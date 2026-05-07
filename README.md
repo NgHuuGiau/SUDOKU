@@ -1,119 +1,55 @@
-# 🎮 Trò Chơi Sudoku Hiện Đại
+# 🧩 Modern Sudoku Game
 
-Một trò chơi Sudoku đẹp mắt, hiện đại được xây dựng bằng Python, Pygame và Tkinter. Thử thách trí tuệ của bạn với giao diện đẹp, âm thanh sống động và tính năng đầy đủ!
+[![Python Version](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Framework: Pygame](https://img.shields.io/badge/Framework-Pygame-green.svg)](https://www.pygame.org)
 
-## ✨ Tính Năng Nổi Bật
+Một ứng dụng game Sudoku chuyên nghiệp được xây dựng bằng Python. Dự án tập trung vào giao diện người dùng tối giản, sắc nét và thuật toán xử lý logic tối ưu.
 
-- **🎨 Giao Diện Hiện Đại**: Menu gradient đẹp mắt với Tkinter, bảng chơi mượt mà với Pygame
-- **🎯 Chế Độ Khó**: Dễ, Trung bình, Khó - phù hợp mọi trình độ
-- **🖱️ Chơi Tương Tác**: Điều khiển bằng chuột và bàn phím
-- **💡 Gợi Ý & Ghi Chú**: Hệ thống gợi ý thông minh và ghi chú số có thể
-- **↩️ Hoàn Tác/Làm Lại**: Chức năng undo/redo đầy đủ
-- **⏱️ Đồng Hồ Thời Gian**: Đếm thời gian thực với khả năng tạm dừng
-- **🌍 Đa Ngôn Ngữ**: Hỗ trợ tiếng Anh và tiếng Việt
-- **🎆 Kỷ Niệm Chiến Thắng**: Hiệu ứng pháo hoa rực rỡ khi thắng
+## ✨ Tính năng nổi bật
 
-## 🚀 Bắt Đầu Nhanh
+- **🎨 UI/UX Cao cấp**: Hệ thống màu sắc hài hòa, hỗ trợ cross-highlighting hàng/cột giúp tăng khả năng tập trung.
+- **🧠 Thuật toán thông minh**:
+  - **Generation**: Tạo bảng Sudoku ngẫu nhiên không trùng lặp.
+  - **Solver**: Tích hợp thuật toán Backtracking để giải bảng trong chớp mắt.
+- **⚡ Hiệu năng tối ưu**: Xử lý render mượt mà, không gây hiện tượng giật lag pixel.
+- **🛠 Công cụ hỗ trợ**: Chế độ ghi chú (Notes), gợi ý (Hint), và kiểm tra lỗi sai thời gian thực.
 
-### Yêu Cầu Hệ Thống
-- Python 3.8 hoặc cao hơn
-- Trình quản lý gói pip
+## 📂 Cấu trúc dự án
 
-### Cài Đặt
-
-1. **Tải mã nguồn**
-   ```bash
-   git clone <địa-chỉ-repo-của-bạn>
-   cd sudoku
-   ```
-
-2. **Cài đặt thư viện phụ thuộc**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Chạy trò chơi**
-   ```bash
-   python main.py
-   ```
-
-## 🎯 Cách Chơi
-
-### Điều Khiển
-- **Chuột**: Nhấp vào ô và nút
-- **WASD/Phím mũi tên**: Di chuyển con trỏ
-- **1-9**: Nhập số
-- **Backspace/Delete**: Xóa ô
-- **Space**: Chuyển chế độ ghi chú
-
-### Tính Năng
-- **💡 Gợi Ý**: Nhận một số đúng (có giới hạn)
-- **📝 Ghi Chú**: Đánh dấu số có thể trong ô
-- **🔍 Kiểm Tra**: Làm nổi bật số sai
-- **⏸️ Tạm Dừng**: Dừng/tiếp tục trò chơi
-- **↩️ Hoàn Tác**: Quay lại bước trước
-
-## 📁 Cấu Trúc Dự Án
-
-```
-sudoku/
-├── main.py          # Điểm vào chính của chương trình
-├── menu.py          # Giao diện menu Tkinter
-├── game.py          # Logic trò chơi Pygame
-├── ui.py            # Hằng số và hàm vẽ giao diện
-├── logic.py         # Tạo và kiểm tra bảng Sudoku
-├── lang.py          # Bản dịch ngôn ngữ
-├── requirements.txt # Thư viện Python cần thiết
-├── .gitignore       # Quy tắc bỏ qua Git
-├── Picture/         # Tài nguyên biểu tượng (tùy chọn)
-├── sounds/          # Hiệu ứng âm thanh (tùy chọn)
-├── README.md        # Tài liệu này
-├── LICENSE          # Giấy phép MIT
-└── DEVELOPMENT.md   # Hướng dẫn phát triển
+```text
+SUDOKU/
+├── main.py          # Entry point của ứng dụng
+├── ui.py            # Quản lý giao diện và hằng số hiển thị
+├── logic.py         # Thuật toán sinh bảng và giải Sudoku
+├── menu.py          # Xử lý giao diện Menu (Tkinter/Pygame)
+├── game.py          # Vòng lặp chính của trò chơi
+└── README.md        # Tài liệu hướng dẫn dự án
 ```
 
-## 🎨 Tùy Chỉnh
+## 🚀 Hướng dẫn cài đặt & Chạy game
 
-### Màu Sắc
-Chỉnh sửa class `Colors` trong `ui.py` để thay đổi chủ đề.
+### 1. Yêu cầu hệ thống
 
-### Ngôn Ngữ
-Thêm ngôn ngữ mới trong dict `ban_dich` của `lang.py`.
+- Python 3.8 trở lên.
+- Thư viện Pygame.
 
-### Độ Khó
-Sửa số ô trống trong hàm `generate_sudoku()` của `logic.py`.
+### 2. Triển khai
 
-## 🛠️ Phát Triển
+Cài đặt các thư viện cần thiết:
 
-### Thiết Lập Môi Trường Phát Triển
 ```bash
-pip install -e ".[dev]"
+pip install pygame
 ```
 
-### Kiểm Tra Chất Lượng Code
-- Định dạng: `black .`
-- Kiểm tra lỗi: `flake8`
-- Kiểm tra kiểu: `mypy`
+### 3. Chạy game
 
-## 📝 Giấy Phép
+```bash
+python main.py
+```
 
-Giấy phép MIT - xem file LICENSE để biết chi tiết.
+## 🛠 Công nghệ sử dụng
 
-## 🤝 Đóng Góp
-
-1. Fork kho lưu trữ
-2. Tạo nhánh tính năng
-3. Commit thay đổi
-4. Push lên nhánh
-5. Tạo Pull Request
-
-## 🙏 Lời Cảm Ơn
-
-- Xây dựng với Pygame và Tkinter
-- Lấy cảm hứng từ các trò chơi Sudoku cổ điển
-
----
-
-**Chúc bạn chơi vui! 🎉**
-
-*Tìm hiểu thêm trong [DEVELOPMENT.md](DEVELOPMENT.md)*
+- **Ngôn ngữ**: Python
+- **Thư viện chính**: Pygame (Xử lý đồ họa)
+- **Thuật toán**: Backtracking (Giải Sudoku)

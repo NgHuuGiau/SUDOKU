@@ -1,3 +1,4 @@
+# Quản lý logic vòng lặp trò chơi, sự kiện người dùng và hiển thị chính
 import pygame
 import copy
 import random
@@ -23,6 +24,7 @@ note_font: pygame.font.Font | None = None
 tiny_font: pygame.font.Font | None = None
 
 def init_display(screen_obj: pygame.Surface, fonts: tuple) -> None:
+    # Khởi tạo các biến font và màn hình toàn cục cho Game
     global screen, font, small_font, medium_font, large_font, note_font, tiny_font
     screen = screen_obj
     font, small_font, medium_font, large_font, note_font, tiny_font = fonts
@@ -49,7 +51,7 @@ class Particle:
             pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), 3)
 
 class GameState:
-    """Manages game state including board, notes, and timer."""
+    # Lớp quản lý toàn bộ trạng thái của một ván đấu (Bảng, ghi chú, undo/redo, timer)
     def __init__(self, difficulty: Difficulty):
         self.difficulty = difficulty
         self.board, self.solution = generate_sudoku(difficulty)
@@ -73,6 +75,7 @@ class GameState:
         self.redo_stack: List[Tuple[Board, List[List[Set[int]]]]] = []
 
     def get_cell_from_pos(self, x: int, y: int) -> Optional[Tuple[int, int]]:
+        # Chuyển đổi tọa độ chuột sang chỉ số ô (hàng, cột) trong bảng Sudoku
         if not (PADDING <= x < PADDING + BOARD_SIZE and
                 TOP_MARGIN <= y < TOP_MARGIN + BOARD_SIZE):
             return None
@@ -81,6 +84,7 @@ class GameState:
         return (row, col) if 0 <= row < 9 and 0 <= col < 9 else None
 
     def save_state(self) -> None:
+        # Lưu trạng thái hiện tại vào stack để thực hiện chức năng hoàn tác (Undo)
         current = (copy.deepcopy(self.board), copy.deepcopy(self.notes))
         if not self.undo_stack or self.undo_stack[-1] != current:
             self.undo_stack.append(current)
@@ -103,6 +107,7 @@ class GameState:
             self.notes = copy.deepcopy(notes_state)
 
     def place_number(self, num: int) -> None:
+        # Đặt một con số hoặc ghi chú vào ô đang được chọn
         r, c = self.selected
         if self.original[r][c] != 0:
             return
@@ -117,6 +122,7 @@ class GameState:
             self.save_state()
 
     def clear_cell(self) -> None:
+        # Xóa giá trị hoặc ghi chú trong ô đang chọn (nếu không phải ô mặc định)
         r, c = self.selected
         if self.original[r][c] != 0:
             return
@@ -127,6 +133,7 @@ class GameState:
             self.save_state()
 
     def give_hint(self) -> None:
+        # Điền giá trị đúng vào ô trống đang chọn (Gợi ý)
         r, c = self.selected
         if self.original[r][c] == 0 and self.board[r][c] == 0:
             self.board[r][c] = self.solution[r][c]
@@ -134,6 +141,7 @@ class GameState:
             self.save_state()
 
     def fill_possible_notes(self) -> None:
+        # Tự động điền tất cả các ghi chú khả thi cho toàn bộ các ô trống
         for r in range(9):
             for c in range(9):
                 self.notes[r][c].clear()
@@ -153,6 +161,7 @@ class GameState:
             self.paused_time += pygame.time.get_ticks() - self.last_pause_start
 
     def restart(self, difficulty: Difficulty) -> None:
+        # Làm mới trò chơi với độ khó mới
         self.difficulty = difficulty
         self.board, self.solution = generate_sudoku(difficulty)
         self.original = [row[:] for row in self.board]
@@ -178,7 +187,7 @@ class GameState:
         return max(0, (pygame.time.get_ticks() - self.start_time - self.paused_time) // 1000)
 
 class Game:
-    """Main game class handling Pygame loop and rendering."""
+    # Lớp trung tâm điều khiển vòng lặp Pygame và vẽ giao diện
     def __init__(self, difficulty: Difficulty = "medium"):
         pygame.init()
         pygame.font.init()
@@ -193,6 +202,7 @@ class Game:
         self.running = True
 
     def _init_sounds(self) -> None:
+        # Khởi tạo hệ thống âm thanh (như âm thanh chiến thắng)
         try:
             sound_files = {
                 'win': 'sounds/applause.wav',
@@ -204,6 +214,7 @@ class Game:
             pass
 
     def _load_icon(self) -> None:
+        # Tải biểu tượng ứng dụng
         try:
             icon_path = f"Picture/SUDOKU.ico"
             pygame.display.set_icon(pygame.image.load(icon_path))
@@ -211,6 +222,7 @@ class Game:
             pass
 
     def _load_fonts(self) -> None:
+        # Tải phông chữ (ưu tiên VN-Times nếu có, không thì dùng phông hệ thống)
         custom_font_path = "VN-Times.ttf"
         system_font_names = ["segoe ui", "tahoma", "arial"]
 
@@ -230,6 +242,7 @@ class Game:
         self.tiny_font = get_font(22)
 
     def handle_events(self) -> bool:
+        # Xử lý các sự kiện từ chuột và bàn phím
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
@@ -240,6 +253,7 @@ class Game:
                 self.running = False
                 return True
 
+            # Xử lý khi cửa sổ bị mất tập trung (để tự động tính giờ tạm dừng)
             if event.type == pygame.ACTIVEEVENT:
                 if event.gain == 0 and not self.state.paused:
                     self.state.last_active_time = pygame.time.get_ticks()
@@ -255,6 +269,7 @@ class Game:
         return True
 
     def _handle_mouse(self, pos: Tuple[int, int]) -> None:
+        # Xử lý sự kiện click chuột vào bảng hoặc các nút chức năng
         x, y = pos
 
 
@@ -268,6 +283,7 @@ class Game:
                 self.state.toggle_pause()
             return
 
+        # Nút khởi động lại
         if restart_rect.collidepoint(x, y):
             self.state.restart(self.state.difficulty)
             return
@@ -278,7 +294,7 @@ class Game:
                 self.state.selected = list(cell)
                 return
 
-
+        # Kiểm tra click vào danh sách các nút điều khiển bên phải
         btn_w = PANEL_WIDTH - 20
         btn_h = 38
         spacing = 8
@@ -342,6 +358,7 @@ class Game:
             self.state.clear_cell()
             return
     def _handle_keyboard(self, event) -> None:
+        # Xử lý phím mũi tên di chuyển ô và nhập số từ bàn phím vật lý
         r, c = self.state.selected
         key = event.key
 
@@ -360,6 +377,7 @@ class Game:
                 self.state.clear_cell()
 
     def update(self) -> None:
+        # Cập nhật logic game (Kiểm tra thắng, hiệu ứng pháo hoa)
         if self.state.game_over: 
             if random.random() < 0.15:
                 color = (random.randint(150, 255), random.randint(150, 255), random.randint(150, 255))
@@ -377,9 +395,10 @@ class Game:
                 self.sounds['win'].play()
 
     def render(self) -> None:
+        # Vẽ toàn bộ thành phần giao diện lên màn hình
         self.screen.fill(Colors.BG_MAIN)
 
-
+        # Vẽ khung Panel điều khiển bên phải
         panel_rect = pygame.Rect(PADDING + BOARD_SIZE + PANEL_OFFSET - 10,
                                   TOP_MARGIN - 10,
                                   PANEL_WIDTH + 20,
@@ -387,8 +406,6 @@ class Game:
         pygame.draw.rect(self.screen, Colors.BG_PANEL, panel_rect, border_radius=20)
 
         draw_grid(self.screen)
-
-
         if self.state.selected and not self.state.paused:
             r, c = self.state.selected
             rect = pygame.Rect(c * CELL_SIZE + PADDING,
@@ -411,6 +428,7 @@ class Game:
                               r_sel * CELL_SIZE + TOP_MARGIN, CELL_SIZE, CELL_SIZE)
             pygame.draw.rect(self.screen, Colors.WIN_GOLD, rect, 4, border_radius=12)
 
+        # Vẽ đồng hồ và điều khiển
         mouse_pos = pygame.mouse.get_pos()
         timer_rect = draw_timer(self.screen, self.small_font, self.state.game_over, self.state.paused,
                                self.state.final_time, self.state.start_time,
@@ -425,6 +443,7 @@ class Game:
                 center=(PADDING + BOARD_SIZE // 2,
                         SCREEN_HEIGHT - BOTTOM_MARGIN // 2)))
 
+        # Hiển thị lớp phủ khi Thắng cuộc hoặc Tạm dừng
 
 
         if self.state.game_over:
@@ -458,6 +477,7 @@ class Game:
         pygame.display.flip()
 
     def _draw_controls(self, mouse_pos, start_y):
+        # Vẽ danh sách các nút chức năng và bàn phím số bên cạnh bảng
         y = start_y + 15
 
         buttons_list = [
@@ -507,6 +527,7 @@ class Game:
         draw_button(self.screen, clear_rect, _('xoa_btn'), mouse_pos, self.small_font, 'danger')
 
     def run(self) -> bool:
+        # Chạy vòng lặp Game Loop ở 60 FPS
         clock = pygame.time.Clock()
         while self.running:
             if not self.handle_events():

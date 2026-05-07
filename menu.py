@@ -3,6 +3,7 @@ from tkinter import ttk, messagebox
 from game import start_game
 from lang import _, chuyen_ngon_ngu
 
+# Định nghĩa bảng màu cho giao diện Menu (Tkinter)
 COLORS = {
     'bg': '#667eea',
     'frame': '#764ba2',
@@ -17,7 +18,7 @@ COLORS = {
 }
 
 class MenuSudoku:
-    """Main menu class for selecting difficulty and language."""
+    # Lớp quản lý Menu chính của trò chơi
 
     def __init__(self):
         self.root = tk.Tk()
@@ -36,6 +37,7 @@ class MenuSudoku:
         self._canh_giua_cua_so()
 
     def _cai_dat_kieu(self):
+        # Thiết lập phong cách (Style) cho các nút bấm của Tkinter
         style = ttk.Style()
         style.theme_use('clam')
 
@@ -73,6 +75,7 @@ class MenuSudoku:
                   background=[('active', '#e53e3e')])
 
     def _tao_cac_widget(self):
+        # Tạo cấu trúc giao diện Menu (Tiêu đề, các nút độ khó, chân trang)
         main_frame = tk.Frame(self.root, bg=COLORS['bg'])
         main_frame.pack(expand=True, fill=tk.BOTH)
 
@@ -179,10 +182,12 @@ class MenuSudoku:
         phien_ban.pack()
 
     def _chuyen_ngon_ngu(self):
+        # Xử lý sự kiện chuyển đổi ngôn ngữ (Việt/Anh)
         chuyen_ngon_ngu()
         self._cap_nhat_van_ban()
 
     def _cap_nhat_van_ban(self):
+        # Cập nhật lại toàn bộ văn bản hiển thị sau khi đổi ngôn ngữ
         self.phu_de.config(text=_("thu_thach"))
         self.nhan_chon_do_kho.config(text=_("chon_do_kho"))
         self.nut_de.config(text=_('de'))
@@ -192,6 +197,7 @@ class MenuSudoku:
         self.nut_ngon_ngu.config(text=_('ngon_ngu'))
 
     def _canh_giua_cua_so(self):
+        # Căn giữa cửa sổ Menu trên màn hình người dùng
         self.root.update_idletasks()
         chieu_rong = 550
         chieu_cao = 650
@@ -200,6 +206,7 @@ class MenuSudoku:
         self.root.geometry(f'{chieu_rong}x{chieu_cao}+{x}+{y}')
 
     def _bat_dau_tro_choi(self, do_kho):
+        # Ẩn menu và khởi động màn hình Game chính (Pygame)
         self.root.withdraw()
         thang = start_game(self.root, do_kho)
         self.root.deiconify()
@@ -211,6 +218,6 @@ class MenuSudoku:
         self.root.mainloop()
 
 def tao_nut_bat_dau():
-    """Khởi tạo và chạy menu chính."""
+    # Hàm khởi tạo Menu
     menu = MenuSudoku()
     menu.chay()
