@@ -3,99 +3,17 @@ import pygame
 import copy
 import random
 import os
-from typing import List, Set, Tuple, Optional
+from typing import List, Set, Tuple
 from logic import generate_sudoku, is_valid_placement, check_win
 from ui import (
-    SCREEN_WIDTH, SCREEN_HEIGHT, BOARD_SIZE, PADDING, PANEL_OFFSET,
-    TOP_MARGIN, BOTTOM_MARGIN, PANEL_WIDTH, CELL_SIZE, Colors, init_display,
-    draw_grid, draw_numbers, draw_timer, draw_button
+    SCREEN_WIDTH, SCREEN_HEIGHT, load_fonts, create_game_screen,
+    get_cell_from_pos, get_timer_rect, get_sidebar_layout, draw_game_view,
+    Particle
 )
-import config
-
-GAME_DICT = {
-    "en": {
-        "move": "WASD: Move",
-        "input": "1-9: Input",
-        "delete": "Backspace: Delete",
-        "chien_thang": "Victory!",
-        "nhan_phim_bat_ky": "Press any key to return to Menu",
-        "tam_dung": "PAUSED",
-        "tiep_tuc": "RESUME",
-        "van_moi": "New Game",
-        "goi_y": "Hint",
-        "kiem_tra": "Check",
-        "tam_dung_btn": "Pause",
-        "ghi_chu": "Notes",
-        "nhap_so": "Input",
-        "ghi_chu_tu_dong": "Auto Notes",
-        "hoan_tac": "Undo",
-        "lam_lai": "Redo",
-        "xoa_btn": "Clear",
-        "thoat": "Quit",
-        "choi_tiep": "Play Again",
-        "thoat_ve_menu": "Back to Menu",
-    },
-    "vi": {
-        "move": "WASD: Di chuyển",
-        "input": "1-9: Nhập",
-        "delete": "Backspace: Xóa",
-        "chien_thang": "Chiến Thắng!",
-        "nhan_phim_bat_ky": "Nhấn phím bất kỳ để quay lại Menu",
-        "tam_dung": "ĐANG TẠM DỪNG",
-        "tiep_tuc": "TIẾP TỤC",
-        "van_moi": "Ván mới",
-        "goi_y": "Gợi ý",
-        "kiem_tra": "Kiểm tra",
-        "tam_dung_btn": "Tạm dừng",
-        "ghi_chu": "Ghi chú",
-        "nhap_so": "Nhập số",
-        "ghi_chu_tu_dong": "Ghi chú tự động",
-        "hoan_tac": "Hoàn tác",
-        "lam_lai": "Làm lại",
-        "xoa_btn": "Xóa",
-        "thoat": "Thoát",
-        "choi_tiep": "Chơi tiếp",
-        "thoat_ve_menu": "Về Menu",
-    },
-}
-
-def _(khoa):
-    return GAME_DICT[config.ngon_ngu_hien_tai][khoa]
 
 Board = List[List[int]]
 NotesBoard = List[List[Set[int]]]
 Difficulty = str
-
-screen: pygame.Surface | None = None
-font: pygame.font.Font | None = None
-small_font: pygame.font.Font | None = None
-medium_font: pygame.font.Font | None = None
-large_font: pygame.font.Font | None = None
-note_font: pygame.font.Font | None = None
-tiny_font: pygame.font.Font | None = None
-
-def init_display(screen_obj: pygame.Surface, fonts: tuple) -> None:
-    global screen, font, small_font, medium_font, large_font, note_font, tiny_font
-    screen = screen_obj
-    font, small_font, medium_font, large_font, note_font, tiny_font = fonts
-
-class Particle:
-    def __init__(self, x, y, color):
-        self.x = x
-        self.y = y
-        self.color = color
-        self.vx = random.uniform(-4, 4)
-        self.vy = random.uniform(-10, 2)
-        self.lifetime = 1.0
-    def update(self):
-        self.x += self.vx
-        self.y += self.vy
-        self.vy += 0.2
-        self.lifetime -= 0.02
-    def draw(self, screen):
-        if self.lifetime > 0:
-            alpha = int(self.lifetime * 255)
-            pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), 3)
 
 class GameState:
     def __init__(self, difficulty: Difficulty):
@@ -117,13 +35,6 @@ class GameState:
             (copy.deepcopy(self.board), copy.deepcopy(self.notes))
         ]
         self.redo_stack: List[Tuple[Board, List[List[Set[int]]]]] = []
-
-    def get_cell_from_pos(self, x: int, y: int) -> Optional[Tuple[int, int]]:
-        if not (PADDING <= x < PADDING + BOARD_SIZE and TOP_MARGIN <= y < TOP_MARGIN + BOARD_SIZE):
-            return None
-        row = (y - TOP_MARGIN) * 9 // BOARD_SIZE
-        col = (x - PADDING) * 9 // BOARD_SIZE
-        return (row, col) if 0 <= row < 9 and 0 <= col < 9 else None
 
     def save_state(self) -> None:
         current = (copy.deepcopy(self.board), copy.deepcopy(self.notes))
@@ -224,11 +135,7 @@ class GameState:
 
 class Game:
     def __init__(self, difficulty: Difficulty = "medium"):
-        pygame.init()
-        pygame.font.init()
-        self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-        pygame.display.set_caption("Sudoku")
-        self._load_icon()
+        self.screen = create_game_screen()
         self._load_fonts()
         self.state = GameState(difficulty)
         self.particles: List[Particle] = []
@@ -251,29 +158,8 @@ class Game:
         except Exception:
             pass
 
-    def _load_icon(self) -> None:
-        try:
-            icon_path = f"Picture/SUDOKU.ico"
-            pygame.display.set_icon(pygame.image.load(icon_path))
-        except Exception:
-            pass
-
     def _load_fonts(self) -> None:
-        custom_font_path = "VN-Times.ttf"
-        system_font_names = ["segoe ui", "tahoma", "arial"]
-        def get_font(size: int, is_bold: bool = False, is_italic: bool = False) -> pygame.font.Font:
-            try:
-                if os.path.exists(custom_font_path):
-                    return pygame.font.Font(custom_font_path, size)
-            except Exception:
-                pass
-            return pygame.font.SysFont(system_font_names, size, bold=is_bold, italic=is_italic)
-        self.font = get_font(BOARD_SIZE // 11)
-        self.small_font = get_font(26)
-        self.medium_font = get_font(38)
-        self.large_font = get_font(50)
-        self.note_font = get_font(18)
-        self.tiny_font = get_font(22)
+        self.fonts = load_fonts()
 
     def handle_events(self) -> bool:
         for event in pygame.event.get():
@@ -306,7 +192,7 @@ class Game:
     def _handle_gameover_click(self, pos):
         x, y = pos
         if self.win_restart_rect and self.win_restart_rect.collidepoint(x, y):
-            self.state.restart(self.state.difficulty)
+            self._restart_game()
         if self.win_quit_rect and self.win_quit_rect.collidepoint(x, y):
             self.running = False
             self.quit_requested = True
@@ -321,67 +207,68 @@ class Game:
 
     def _handle_mouse(self, pos: Tuple[int, int]) -> None:
         x, y = pos
-        timer_rect = pygame.Rect(PADDING + BOARD_SIZE + PANEL_OFFSET, TOP_MARGIN, PANEL_WIDTH, 60)
-        restart_rect = pygame.Rect(PADDING + BOARD_SIZE + PANEL_OFFSET + 15,
-                                    timer_rect.bottom + 10, PANEL_WIDTH - 30, 42)
-        if restart_rect.collidepoint(x, y):
-            self.state.restart(self.state.difficulty)
-            return
         if not self.state.paused and not self.state.game_over:
-            cell = self.state.get_cell_from_pos(x, y)
+            cell = get_cell_from_pos(x, y)
             if cell:
                 self.state.selected = list(cell)
                 return
-        btn_w = PANEL_WIDTH - 20
-        btn_h = 38
-        spacing = 8
-        current_y = restart_rect.bottom + 8
-        buttons = [
+
+        layout = get_sidebar_layout(get_timer_rect().bottom)
+        main_actions = [
+            self._restart_game,
             self.state.give_hint,
             lambda: setattr(self.state, 'show_errors', not self.state.show_errors),
             self.state.toggle_pause,
             lambda: setattr(self.state, 'notes_mode', not self.state.notes_mode),
             self.state.fill_possible_notes,
         ]
-        for action in buttons:
-            rect = pygame.Rect(PADDING + BOARD_SIZE + PANEL_OFFSET + 15,
-                              current_y, btn_w, btn_h)
+        for rect, action in zip(layout["main_buttons"], main_actions):
             if rect.collidepoint(x, y):
                 action()
                 return
-            current_y = rect.bottom + spacing
-        undo_w = (btn_w - 8) // 2
-        undo_rect = pygame.Rect(PADDING + BOARD_SIZE + PANEL_OFFSET + 15,
-                                current_y, undo_w, 40)
-        redo_rect = pygame.Rect(undo_rect.right + 8, current_y, undo_w, 40)
-        if undo_rect.collidepoint(x, y):
+
+        if layout["undo"].collidepoint(x, y):
             self.state.undo()
             return
-        if redo_rect.collidepoint(x, y):
+        if layout["redo"].collidepoint(x, y):
             self.state.redo()
             return
-        num_y = undo_rect.bottom + 20
-        num_btn_w = (PANEL_WIDTH - 40) // 3
-        num_btn_h = 44
-        num_pad = 8
-        for i in range(9):
-            num = i + 1
-            col_idx = i % 3
-            row_idx = i // 3
-            num_rect = pygame.Rect(
-                PADDING + BOARD_SIZE + PANEL_OFFSET + 15 + (num_btn_w + num_pad) * col_idx,
-                num_y + (num_btn_h + num_pad) * row_idx,
-                num_btn_w, num_btn_h)
+
+        for i, num_rect in enumerate(layout["numbers"]):
             if num_rect.collidepoint(x, y):
-                self.state.place_number(num)
+                self.state.place_number(i + 1)
                 return
-        clear_rect = pygame.Rect(
-            PADDING + BOARD_SIZE + PANEL_OFFSET + 15 + (num_btn_w + num_pad) * 1,
-            num_y + (num_btn_h + num_pad) * 3,
-            num_btn_w + 20, num_btn_h)
-        if clear_rect.collidepoint(x, y):
+
+        if layout["clear"].collidepoint(x, y):
             self.state.clear_cell()
             return
+
+    def _restart_game(self) -> None:
+        self.particles.clear()
+        self.state.restart(self.state.difficulty)
+
+    def _spawn_firework_burst(self, x: int, y: int, count: int = 38) -> None:
+        colors = [
+            (255, 215, 0),
+            (96, 165, 250),
+            (244, 114, 182),
+            (52, 211, 153),
+            (251, 146, 60),
+            (248, 113, 113),
+        ]
+        for _ in range(count):
+            self.particles.append(Particle(x, y, random.choice(colors)))
+
+    def _spawn_win_fireworks(self) -> None:
+        burst_points = [
+            (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 120),
+            (SCREEN_WIDTH // 2 - 190, SCREEN_HEIGHT // 2 - 80),
+            (SCREEN_WIDTH // 2 + 190, SCREEN_HEIGHT // 2 - 90),
+            (SCREEN_WIDTH // 2 - 80, SCREEN_HEIGHT // 2 - 175),
+            (SCREEN_WIDTH // 2 + 85, SCREEN_HEIGHT // 2 - 170),
+        ]
+        for x, y in burst_points:
+            self._spawn_firework_burst(x, y, 34)
 
     def _handle_keyboard(self, event) -> None:
         r, c = self.state.selected
@@ -402,11 +289,10 @@ class Game:
 
     def update(self) -> None:
         if self.state.game_over:
-            if random.random() < 0.15:
-                color = (random.randint(150, 255), random.randint(150, 255), random.randint(150, 255))
-                x, y = random.randint(50, SCREEN_WIDTH-50), random.randint(50, SCREEN_HEIGHT-150)
-                for _ in range(30):
-                    self.particles.append(Particle(x, y, color))
+            if random.random() < 0.045:
+                x = random.randint(70, SCREEN_WIDTH - 70)
+                y = random.randint(70, SCREEN_HEIGHT // 2)
+                self._spawn_firework_burst(x, y, 26)
             for p in self.particles[:]:
                 p.update()
                 if p.lifetime <= 0:
@@ -414,110 +300,17 @@ class Game:
         if not self.state.game_over and check_win(self.state.board, self.state.solution):
             self.state.game_over = True
             self.state.final_time = self.state.get_elapsed_time()
+            self._spawn_win_fireworks()
             if 'win' in self.sounds:
                 self.sounds['win'].play()
 
     def render(self) -> None:
-        self.screen.fill(Colors.BG_MAIN)
-        panel_rect = pygame.Rect(PADDING + BOARD_SIZE + PANEL_OFFSET - 10,
-                                  TOP_MARGIN - 10, PANEL_WIDTH + 20, SCREEN_HEIGHT - TOP_MARGIN)
-        pygame.draw.rect(self.screen, Colors.BG_PANEL, panel_rect, border_radius=20)
-        draw_grid(self.screen)
-        if self.state.selected and not self.state.paused and not self.state.game_over:
-            r, c = self.state.selected
-            rect = pygame.Rect(c * CELL_SIZE + PADDING, r * CELL_SIZE + TOP_MARGIN, CELL_SIZE, CELL_SIZE)
-            color = (Colors.SELECTED if self.state.original[r][c] == 0 else Colors.HIGHLIGHT)
-            pygame.draw.rect(self.screen, color, rect, border_radius=12)
-        if not self.state.game_over:
-            r_sel, c_sel = self.state.selected
-            highlight_num = self.state.board[r_sel][c_sel]
-            draw_numbers(self.screen, self.font, self.note_font, self.state.board, self.state.original, self.state.solution,
-                        self.state.notes, self.state.show_errors, highlight_val=highlight_num)
-            if self.state.selected and not self.state.paused:
-                rect = pygame.Rect(c_sel * CELL_SIZE + PADDING, r_sel * CELL_SIZE + TOP_MARGIN, CELL_SIZE, CELL_SIZE)
-                pygame.draw.rect(self.screen, Colors.WIN_GOLD, rect, 4, border_radius=12)
         mouse_pos = pygame.mouse.get_pos()
-        timer_rect = draw_timer(self.screen, self.small_font, self.state.game_over, self.state.paused,
-                               self.state.final_time, self.state.start_time,
-                               self.state.paused_time, self.state.last_pause_start)
-        if not self.state.game_over and not self.state.paused:
-            self._draw_controls(mouse_pos, timer_rect.bottom)
-            help_text = f"{_('move')}  |  {_('input')}  |  {_('delete')}"
-            text = self.tiny_font.render(help_text, True, (100, 110, 120))
-            self.screen.blit(text, text.get_rect(
-                center=(PADDING + BOARD_SIZE // 2, SCREEN_HEIGHT - BOTTOM_MARGIN // 2)))
-        # Game Over overlay
-        if self.state.game_over:
-            overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
-            overlay.fill((0, 0, 0, 150))
-            self.screen.blit(overlay, (0, 0))
-            win_text = self.large_font.render(_("chien_thang"), True, Colors.WIN_GOLD)
-            self.screen.blit(win_text, win_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 60)))
-            btn_w = 220
-            btn_h = 50
-            gap = 20
-            total_w = btn_w * 2 + gap
-            start_x = (SCREEN_WIDTH - total_w) // 2
-            start_y = SCREEN_HEIGHT // 2 + 10
-            self.win_restart_rect = pygame.Rect(start_x, start_y, btn_w, btn_h)
-            self.win_quit_rect = pygame.Rect(start_x + btn_w + gap, start_y, btn_w, btn_h)
-            draw_button(self.screen, self.win_restart_rect, _("choi_tiep"), mouse_pos, self.small_font, 'warning')
-            draw_button(self.screen, self.win_quit_rect, _("thoat_ve_menu"), mouse_pos, self.small_font, 'danger')
-        # Pause overlay
-        if self.state.paused:
-            overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
-            overlay.fill(Colors.PAUSE_OVERLAY)
-            self.screen.blit(overlay, (0, 0))
-            pause_text = self.large_font.render(_("tam_dung"), True, Colors.WHITE)
-            self.screen.blit(pause_text, pause_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 50)))
-            btn_w = 200
-            btn_h = 50
-            gap = 20
-            total_w = btn_w * 2 + gap
-            start_x = (SCREEN_WIDTH - total_w) // 2
-            start_y = SCREEN_HEIGHT // 2 + 20
-            self.pause_resume_rect = pygame.Rect(start_x, start_y, btn_w, btn_h)
-            self.pause_quit_rect = pygame.Rect(start_x + btn_w + gap, start_y, btn_w, btn_h)
-            draw_button(self.screen, self.pause_resume_rect, _("tiep_tuc"), mouse_pos, self.small_font, 'warning')
-            draw_button(self.screen, self.pause_quit_rect, _("thoat"), mouse_pos, self.small_font, 'danger')
-        pygame.display.flip()
-
-    def _draw_controls(self, mouse_pos, start_y):
-        y = start_y + 15
-        buttons_list = [
-            (_('van_moi'), lambda: self.state.restart(self.state.difficulty), 'warning'),
-            (_('goi_y'), self.state.give_hint, 'secondary'),
-            (_('kiem_tra'), lambda: setattr(self.state, 'show_errors', not self.state.show_errors), 'secondary'),
-            (_('tam_dung_btn') if not self.state.paused else _('tiep_tuc'), self.state.toggle_pause, 'warning'),
-            (_('ghi_chu') if not self.state.notes_mode else _('nhap_so'), lambda: setattr(self.state, 'notes_mode', not self.state.notes_mode), 'primary'),
-            (_('ghi_chu_tu_dong'), self.state.fill_possible_notes, 'secondary'),
-        ]
-        btn_w = PANEL_WIDTH - 20
-        btn_h = 38
-        for text, action, color_scheme in buttons_list:
-            rect = draw_button(self.screen, pygame.Rect(PADDING + BOARD_SIZE + PANEL_OFFSET + 15, y, btn_w, btn_h),
-                              text, mouse_pos, self.small_font, color_scheme)
-            y = rect.bottom + 8
-        hoan_tac_rong = (btn_w - 8) // 2
-        hoan_tac_hcn = draw_button(self.screen, pygame.Rect(PADDING + BOARD_SIZE + PANEL_OFFSET + 15, y, hoan_tac_rong, 40),
-                                _('hoan_tac'), mouse_pos, self.tiny_font, 'primary')
-        draw_button(self.screen, pygame.Rect(hoan_tac_hcn.right + 8, y, hoan_tac_rong, 40),
-                    _('lam_lai'), mouse_pos, self.tiny_font, 'primary')
-        y = hoan_tac_hcn.bottom + 20
-        num_btn_w = (PANEL_WIDTH - 40) // 3
-        num_btn_h = 44
-        num_pad = 8
-        num_colors = ['primary', 'primary', 'primary', 'secondary', 'secondary', 'secondary', 'warning', 'warning', 'warning']
-        for i in range(9):
-            num = i + 1
-            col = i % 3
-            row = i // 3
-            x = PADDING + BOARD_SIZE + PANEL_OFFSET + 15 + (num_btn_w + num_pad) * col
-            rect = pygame.Rect(x, y + (num_btn_h + num_pad) * row, num_btn_w, num_btn_h)
-            draw_button(self.screen, rect, str(num), mouse_pos, self.medium_font, num_colors[i])
-        clear_rect = pygame.Rect(PADDING + BOARD_SIZE + PANEL_OFFSET + 15 + (num_btn_w + num_pad) * 1,
-                                  y + (num_btn_h + num_pad) * 3, num_btn_w + 20, num_btn_h)
-        draw_button(self.screen, clear_rect, _('xoa_btn'), mouse_pos, self.small_font, 'danger')
+        overlay_rects = draw_game_view(self.screen, self.fonts, self.state, mouse_pos, self.particles)
+        self.pause_resume_rect = overlay_rects["pause_resume"]
+        self.pause_quit_rect = overlay_rects["pause_quit"]
+        self.win_restart_rect = overlay_rects["win_restart"]
+        self.win_quit_rect = overlay_rects["win_quit"]
 
     def run(self) -> bool:
         clock = pygame.time.Clock()
