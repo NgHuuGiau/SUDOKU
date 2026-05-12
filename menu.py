@@ -1,9 +1,37 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 from game import start_game
-from lang import _, chuyen_ngon_ngu
+import config
+from config import chuyen_ngon_ngu
 
-# Định nghĩa bảng màu cho giao diện Menu (Tkinter)
+MENU_DICT = {
+    "en": {
+        "thu_thach": "Challenge your intelligence!",
+        "chon_do_kho": "Select Difficulty",
+        "de": "Easy",
+        "trung_binh": "Medium",
+        "kho": "Hard",
+        "chuc_vui_ve": "Have fun playing!",
+        "chien_thang": "Victory!",
+        "chuc_mung": "Congratulations! You solved the Sudoku.\nDo you want to play another game?",
+        "ngon_ngu": "Language",
+    },
+    "vi": {
+        "thu_thach": "Thử thách trí tuệ của bạn!",
+        "chon_do_kho": "Chọn Độ Khó",
+        "de": "Chơi Dễ",
+        "trung_binh": "Chơi Trung bình",
+        "kho": "Chơi Khó",
+        "chuc_vui_ve": "Chúc bạn chơi game vui vẻ!",
+        "chien_thang": "Chiến Thắng!",
+        "chuc_mung": "Chúc mừng! Bạn đã giải xong Sudoku.\nBạn có muốn chơi tiếp ván mới không?",
+        "ngon_ngu": "Ngôn ngữ",
+    },
+}
+
+def _(khoa):
+    return MENU_DICT[config.ngon_ngu_hien_tai][khoa]
+
 COLORS = {
     'bg': '#667eea',
     'frame': '#764ba2',
@@ -17,177 +45,85 @@ COLORS = {
     'shadow': '#rgba(0,0,0,0.1)',
 }
 
-class MenuSudoku:
-    # Lớp quản lý Menu chính của trò chơi
 
+class MenuSudoku:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("🎮 Sudoku Cổ Điển")
+        self.root.title("\uD83C\uDFAE Sudoku Cổ \u0110iển")
         self.root.configure(bg=COLORS['bg'])
         self.root.resizable(False, False)
-
         try:
             icon_path = os.path.join(os.path.dirname(__file__), "Picture/SUDOKU.ico")
             self.root.iconbitmap(icon_path)
         except Exception:
             pass
-
         self._cai_dat_kieu()
         self._tao_cac_widget()
         self._canh_giua_cua_so()
 
     def _cai_dat_kieu(self):
-        # Thiết lập phong cách (Style) cho các nút bấm của Tkinter
         style = ttk.Style()
         style.theme_use('clam')
-
-        style.configure('Easy.TButton',
-                        font=('Segoe UI Emoji', 13, 'bold'),
-                        background='#48bb78',
-                        foreground=COLORS['text_light'],
-                        borderwidth=0,
-                        focusthickness=0,
-                        focuscolor='#48bb78',
-                        padding=10)
-        style.map('Easy.TButton',
-                  background=[('active', '#38a169')])
-
-        style.configure('Medium.TButton',
-                        font=('Segoe UI Emoji', 13, 'bold'),
-                        background='#ed8936',
-                        foreground=COLORS['text_light'],
-                        borderwidth=0,
-                        focusthickness=0,
-                        focuscolor='#ed8936',
-                        padding=10)
-        style.map('Medium.TButton',
-                  background=[('active', '#dd6b20')])
-
-        style.configure('Hard.TButton',
-                        font=('Segoe UI Emoji', 13, 'bold'),
-                        background='#f56565',
-                        foreground=COLORS['text_light'],
-                        borderwidth=0,
-                        focusthickness=0,
-                        focuscolor='#f56565',
-                        padding=10)
-        style.map('Hard.TButton',
-                  background=[('active', '#e53e3e')])
+        style.configure('Easy.TButton', font=('Segoe UI Emoji', 13, 'bold'),
+                        background='#48bb78', foreground=COLORS['text_light'],
+                        borderwidth=0, focusthickness=0, focuscolor='#48bb78', padding=10)
+        style.map('Easy.TButton', background=[('active', '#38a169')])
+        style.configure('Medium.TButton', font=('Segoe UI Emoji', 13, 'bold'),
+                        background='#ed8936', foreground=COLORS['text_light'],
+                        borderwidth=0, focusthickness=0, focuscolor='#ed8936', padding=10)
+        style.map('Medium.TButton', background=[('active', '#dd6b20')])
+        style.configure('Hard.TButton', font=('Segoe UI Emoji', 13, 'bold'),
+                        background='#f56565', foreground=COLORS['text_light'],
+                        borderwidth=0, focusthickness=0, focuscolor='#f56565', padding=10)
+        style.map('Hard.TButton', background=[('active', '#e53e3e')])
 
     def _tao_cac_widget(self):
-        # Tạo cấu trúc giao diện Menu (Tiêu đề, các nút độ khó, chân trang)
         main_frame = tk.Frame(self.root, bg=COLORS['bg'])
         main_frame.pack(expand=True, fill=tk.BOTH)
-
         top_bar = tk.Frame(main_frame, bg='#4facfe', height=6)
         top_bar.pack(fill=tk.X)
-
         card = tk.Frame(main_frame, bg=COLORS['card'], padx=40, pady=15)
         card.pack(expand=True, fill=tk.BOTH, padx=30, pady=(10, 20))
-
         shadow = tk.Frame(main_frame, bg='#a0aec0', height=2)
         shadow.pack(fill=tk.X, side=tk.BOTTOM)
-
-        title_label = tk.Label(
-            card,
-            text="🔢 SUDOKU 🔢",
-            font=('Segoe UI Emoji', 36, 'bold'),
-            bg=COLORS['card'],
-            fg='#2d3748'
-        )
+        title_label = tk.Label(card, text="\uD83D\uDD22\uD83D\uDD22 SUDOKU \uD83D\uDD22\uD83D\uDD22",
+                               font=('Segoe UI Emoji', 36, 'bold'), bg=COLORS['card'], fg='#2d3748')
         title_label.pack(pady=(0, 10))
-
-        self.phu_de = tk.Label(
-            card,
-            text=_("thu_thach"),
-            font=('Segoe UI Emoji', 13, 'italic'),
-            bg=COLORS['card'],
-            fg='#718096'
-        )
+        self.phu_de = tk.Label(card, text=_("thu_thach"), font=('Segoe UI Emoji', 13, 'italic'),
+                               bg=COLORS['card'], fg='#718096')
         self.phu_de.pack(pady=(0, 15))
-
         dai_phan_cach = tk.Frame(card, height=2, bg='#e2e8f0')
         dai_phan_cach.pack(fill=tk.X, pady=(0, 25))
-
-        self.nhan_chon_do_kho = tk.Label(
-            card,
-            text=_("chon_do_kho"),
-            font=('Segoe UI Emoji', 18, 'bold'),
-            bg=COLORS['card'],
-            fg='#2d3748'
-        )
+        self.nhan_chon_do_kho = tk.Label(card, text=_("chon_do_kho"), font=('Segoe UI Emoji', 18, 'bold'),
+                                          bg=COLORS['card'], fg='#2d3748')
         self.nhan_chon_do_kho.pack(pady=(0, 20))
-
         chieu_rong_nut = 18
-
-        self.nut_de = ttk.Button(
-            card,
-            text=_('de'),
-            command=lambda: self._bat_dau_tro_choi("easy"),
-            style='Easy.TButton',
-            width=chieu_rong_nut,
-            takefocus=False
-        )
+        self.nut_de = ttk.Button(card, text=_('de'), command=lambda: self._bat_dau_tro_choi("easy"),
+                                 style='Easy.TButton', width=chieu_rong_nut, takefocus=False)
         self.nut_de.pack(pady=5)
-
-        self.nut_trung_binh = ttk.Button(
-            card,
-            text=_('trung_binh'),
-            command=lambda: self._bat_dau_tro_choi("medium"),
-            style='Medium.TButton',
-            width=chieu_rong_nut,
-            takefocus=False
-        )
+        self.nut_trung_binh = ttk.Button(card, text=_('trung_binh'), command=lambda: self._bat_dau_tro_choi("medium"),
+                                         style='Medium.TButton', width=chieu_rong_nut, takefocus=False)
         self.nut_trung_binh.pack(pady=5)
-
-        self.nut_kho = ttk.Button(
-            card,
-            text=_('kho'),
-            command=lambda: self._bat_dau_tro_choi("hard"),
-            style='Hard.TButton',
-            width=chieu_rong_nut,
-            takefocus=False
-        )
+        self.nut_kho = ttk.Button(card, text=_('kho'), command=lambda: self._bat_dau_tro_choi("hard"),
+                                  style='Hard.TButton', width=chieu_rong_nut, takefocus=False)
         self.nut_kho.pack(pady=5)
-
-        self.nut_ngon_ngu = ttk.Button(
-            card,
-            text=_('ngon_ngu'),
-            command=self._chuyen_ngon_ngu,
-            style='Medium.TButton',
-            width=chieu_rong_nut,
-            takefocus=False
-        )
+        self.nut_ngon_ngu = ttk.Button(card, text=_('ngon_ngu'), command=self._chuyen_ngon_ngu,
+                                       style='Medium.TButton', width=chieu_rong_nut, takefocus=False)
         self.nut_ngon_ngu.pack(pady=5)
-
         khung_chan_trang = tk.Frame(card, bg=COLORS['card'])
         khung_chan_trang.pack(pady=(15, 0))
-
-        self.chan_trang = tk.Label(
-            khung_chan_trang,
-            text=_("chuc_vui_ve"),
-            font=('Segoe UI Emoji', 10, 'italic'),
-            bg=COLORS['card'],
-            fg='#a0aec0'
-        )
+        self.chan_trang = tk.Label(khung_chan_trang, text=_("chuc_vui_ve"), font=('Segoe UI Emoji', 10, 'italic'),
+                                   bg=COLORS['card'], fg='#a0aec0')
         self.chan_trang.pack()
-
-        phien_ban = tk.Label(
-            khung_chan_trang,
-            text="v1.0.0",
-            font=('Segoe UI Emoji', 8),
-            bg=COLORS['card'],
-            fg='#cbd5e0'
-        )
+        phien_ban = tk.Label(khung_chan_trang, text="v1.0.0", font=('Segoe UI Emoji', 8),
+                             bg=COLORS['card'], fg='#cbd5e0')
         phien_ban.pack()
 
     def _chuyen_ngon_ngu(self):
-        # Xử lý sự kiện chuyển đổi ngôn ngữ (Việt/Anh)
         chuyen_ngon_ngu()
         self._cap_nhat_van_ban()
 
     def _cap_nhat_van_ban(self):
-        # Cập nhật lại toàn bộ văn bản hiển thị sau khi đổi ngôn ngữ
         self.phu_de.config(text=_("thu_thach"))
         self.nhan_chon_do_kho.config(text=_("chon_do_kho"))
         self.nut_de.config(text=_('de'))
@@ -197,7 +133,6 @@ class MenuSudoku:
         self.nut_ngon_ngu.config(text=_('ngon_ngu'))
 
     def _canh_giua_cua_so(self):
-        # Căn giữa cửa sổ Menu trên màn hình người dùng
         self.root.update_idletasks()
         chieu_rong = 550
         chieu_cao = 650
@@ -206,7 +141,6 @@ class MenuSudoku:
         self.root.geometry(f'{chieu_rong}x{chieu_cao}+{x}+{y}')
 
     def _bat_dau_tro_choi(self, do_kho):
-        # Ẩn menu và khởi động màn hình Game chính (Pygame)
         self.root.withdraw()
         thang = start_game(self.root, do_kho)
         self.root.deiconify()
@@ -217,7 +151,7 @@ class MenuSudoku:
     def chay(self):
         self.root.mainloop()
 
+
 def tao_nut_bat_dau():
-    # Hàm khởi tạo Menu
     menu = MenuSudoku()
     menu.chay()
