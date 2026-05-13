@@ -22,7 +22,9 @@ Mã nguồn được tách thành các phần riêng cho logic sinh bảng, ki�
 
 ### 1. Màn hình menu
 
-![Menu](Picture/menu.png)
+<div align="center">
+  <img src="./Picture/menu.png" alt="Menu" width="80%" />
+</div>
 
 Đây là màn hình đầu tiên khi mở game.
 
@@ -41,7 +43,9 @@ Màn hình này đóng vai trò điều hướng nhanh trước khi vào ván ch
 
 ### 2. Màn hình chơi chính
 
-![Màn hình chơi](Picture/game.png)
+<div align="center">
+  <img src="./Picture/game.png" alt="Màn hình chơi" width="80%" />
+</div>
 
 Đây là giao diện quan trọng nhất của game, nơi toàn bộ trải nghiệm chơi được diễn ra.
 
@@ -79,7 +83,9 @@ Thiết kế này cho thấy game không chỉ tập trung vào logic mà còn c
 
 ### 3. Màn hình tạm dừng
 
-![Tạm dừng](Picture/stop.png)
+<div align="center">
+  <img src="./Picture/stop.png" alt="Tạm dừng" width="80%" />
+</div>
 
 Khi người chơi nhấn tạm dừng hoặc `Esc`, game sẽ hiển thị một lớp phủ mờ lên toàn bộ màn hình chơi.
 
@@ -96,7 +102,9 @@ Chi tiết giao diện:
 
 ### 4. Màn hình chiến thắng
 
-![Chiến thắng](Picture/win.png)
+<div align="center">
+  <img src="./Picture/win.png" alt="Chiến thắng" width="80%" />
+</div>
 
 Khi giải xong bảng Sudoku, game chuyển sang trạng thái chiến thắng với hiệu ứng ăn mừng trực quan.
 
