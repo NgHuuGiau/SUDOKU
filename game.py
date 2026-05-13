@@ -1,19 +1,27 @@
-# Quản lý logic vòng lặp trò chơi, sự kiện người dùng và hiển thị chính
-import pygame
 import copy
-import random
 import os
+import random
 from typing import List, Set, Tuple
-from logic import generate_sudoku, is_valid_placement, check_win
+
+import pygame
+
+from logic import check_win, generate_sudoku, is_valid_placement
 from ui import (
-    SCREEN_WIDTH, SCREEN_HEIGHT, load_fonts, create_game_screen,
-    get_cell_from_pos, get_timer_rect, get_sidebar_layout, draw_game_view,
-    Particle
+    Particle,
+    SCREEN_HEIGHT,
+    SCREEN_WIDTH,
+    create_game_screen,
+    draw_game_view,
+    get_cell_from_pos,
+    get_sidebar_layout,
+    get_timer_rect,
+    load_fonts,
 )
 
 Board = List[List[int]]
 NotesBoard = List[List[Set[int]]]
 Difficulty = str
+
 
 class GameState:
     def __init__(self, difficulty: Difficulty):
@@ -133,6 +141,7 @@ class GameState:
             return max(0, (self.last_pause_start - self.start_time - self.paused_time) // 1000)
         return max(0, (pygame.time.get_ticks() - self.start_time - self.paused_time) // 1000)
 
+
 class Game:
     def __init__(self, difficulty: Difficulty = "medium"):
         self.screen = create_game_screen()
@@ -143,7 +152,6 @@ class Game:
         self._init_sounds()
         self.running = True
         self.quit_requested = False
-        # Rects for overlay buttons
         self.pause_resume_rect = None
         self.pause_quit_rect = None
         self.win_restart_rect = None
@@ -151,7 +159,7 @@ class Game:
 
     def _init_sounds(self) -> None:
         try:
-            sound_files = {'win': 'sounds/applause.wav'}
+            sound_files = {"win": "sounds/applause.wav"}
             for name, path in sound_files.items():
                 if os.path.exists(path):
                     self.sounds[name] = pygame.mixer.Sound(path)
@@ -217,9 +225,9 @@ class Game:
         main_actions = [
             self._restart_game,
             self.state.give_hint,
-            lambda: setattr(self.state, 'show_errors', not self.state.show_errors),
+            lambda: setattr(self.state, "show_errors", not self.state.show_errors),
             self.state.toggle_pause,
-            lambda: setattr(self.state, 'notes_mode', not self.state.notes_mode),
+            lambda: setattr(self.state, "notes_mode", not self.state.notes_mode),
             self.state.fill_possible_notes,
         ]
         for rect, action in zip(layout["main_buttons"], main_actions):
@@ -301,8 +309,8 @@ class Game:
             self.state.game_over = True
             self.state.final_time = self.state.get_elapsed_time()
             self._spawn_win_fireworks()
-            if 'win' in self.sounds:
-                self.sounds['win'].play()
+            if "win" in self.sounds:
+                self.sounds["win"].play()
 
     def render(self) -> None:
         mouse_pos = pygame.mouse.get_pos()
@@ -322,6 +330,7 @@ class Game:
             clock.tick(60)
         pygame.quit()
         return self.state.game_over and not self.quit_requested
+
 
 def start_game(root, difficulty: str = "medium") -> bool:
     game = Game(difficulty)
