@@ -137,6 +137,8 @@ Chi tiết giao diện:
 - Gợi ý số đúng cho ô đang chọn
 - Tự động điền ghi chú khả dĩ
 - Kiểm tra thắng khi bảng hiện tại trùng với lời giải
+- **Lưu/Tải ván chơi tự động** (tự động lưu sau mỗi thao tác, tiếp tục được ván dở khi mở lại game)
+- **Kỷ lục thời gian tốt nhất** theo từng độ khó (lưu cục bộ, hiển thị khi chiến thắng)
 
 ### Điều khiển
 
@@ -145,6 +147,8 @@ Chi tiết giao diện:
 - `1` đến `9`: nhập số
 - `Backspace` hoặc `Delete`: xóa ô
 - `Esc`: tạm dừng / tiếp tục
+- `Ctrl+Z`: Hoàn tác, `Ctrl+Shift+Z` / `Ctrl+Y`: Làm lại
+- `Space` / `N`: Bật/tắt chế độ ghi chú
 
 ### Cấu trúc mã nguồn
 
@@ -204,11 +208,14 @@ python main.py
 
 ## Hướng phát triển tiếp
 
-- Tối ưu thuật toán sinh bảng để đảm bảo lời giải duy nhất tốt hơn
-- Lưu và tải lại trạng thái ván chơi
-- Ghi nhận thời gian chơi tốt nhất
-- Đóng gói thành bản `.exe` cho Windows
-- Bổ sung ảnh GIF hoặc video demo thực tế
+- [x] Tối ưu thuật toán sinh bảng để đảm bảo lời giải duy nhất tốt hơn
+- [x] Lưu và tải lại trạng thái ván chơi
+- [x] Ghi nhận thời gian chơi tốt nhất
+- [x] Đóng gói thành bản `.exe` cho Windows
+- [ ] Bổ sung ảnh GIF hoặc video demo thực tế
+- [ ] Thêm hiệu ứng âm thanh khi nhập số, thắng, gợi ý
+- [ ] Thêm chế độ Daily Challenge (bảng mới mỗi ngày)
+- [ ] Thêm thống kê chi tiết (số ván chơi, tỷ lệ thắng, thời gian trung bình)
 
 ## Giấy phép
 
