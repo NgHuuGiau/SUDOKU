@@ -149,3 +149,64 @@ def draw_footer_helper(screen: pygame.Surface, fonts, translate) -> None:
     txt = f"{translate('move')}  |  {translate('input')}  |  {translate('notes_shortcut')}  |  {translate('delete')}"
     help_surf = fonts.tiny.render(txt, True, Colors.STATUS_TEXT)
     screen.blit(help_surf, help_surf.get_rect(center=helper_rect.center))
+
+
+def draw_help_modal(screen: pygame.Surface, fonts, mouse_pos, translate) -> dict:
+    """Draw keyboard shortcut help overlay (F1). Returns overlay rects for click handling."""
+    from ui.geometry import SCREEN_WIDTH, SCREEN_HEIGHT
+    
+    overlay_rects = {"help_close": None}
+    
+    overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+    overlay.fill((15, 23, 42, 180))
+    screen.blit(overlay, (0, 0))
+    
+    card_w, card_h = 520, 480
+    modal_rect = pygame.Rect((SCREEN_WIDTH - card_w) // 2, (SCREEN_HEIGHT - card_h) // 2, card_w, card_h)
+    draw_rounded_card(screen, modal_rect, Colors.BG_CARD, Colors.CARD_BORDER, radius=16)
+    
+    # Title
+    title_surf = fonts.large.render(translate("keyboard_shortcuts"), True, Colors.FIXED_TEXT)
+    screen.blit(title_surf, title_surf.get_rect(center=(modal_rect.centerx, modal_rect.top + 40)))
+    
+    # Shortcut list
+    shortcuts = [
+        ("W / ↑", translate("shortcut_move_up")),
+        ("S / ↓", translate("shortcut_move_down")),
+        ("A / ←", translate("shortcut_move_left")),
+        ("D / →", translate("shortcut_move_right")),
+        ("1 - 9", translate("shortcut_input_number")),
+        ("Backspace / Del", translate("shortcut_delete")),
+        ("Space / N", translate("shortcut_toggle_notes")),
+        ("Ctrl + Z", translate("shortcut_undo")),
+        ("Ctrl + Shift + Z / Ctrl + Y", translate("shortcut_redo")),
+        ("Esc / P", translate("shortcut_pause")),
+        ("F1", translate("shortcut_help")),
+    ]
+    
+    y_start = modal_rect.top + 90
+    line_height = 36
+    key_col_x = modal_rect.left + 60
+    desc_col_x = modal_rect.left + 200
+    
+    for i, (key, desc) in enumerate(shortcuts):
+        y = y_start + i * line_height
+        # Key
+        key_surf = fonts.medium.render(key, True, Colors.GOLD)
+        screen.blit(key_surf, key_surf.get_rect(midleft=(key_col_x, y)))
+        # Separator
+        sep_surf = fonts.medium.render("→", True, Colors.STATUS_TEXT)
+        screen.blit(sep_surf, sep_surf.get_rect(center=(modal_rect.centerx, y)))
+        # Description
+        desc_surf = fonts.medium.render(desc, True, Colors.FIXED_TEXT)
+        screen.blit(desc_surf, desc_surf.get_rect(midleft=(desc_col_x, y)))
+    
+    # Close button
+    btn_w, btn_h = 120, 44
+    btn_y = modal_rect.bottom - 60
+    help_close = pygame.Rect(modal_rect.centerx - btn_w // 2, btn_y, btn_w, btn_h)
+    draw_modern_button(screen, help_close, translate('close'), mouse_pos, fonts.small,
+                       variant='primary', icon_name='check', icon_size=16)
+    
+    overlay_rects["help_close"] = help_close
+    return overlay_rects

@@ -204,6 +204,8 @@ class Game:
         self.win_restart_rect = None
         self.win_quit_rect = None
         self.header_pause_rect = None
+        self.help_rects = None
+        self.show_help = False
 
     def _load_fonts(self) -> None:
         self.fonts = load_fonts()
@@ -230,6 +232,15 @@ class Game:
                 self.state.toggle_pause()
                 return True
 
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_F1:
+                self.show_help = not self.show_help
+                return True
+
+            if self.show_help:
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    self._handle_help_click(event.pos)
+                continue
+
             if event.type == pygame.MOUSEBUTTONDOWN:
                 self._handle_mouse(event.pos)
 
@@ -253,6 +264,11 @@ class Game:
         if self.pause_quit_rect and self.pause_quit_rect.collidepoint(x, y):
             self.running = False
             self.quit_requested = True
+
+    def _handle_help_click(self, pos):
+        x, y = pos
+        if self.help_rects and self.help_rects.get("help_close") and self.help_rects["help_close"].collidepoint(x, y):
+            self.show_help = False
 
     def _handle_mouse(self, pos: Tuple[int, int]) -> None:
         x, y = pos
@@ -424,6 +440,12 @@ class Game:
         self.win_restart_rect = overlay_rects["win_restart"]
         self.win_quit_rect = overlay_rects["win_quit"]
         self.header_pause_rect = overlay_rects.get("header_pause")
+
+        # Draw help modal if active
+        if self.show_help:
+            from ui.modals import draw_help_modal
+            from config import game_text
+            self.help_rects = draw_help_modal(self.screen, self.fonts, pygame.mouse.get_pos(), game_text)
 
     def run(self) -> bool:
         clock = pygame.time.Clock()
