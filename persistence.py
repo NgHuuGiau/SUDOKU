@@ -2,7 +2,7 @@
 import json
 import os
 from datetime import date
-from typing import Any
+from typing import Any, TypedDict, Literal, Union
 
 
 SAVE_FILE = os.path.join(os.path.dirname(__file__), "save_game.json")
@@ -12,7 +12,58 @@ STATS_FILE = os.path.join(os.path.dirname(__file__), "stats.json")
 LEADERBOARD_FILE = os.path.join(os.path.dirname(__file__), "leaderboard.json")
 
 
-def _load_json(filepath: str, default: Any) -> Any:
+# Type definitions
+Difficulty = Literal["easy", "medium", "hard", "daily"]
+ThemeMode = Literal["light", "dark"]
+
+class LeaderboardEntry(TypedDict):
+    name: str
+    time: int
+    date: str
+
+class LeaderboardData(TypedDict):
+    easy: list[LeaderboardEntry]
+    medium: list[LeaderboardEntry]
+    hard: list[LeaderboardEntry]
+
+class DailyStats(TypedDict):
+    last_completed_date: str | None
+    streak: int
+    total_completed: int
+    best_streak: int
+
+class GameStats(TypedDict):
+    games_played: int
+    games_won: int
+    total_time: int
+    best_times: dict[Difficulty, int | None]
+    by_difficulty: dict[Difficulty, dict[str, int]]
+    current_streak: int
+    best_streak: int
+    last_win_date: str | None
+    theme: ThemeMode
+
+class SaveGameState(TypedDict):
+    difficulty: str
+    board: list[list[int]]
+    solution: list[list[int]]
+    original: list[list[int]]
+    selected: list[int]
+    notes: list[list[list[int]]]
+    notes_mode: bool
+    game_over: bool
+    paused: bool
+    show_errors: bool
+    start_time: int
+    paused_time: int
+    last_pause_start: int
+    last_active_time: int
+    final_time: int
+    undo_stack: list[dict[str, list]]
+    redo_stack: list[dict[str, list]]
+
+
+def _load_json(filepath: str, default: dict) -> dict:
     if os.path.exists(filepath):
         try:
             with open(filepath, "r", encoding="utf-8") as f:
@@ -22,7 +73,7 @@ def _load_json(filepath: str, default: Any) -> Any:
     return default
 
 
-def _save_json(filepath: str, data: Any) -> None:
+def _save_json(filepath: str, data: dict) -> None:
     try:
         with open(filepath, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
@@ -30,7 +81,7 @@ def _save_json(filepath: str, data: Any) -> None:
         pass
 
 
-def load_best_times() -> dict:
+def load_best_times() -> dict[Difficulty, int | None]:
     if os.path.exists(BEST_TIMES_FILE):
         try:
             with open(BEST_TIMES_FILE, "r", encoding="utf-8") as f:
@@ -40,7 +91,7 @@ def load_best_times() -> dict:
     return {"easy": None, "medium": None, "hard": None}
 
 
-def save_best_times(times: dict) -> None:
+def save_best_times(times: dict[Difficulty, int | None]) -> None:
     try:
         with open(BEST_TIMES_FILE, "w", encoding="utf-8") as f:
             json.dump(times, f, ensure_ascii=False, indent=2)
@@ -48,7 +99,7 @@ def save_best_times(times: dict) -> None:
         pass
 
 
-def update_best_time(difficulty: str, elapsed: int) -> bool:
+def update_best_time(difficulty: Difficulty, elapsed: int) -> bool:
     times = load_best_times()
     current = times.get(difficulty)
     if current is None or elapsed < current:
@@ -58,11 +109,11 @@ def update_best_time(difficulty: str, elapsed: int) -> bool:
     return False
 
 
-def get_best_time(difficulty: str):
+def get_best_time(difficulty: Difficulty) -> int | None:
     return load_best_times().get(difficulty)
 
 
-def save_game_state(state: Any) -> None:
+def save_game_state(state: "GameState") -> None:
     data = {
         "difficulty": state.difficulty,
         "board": state.board,
@@ -101,7 +152,7 @@ def save_game_state(state: Any) -> None:
         pass
 
 
-def load_game_state() -> Any | None:
+def load_game_state() -> "GameState | None":
     if not os.path.exists(SAVE_FILE):
         return None
     try:
@@ -155,7 +206,7 @@ def has_save_file() -> bool:
 # Daily Challenge Stats
 # =============================================================================
 
-def load_daily_stats() -> dict:
+def load_daily_stats() -> DailyStats:
     return _load_json(DAILY_STATS_FILE, {
         "last_completed_date": None,
         "streak": 0,
@@ -164,11 +215,11 @@ def load_daily_stats() -> dict:
     })
 
 
-def save_daily_stats(stats: dict) -> None:
+def save_daily_stats(stats: DailyStats) -> None:
     _save_json(DAILY_STATS_FILE, stats)
 
 
-def mark_daily_challenge_completed(elapsed: int, difficulty: str) -> dict:
+def mark_daily_challenge_completed(elapsed: int, difficulty: Difficulty) -> DailyStats:
     """Mark today's daily challenge as completed. Returns updated stats."""
     today = date.today().isoformat()
     stats = load_daily_stats()
@@ -199,7 +250,7 @@ def mark_daily_challenge_completed(elapsed: int, difficulty: str) -> dict:
     return stats
 
 
-def get_daily_stats() -> dict:
+def get_daily_stats() -> DailyStats:
     return load_daily_stats()
 
 
@@ -207,7 +258,7 @@ def get_daily_stats() -> dict:
 # General Statistics
 # =============================================================================
 
-def load_stats() -> dict:
+def load_stats() -> GameStats:
     return _load_json(STATS_FILE, {
         "games_played": 0,
         "games_won": 0,
@@ -225,18 +276,18 @@ def load_stats() -> dict:
     })
 
 
-def save_stats(stats: dict) -> None:
+def save_stats(stats: GameStats) -> None:
     _save_json(STATS_FILE, stats)
 
 
-def record_game_start(difficulty: str) -> None:
+def record_game_start(difficulty: Difficulty) -> None:
     stats = load_stats()
     stats["games_played"] += 1
     stats["by_difficulty"][difficulty]["played"] += 1
     save_stats(stats)
 
 
-def record_game_win(difficulty: str, elapsed: int) -> dict:
+def record_game_win(difficulty: Difficulty, elapsed: int) -> GameStats:
     stats = load_stats()
     stats["games_won"] += 1
     stats["total_time"] += elapsed
@@ -269,7 +320,7 @@ def record_game_win(difficulty: str, elapsed: int) -> dict:
     return stats
 
 
-def get_stats() -> dict:
+def get_stats() -> GameStats:
     stats = load_stats()
     # Compute derived stats
     if stats["games_played"] > 0:
@@ -289,7 +340,7 @@ def get_stats() -> dict:
 
 LEADERBOARD_MAX_ENTRIES = 10
 
-def load_leaderboard() -> dict:
+def load_leaderboard() -> LeaderboardData:
     return _load_json(LEADERBOARD_FILE, {
         "easy": [],
         "medium": [],
@@ -297,11 +348,11 @@ def load_leaderboard() -> dict:
     })
 
 
-def save_leaderboard(leaderboard: dict) -> None:
+def save_leaderboard(leaderboard: LeaderboardData) -> None:
     _save_json(LEADERBOARD_FILE, leaderboard)
 
 
-def add_leaderboard_entry(difficulty: str, name: str, elapsed: int, date_str: str = None) -> bool:
+def add_leaderboard_entry(difficulty: Difficulty, name: str, elapsed: int, date_str: str | None = None) -> bool:
     """Add a new entry to the leaderboard. Returns True if entry made top 10."""
     if date_str is None:
         date_str = date.today().isoformat()
@@ -309,7 +360,7 @@ def add_leaderboard_entry(difficulty: str, name: str, elapsed: int, date_str: st
     leaderboard = load_leaderboard()
     entries = leaderboard.get(difficulty, [])
     
-    new_entry = {
+    new_entry: LeaderboardEntry = {
         "name": name[:20],  # Limit name length
         "time": elapsed,
         "date": date_str,
@@ -328,7 +379,7 @@ def add_leaderboard_entry(difficulty: str, name: str, elapsed: int, date_str: st
     return new_entry in entries
 
 
-def get_leaderboard(difficulty: str = None) -> dict | list:
+def get_leaderboard(difficulty: Difficulty | None = None) -> LeaderboardData | list[LeaderboardEntry]:
     """Get leaderboard for specific difficulty or all."""
     leaderboard = load_leaderboard()
     if difficulty:
@@ -336,7 +387,7 @@ def get_leaderboard(difficulty: str = None) -> dict | list:
     return leaderboard
 
 
-def is_top_10_time(difficulty: str, elapsed: int) -> bool:
+def is_top_10_time(difficulty: Difficulty, elapsed: int) -> bool:
     """Check if a time would make the top 10 leaderboard."""
     leaderboard = load_leaderboard()
     entries = leaderboard.get(difficulty, [])
