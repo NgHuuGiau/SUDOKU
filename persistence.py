@@ -221,6 +221,7 @@ def load_stats() -> dict:
         "current_streak": 0,
         "best_streak": 0,
         "last_win_date": None,
+        "theme": "light",
     })
 
 

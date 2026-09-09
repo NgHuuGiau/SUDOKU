@@ -11,35 +11,15 @@ from persistence import has_save_file, load_game_state, get_daily_stats
 from logic import get_daily_challenge_info, generate_daily_challenge
 from datetime import date
 import copy
-
-
-MENU_COLORS = {
-    'bg': '#f8fafc',
-    'hero': '#1e293b',
-    'card': '#ffffff',
-    'primary': '#4f46e5',
-    'primary_hover': '#4338ca',
-    'secondary': '#10b981',
-    'secondary_hover': '#059669',
-    'warning': '#f59e0b',
-    'warning_hover': '#d97706',
-    'danger': '#ef4444',
-    'danger_hover': '#dc2626',
-    'text_dark': '#0f172a',
-    'text_muted': '#64748b',
-    'text_light': '#ffffff',
-    'border': '#e2e8f0',
-    'badge_bg': '#eef2ff',
-    'badge_fg': '#4338ca',
-}
+from ui.colors import get_theme_manager, get_current_menu_colors
 
 
 class MenuSudoku:
     def __init__(self, start_game_func):
         self.start_game_func = start_game_func
+        self.theme_manager = get_theme_manager()
         self.root = tk.Tk()
         self.root.title(MENU_TITLE)
-        self.root.configure(bg=MENU_COLORS['bg'])
         self.root.resizable(False, False)
         self._tao_font_menu()
         try:
@@ -50,7 +30,13 @@ class MenuSudoku:
             pass
         self._cai_dat_kieu()
         self._tao_cac_widget()
+        self._cap_nhat_theme()  # Apply initial theme
         self._canh_giua_cua_so()
+
+    @property
+    def MENU_COLORS(self):
+        """Get current theme colors dynamically."""
+        return self.theme_manager.menu_colors
 
     def _tao_font_menu(self):
         self.menu_fonts = {
@@ -69,56 +55,75 @@ class MenuSudoku:
     def _cai_dat_kieu(self):
         style = ttk.Style()
         style.theme_use('clam')
-        style.configure('.', font=self.menu_fonts["default"], background=MENU_COLORS['bg'])
+        style.configure('.', font=self.menu_fonts["default"], background=self.self.MENU_COLORS['bg'])
+
+    def _cap_nhat_theme(self):
+        """Apply current theme to root and main widgets."""
+        colors = self.MENU_COLORS
+        self.root.configure(bg=colors['bg'])
+        if hasattr(self, 'main_frame'):
+            self.main_frame.configure(bg=colors['bg'])
+        self._cap_nhat_van_ban()
 
     def _tao_cac_widget(self):
-        self.main_frame = tk.Frame(self.root, bg=MENU_COLORS['bg'], padx=32, pady=24)
+        colors = self.MENU_COLORS
+        self.main_frame = tk.Frame(self.root, bg=colors['bg'], padx=32, pady=24)
         self.main_frame.pack(expand=True, fill=tk.BOTH)
 
         # 1. Top Bar
-        top_bar = tk.Frame(self.main_frame, bg=MENU_COLORS['bg'])
+        top_bar = tk.Frame(self.main_frame, bg=colors['bg'])
         top_bar.pack(fill=tk.X, pady=(0, 10))
 
         self.app_badge = tk.Label(
             top_bar, text=f"[ {menu_text('app_badge')} ]",
-            font=self.menu_fonts["badge"], bg=MENU_COLORS['badge_bg'],
-            fg=MENU_COLORS['badge_fg'], padx=10, pady=4
+            font=self.menu_fonts["badge"], bg=colors['badge_bg'],
+            fg=colors['badge_fg'], padx=10, pady=4
         )
         self.app_badge.pack(side=tk.LEFT)
 
+        # Theme toggle button
+        self.btn_theme = tk.Button(
+            top_bar, text="🌙" if self.theme_manager.is_dark else "☀️",
+            font=self.menu_fonts["lang_btn"], bg=colors['card'],
+            fg=colors['primary'], activebackground=colors['badge_bg'],
+            relief=tk.FLAT, bd=1, highlightthickness=1, highlightbackground=colors['border'],
+            cursor="hand2", padx=12, pady=3, command=self._toggle_theme
+        )
+        self.btn_theme.pack(side=tk.RIGHT, padx=(8, 0))
+
         self.btn_lang = tk.Button(
             top_bar, text=menu_text('ngon_ngu_btn'),
-            font=self.menu_fonts["lang_btn"], bg=MENU_COLORS['card'],
-            fg=MENU_COLORS['primary'], activebackground=MENU_COLORS['badge_bg'],
-            relief=tk.FLAT, bd=1, highlightthickness=1, highlightbackground=MENU_COLORS['border'],
+            font=self.menu_fonts["lang_btn"], bg=colors['card'],
+            fg=colors['primary'], activebackground=colors['badge_bg'],
+            relief=tk.FLAT, bd=1, highlightthickness=1, highlightbackground=colors['border'],
             cursor="hand2", padx=12, pady=3, command=self._chuyen_ngon_ngu
         )
         self.btn_lang.pack(side=tk.RIGHT)
 
         # 2. Hero Card
-        hero_card = tk.Frame(self.main_frame, bg=MENU_COLORS['card'], padx=24, pady=18,
-                             highlightbackground=MENU_COLORS['border'], highlightthickness=1)
+        hero_card = tk.Frame(self.main_frame, bg=colors['card'], padx=24, pady=18,
+                             highlightbackground=colors['border'], highlightthickness=1)
         hero_card.pack(fill=tk.X, pady=(0, 16))
 
         title_lbl = tk.Label(
             hero_card, text=MENU_HEADING,
-            font=self.menu_fonts["title"], bg=MENU_COLORS['card'],
-            fg=MENU_COLORS['hero']
+            font=self.menu_fonts["title"], bg=self.MENU_COLORS['card'],
+            fg=self.MENU_COLORS['hero']
         )
         title_lbl.pack(pady=(0, 4))
 
         self.subtitle_lbl = tk.Label(
             hero_card, text=menu_text("thu_thach"),
-            font=self.menu_fonts["subtitle"], bg=MENU_COLORS['card'],
-            fg=MENU_COLORS['text_muted']
+            font=self.menu_fonts["subtitle"], bg=self.MENU_COLORS['card'],
+            fg=self.MENU_COLORS['text_muted']
         )
         self.subtitle_lbl.pack()
 
         # 3. Section Title
         self.sec_title = tk.Label(
             self.main_frame, text=menu_text("chon_do_kho"),
-            font=self.menu_fonts["section"], bg=MENU_COLORS['bg'],
-            fg=MENU_COLORS['text_dark']
+            font=self.menu_fonts["section"], bg=self.MENU_COLORS['bg'],
+            fg=self.MENU_COLORS['text_dark']
         )
         self.sec_title.pack(anchor=tk.W, pady=(4, 10))
 
@@ -133,57 +138,57 @@ class MenuSudoku:
         # 6. Difficulty Cards
         self.card_de = self._tao_the_do_kho(
             "easy", "[ 1 ] " + menu_text("de"), menu_text("de_desc"),
-            MENU_COLORS['secondary'], MENU_COLORS['secondary_hover']
+            self.MENU_COLORS['secondary'], self.MENU_COLORS['secondary_hover']
         )
         self.card_tb = self._tao_the_do_kho(
             "medium", "[ 2 ] " + menu_text("trung_binh"), menu_text("trung_binh_desc"),
-            MENU_COLORS['warning'], MENU_COLORS['warning_hover']
+            self.MENU_COLORS['warning'], self.MENU_COLORS['warning_hover']
         )
         self.card_kho = self._tao_the_do_kho(
             "hard", "[ 3 ] " + menu_text("kho"), menu_text("kho_desc"),
-            MENU_COLORS['danger'], MENU_COLORS['danger_hover']
+            self.MENU_COLORS['danger'], self.MENU_COLORS['danger_hover']
         )
 
         # 7. Footer
-        footer_frame = tk.Frame(self.main_frame, bg=MENU_COLORS['bg'])
+        footer_frame = tk.Frame(self.main_frame, bg=self.MENU_COLORS['bg'])
         footer_frame.pack(fill=tk.X, pady=(16, 0))
 
         self.footer_lbl = tk.Label(
             footer_frame, text=menu_text("chuc_vui_ve"),
-            font=self.menu_fonts["footer"], bg=MENU_COLORS['bg'],
-            fg=MENU_COLORS['text_muted']
+            font=self.menu_fonts["footer"], bg=self.MENU_COLORS['bg'],
+            fg=self.MENU_COLORS['text_muted']
         )
         self.footer_lbl.pack()
 
         ver_lbl = tk.Label(
             footer_frame, text=VERSION_TEXT,
-            font=self.menu_fonts["footer"], bg=MENU_COLORS['bg'],
+            font=self.menu_fonts["footer"], bg=self.MENU_COLORS['bg'],
             fg='#94a3b8'
         )
         ver_lbl.pack()
 
     def _tao_the_do_kho(self, difficulty, title, desc, accent_color, hover_color):
-        card = tk.Frame(self.main_frame, bg=MENU_COLORS['card'], padx=16, pady=12,
-                        highlightbackground=MENU_COLORS['border'], highlightthickness=1,
+        card = tk.Frame(self.main_frame, bg=self.MENU_COLORS['card'], padx=16, pady=12,
+                        highlightbackground=self.MENU_COLORS['border'], highlightthickness=1,
                         cursor="hand2")
         card.pack(fill=tk.X, pady=4)
 
         accent_bar = tk.Frame(card, bg=accent_color, width=4)
         accent_bar.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 12))
 
-        info_frame = tk.Frame(card, bg=MENU_COLORS['card'])
+        info_frame = tk.Frame(card, bg=self.MENU_COLORS['card'])
         info_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         t_lbl = tk.Label(info_frame, text=title, font=self.menu_fonts["card_title"],
-                         bg=MENU_COLORS['card'], fg=MENU_COLORS['text_dark'], anchor=tk.W)
+                         bg=self.MENU_COLORS['card'], fg=self.MENU_COLORS['text_dark'], anchor=tk.W)
         t_lbl.pack(fill=tk.X)
 
         d_lbl = tk.Label(info_frame, text=desc, font=self.menu_fonts["card_desc"],
-                         bg=MENU_COLORS['card'], fg=MENU_COLORS['text_muted'], anchor=tk.W)
+                         bg=self.MENU_COLORS['card'], fg=self.MENU_COLORS['text_muted'], anchor=tk.W)
         d_lbl.pack(fill=tk.X)
 
         arrow_lbl = tk.Label(card, text="->", font=self.menu_fonts["card_title"],
-                             bg=MENU_COLORS['card'], fg=accent_color)
+                             bg=self.MENU_COLORS['card'], fg=accent_color)
         arrow_lbl.pack(side=tk.RIGHT, padx=6)
 
         def on_click(event=None):
@@ -193,7 +198,7 @@ class MenuSudoku:
             card.config(highlightbackground=accent_color)
 
         def on_leave(event=None):
-            card.config(highlightbackground=MENU_COLORS['border'])
+            card.config(highlightbackground=self.MENU_COLORS['border'])
 
         for widget in (card, info_frame, t_lbl, d_lbl, arrow_lbl):
             widget.bind("<Button-1>", on_click)
@@ -216,28 +221,28 @@ class MenuSudoku:
             diff_name = menu_text("trung_binh")
             desc = menu_text("tiep_tuc_van_desc").format(diff=diff_name, time="--:--")
 
-        card = tk.Frame(self.main_frame, bg=MENU_COLORS['card'], padx=16, pady=12,
-                        highlightbackground=MENU_COLORS['primary'], highlightthickness=2,
+        card = tk.Frame(self.main_frame, bg=self.MENU_COLORS['card'], padx=16, pady=12,
+                        highlightbackground=self.MENU_COLORS['primary'], highlightthickness=2,
                         cursor="hand2")
         card.pack(fill=tk.X, pady=(0, 8))
 
-        accent_bar = tk.Frame(card, bg=MENU_COLORS['primary'], width=4)
+        accent_bar = tk.Frame(card, bg=self.MENU_COLORS['primary'], width=4)
         accent_bar.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 12))
 
-        info_frame = tk.Frame(card, bg=MENU_COLORS['card'])
+        info_frame = tk.Frame(card, bg=self.MENU_COLORS['card'])
         info_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         t_lbl = tk.Label(info_frame, text="[ >> ] " + menu_text("tiep_tuc_van"),
-                         font=self.menu_fonts["card_title"], bg=MENU_COLORS['card'],
-                         fg=MENU_COLORS['primary'], anchor=tk.W)
+                         font=self.menu_fonts["card_title"], bg=self.MENU_COLORS['card'],
+                         fg=self.MENU_COLORS['primary'], anchor=tk.W)
         t_lbl.pack(fill=tk.X)
 
         d_lbl = tk.Label(info_frame, text=desc, font=self.menu_fonts["card_desc"],
-                         bg=MENU_COLORS['card'], fg=MENU_COLORS['text_muted'], anchor=tk.W)
+                         bg=self.MENU_COLORS['card'], fg=self.MENU_COLORS['text_muted'], anchor=tk.W)
         d_lbl.pack(fill=tk.X)
 
         arrow_lbl = tk.Label(card, text="->", font=self.menu_fonts["card_title"],
-                             bg=MENU_COLORS['card'], fg=MENU_COLORS['primary'])
+                             bg=self.MENU_COLORS['card'], fg=self.MENU_COLORS['primary'])
         arrow_lbl.pack(side=tk.RIGHT, padx=6)
 
         def on_click(event=None):
@@ -245,10 +250,10 @@ class MenuSudoku:
             self._bat_dau_tro_choi(loaded.difficulty if loaded else "medium", loaded)
 
         def on_enter(event=None):
-            card.config(highlightbackground=MENU_COLORS['primary'])
+            card.config(highlightbackground=self.MENU_COLORS['primary'])
 
         def on_leave(event=None):
-            card.config(highlightbackground=MENU_COLORS['primary'])
+            card.config(highlightbackground=self.MENU_COLORS['primary'])
 
         for widget in (card, info_frame, t_lbl, d_lbl, arrow_lbl):
             widget.bind("<Button-1>", on_click)
@@ -265,13 +270,13 @@ class MenuSudoku:
         if completed_today:
             title = "[ ✓ ] " + menu_text("daily_challenge")
             desc = f"{menu_text('completed_today')}  {menu_text('streak_label').format(n=stats['streak'])}"
-            accent = MENU_COLORS['secondary']
+            accent = self.MENU_COLORS['secondary']
         else:
             title = "[ ⚡ ] " + menu_text("daily_challenge")
             desc = f"{menu_text('daily_challenge_desc')}  {menu_text('streak_label').format(n=stats['streak'])}"
-            accent = MENU_COLORS['primary']
+            accent = self.MENU_COLORS['primary']
 
-        card = tk.Frame(self.main_frame, bg=MENU_COLORS['card'], padx=16, pady=12,
+        card = tk.Frame(self.main_frame, bg=self.MENU_COLORS['card'], padx=16, pady=12,
                         highlightbackground=accent, highlightthickness=2,
                         cursor="hand2")
         card.pack(fill=tk.X, pady=(0, 8))
@@ -279,20 +284,20 @@ class MenuSudoku:
         accent_bar = tk.Frame(card, bg=accent, width=4)
         accent_bar.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 12))
 
-        info_frame = tk.Frame(card, bg=MENU_COLORS['card'])
+        info_frame = tk.Frame(card, bg=self.MENU_COLORS['card'])
         info_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         t_lbl = tk.Label(info_frame, text=title,
-                         font=self.menu_fonts["card_title"], bg=MENU_COLORS['card'],
+                         font=self.menu_fonts["card_title"], bg=self.MENU_COLORS['card'],
                          fg=accent, anchor=tk.W)
         t_lbl.pack(fill=tk.X)
 
         d_lbl = tk.Label(info_frame, text=desc, font=self.menu_fonts["card_desc"],
-                         bg=MENU_COLORS['card'], fg=MENU_COLORS['text_muted'], anchor=tk.W)
+                         bg=self.MENU_COLORS['card'], fg=self.MENU_COLORS['text_muted'], anchor=tk.W)
         d_lbl.pack(fill=tk.X)
 
         arrow_lbl = tk.Label(card, text="->", font=self.menu_fonts["card_title"],
-                             bg=MENU_COLORS['card'], fg=accent)
+                             bg=self.MENU_COLORS['card'], fg=accent)
         arrow_lbl.pack(side=tk.RIGHT, padx=6)
 
         def on_click(event=None):
@@ -336,7 +341,15 @@ class MenuSudoku:
 
     def _chuyen_ngon_ngu(self):
         chuyen_ngon_ngu()
-        self._cap_nhat_van_ban()
+        self._cap_nhat_theme()
+
+    def _toggle_theme(self):
+        """Toggle between light and dark theme."""
+        self.theme_manager.toggle()
+        self._cap_nhat_theme()
+        # Update theme toggle button text
+        if hasattr(self, 'btn_theme'):
+            self.btn_theme.config(text="☀️" if self.theme_manager.is_dark else "🌙")
 
     def _cap_nhat_van_ban(self):
         self.app_badge.config(text=f"[ {menu_text('app_badge')} ]")
@@ -367,10 +380,10 @@ class MenuSudoku:
             stats = get_daily_stats()
             completed_today = stats["last_completed_date"] == date.today().isoformat()
             if completed_today:
-                self.daily_card["title_lbl"].config(text="[ ✓ ] " + menu_text("daily_challenge"), fg=MENU_COLORS['secondary'])
+                self.daily_card["title_lbl"].config(text="[ ✓ ] " + menu_text("daily_challenge"), fg=self.MENU_COLORS['secondary'])
                 self.daily_card["desc_lbl"].config(text=f"{menu_text('completed_today')}  {menu_text('streak_label').format(n=stats['streak'])}")
             else:
-                self.daily_card["title_lbl"].config(text="[ ⚡ ] " + menu_text("daily_challenge"), fg=MENU_COLORS['primary'])
+                self.daily_card["title_lbl"].config(text="[ ⚡ ] " + menu_text("daily_challenge"), fg=self.MENU_COLORS['primary'])
                 self.daily_card["desc_lbl"].config(text=f"{menu_text('daily_challenge_desc')}  {menu_text('streak_label').format(n=stats['streak'])}")
 
         self.footer_lbl.config(text=menu_text("chuc_vui_ve"))

@@ -1,7 +1,7 @@
 """Sudoku UI package - Modular UI components.
 
 This package provides all UI components for the Sudoku game:
-- colors: Color constants
+- colors: Color constants & theme system
 - fonts: Font loading
 - icons: Smooth supersampled icons & particles
 - geometry: Layout calculations & constants
@@ -14,7 +14,10 @@ This package provides all UI components for the Sudoku game:
 - menu: Tkinter-based main menu
 """
 
-from ui.colors import Colors, MENU_COLORS
+from ui.colors import (
+    Colors, MENU_COLORS, ThemeColors, LIGHT_THEME, DARK_THEME,
+    ThemeManager, get_theme_manager, get_current_colors, get_current_menu_colors
+)
 from ui.fonts import load_fonts, GameFonts
 from ui.icons import SmoothIcons, Particle
 from ui.geometry import (
@@ -31,9 +34,16 @@ from ui.view import draw_game_view
 from ui.menu import MenuSudoku, tao_nut_bat_dau
 
 __all__ = [
-    # Colors
+    # Colors & Themes
     "Colors",
     "MENU_COLORS",
+    "ThemeColors",
+    "LIGHT_THEME",
+    "DARK_THEME",
+    "ThemeManager",
+    "get_theme_manager",
+    "get_current_colors",
+    "get_current_menu_colors",
     # Fonts
     "load_fonts",
     "GameFonts",
