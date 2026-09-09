@@ -35,6 +35,14 @@ def draw_sidebar(screen: pygame.Surface, fonts, mouse_pos, translate, state) -> 
                        variant='secondary', subtext=translate("goi_y"), sub_font=fonts.badge,
                        icon_name='hint', icon_size=20)
 
+    # Check Errors toggle
+    check_errors_active = state.show_errors
+    check_errors_subtext = f"{translate('kiem_tra_loi')} {'ON' if check_errors_active else 'OFF'}"
+    draw_modern_button(screen, layout["quick_check_errors"], "", mouse_pos, fonts.small,
+                       variant='secondary', is_active=check_errors_active,
+                       subtext=check_errors_subtext, sub_font=fonts.badge,
+                       icon_name='check', icon_size=20)
+
     # 2. Tools (Clear & Auto Notes)
     draw_modern_button(screen, layout["clear"], translate('xoa_btn'), mouse_pos, fonts.small,
                        variant='danger', icon_name='erase', icon_size=16)

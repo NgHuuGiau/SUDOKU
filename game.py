@@ -283,6 +283,10 @@ class Game:
             if layout["quick_hint"].collidepoint(x, y):
                 self.state.give_hint()
                 return
+            if layout["quick_check_errors"].collidepoint(x, y):
+                self.state.show_errors = not self.state.show_errors
+                self.state.auto_save()
+                return
 
             if layout["clear"].collidepoint(x, y):
                 self.state.clear_cell()

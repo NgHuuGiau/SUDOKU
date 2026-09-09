@@ -34,11 +34,11 @@ def get_sidebar_layout() -> dict:
     w = SIDEBAR_WIDTH
     y = SIDEBAR_Y
 
-    # 1. Quick Actions (4 buttons)
-    quick_btn_w = (w - 18) // 4
+    # 1. Quick Actions (5 buttons)
+    quick_btn_w = (w - 24) // 5
     quick_btn_h = 58
     quick_buttons = []
-    for i in range(4):
+    for i in range(5):
         bx = x + i * (quick_btn_w + 6)
         quick_buttons.append(pygame.Rect(bx, y, quick_btn_w, quick_btn_h))
 
@@ -80,6 +80,7 @@ def get_sidebar_layout() -> dict:
         "quick_redo": quick_buttons[1],
         "quick_notes": quick_buttons[2],
         "quick_hint": quick_buttons[3],
+        "quick_check_errors": quick_buttons[4],
         "clear": clear_rect,
         "auto_notes": auto_notes_rect,
         "numbers": number_buttons,
