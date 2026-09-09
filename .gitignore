@@ -24,3 +24,9 @@ dist/
 *.log
 
 settings.txt
+
+# Runtime data files
+*.json
+!pyproject.toml
+!package.json
+!package-lock.json
