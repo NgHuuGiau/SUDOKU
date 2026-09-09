@@ -29,6 +29,7 @@ from persistence import (
     record_game_win,
     is_top_10_time,
 )
+from sounds import get_sound_manager, play_sound
 
 Board = List[List[int]]
 NotesBoard = List[List[Set[int]]]
@@ -69,12 +70,13 @@ class GameState:
     def undo(self) -> None:
         if len(self.undo_stack) > 1:
             self.redo_stack.append((copy.deepcopy(self.board), copy.deepcopy(self.notes)))
-            self.undo_stack.pop()  # Discard current state
+            self.undo_stack.pop()
             self.board, self.notes = self.undo_stack[-1]
             self.board = copy.deepcopy(self.board)
             for r in range(9):
                 for c in range(9):
                     self.notes[r][c] = copy.deepcopy(self.notes[r][c])
+            play_sound('undo')
         self.auto_save()
 
     def redo(self) -> None:
@@ -83,6 +85,7 @@ class GameState:
             self.undo_stack.append((copy.deepcopy(self.board), copy.deepcopy(self.notes)))
             self.board = board_state
             self.notes = copy.deepcopy(notes_state)
+            play_sound('pop')
         self.auto_save()
 
     def place_number(self, num: int) -> None:
@@ -98,6 +101,7 @@ class GameState:
             self.board[r][c] = num
             self.notes[r][c].clear()
             self.save_state()
+            play_sound('pop')
         self.auto_save()
 
     def clear_cell(self) -> None:
@@ -109,6 +113,7 @@ class GameState:
         else:
             self.board[r][c] = 0
             self.save_state()
+            play_sound('click')
         self.auto_save()
 
     def give_hint(self) -> None:
@@ -117,6 +122,7 @@ class GameState:
             self.board[r][c] = self.solution[r][c]
             self.notes[r][c].clear()
             self.save_state()
+            play_sound('hint')
         self.auto_save()
 
     def fill_possible_notes(self) -> None:
@@ -130,6 +136,7 @@ class GameState:
                         if is_valid_placement(self.board, r, c, num):
                             self.notes[r][c].add(num)
         self.save_state()
+        play_sound('click')
         self.auto_save()
 
     def toggle_pause(self) -> None:
@@ -138,6 +145,7 @@ class GameState:
             self.last_pause_start = pygame.time.get_ticks()
         else:
             self.paused_time += pygame.time.get_ticks() - self.last_pause_start
+        play_sound('click')
 
     def restart(self, difficulty: Difficulty) -> None:
         self.difficulty = difficulty
@@ -158,6 +166,7 @@ class GameState:
         self.redo_stack.clear()
         self._last_auto_save_time = 0.0
         save_game_state(self)
+        play_sound('click')
 
     def auto_save(self) -> None:
         if self.game_over:
@@ -187,8 +196,7 @@ class Game:
         self._load_fonts()
         self.state = GameState(difficulty)
         self.particles: List[Particle] = []
-        self.sounds = {}
-        self._init_sounds()
+        self.sound_manager = get_sound_manager()
         self.running = True
         self.quit_requested = False
         self.pause_resume_rect = None
@@ -196,15 +204,6 @@ class Game:
         self.win_restart_rect = None
         self.win_quit_rect = None
         self.header_pause_rect = None
-
-    def _init_sounds(self) -> None:
-        try:
-            sound_files = {"win": "sounds/applause.wav"}
-            for name, path in sound_files.items():
-                if os.path.exists(path):
-                    self.sounds[name] = pygame.mixer.Sound(path)
-        except Exception:
-            pass
 
     def _load_fonts(self) -> None:
         self.fonts = load_fonts()
@@ -415,8 +414,7 @@ class Game:
                 self._show_name_input_dialog()
             clear_save_file()
             self._spawn_win_fireworks()
-            if "win" in self.sounds:
-                self.sounds["win"].play()
+            play_sound('success')
 
     def render(self) -> None:
         mouse_pos = pygame.mouse.get_pos()
