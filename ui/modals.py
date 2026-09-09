@@ -53,13 +53,13 @@ def draw_win_modal(screen: pygame.Surface, fonts, mouse_pos, translate, state, p
 
 
 def draw_pause_modal(screen: pygame.Surface, fonts, mouse_pos, translate) -> dict:
-    overlay_rects = {"pause_resume": None, "pause_quit": None}
+    overlay_rects = {"pause_resume": None, "pause_quit": None, "pause_restart": None, "pause_save_quit": None}
 
     overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
     overlay.fill((15, 23, 42, 180))
     screen.blit(overlay, (0, 0))
 
-    card_w, card_h = 420, 260
+    card_w, card_h = 420, 320
     modal_rect = pygame.Rect((SCREEN_WIDTH - card_w) // 2, (SCREEN_HEIGHT - card_h) // 2, card_w, card_h)
     draw_rounded_card(screen, modal_rect, Colors.BG_CARD, Colors.CARD_BORDER, radius=16)
 
@@ -70,19 +70,28 @@ def draw_pause_modal(screen: pygame.Surface, fonts, mouse_pos, translate) -> dic
     pause_title = fonts.large.render(translate('tam_dung'), True, Colors.FIXED_TEXT)
     screen.blit(pause_title, pause_title.get_rect(center=(modal_rect.centerx, modal_rect.top + 90)))
 
-    # Resume & Quit buttons
-    btn_w, btn_h = 165, 48
-    btn_y = modal_rect.bottom - 80
-    pause_resume = pygame.Rect(modal_rect.centerx - btn_w - 10, btn_y, btn_w, btn_h)
-    pause_quit = pygame.Rect(modal_rect.centerx + 10, btn_y, btn_w, btn_h)
+    # 3 buttons: Resume, Restart, Save & Quit
+    btn_w, btn_h = 120, 44
+    btn_y = modal_rect.bottom - 70
+    spacing = 10
+    total_w = 3 * btn_w + 2 * spacing
+    start_x = modal_rect.centerx - total_w // 2
+
+    pause_resume = pygame.Rect(start_x, btn_y, btn_w, btn_h)
+    pause_restart = pygame.Rect(start_x + btn_w + spacing, btn_y, btn_w, btn_h)
+    pause_save_quit = pygame.Rect(start_x + 2 * (btn_w + spacing), btn_y, btn_w, btn_h)
 
     draw_modern_button(screen, pause_resume, translate('tiep_tuc'), mouse_pos, fonts.small,
-                       variant='primary', icon_name='play', icon_size=18)
-    draw_modern_button(screen, pause_quit, translate('thoat_ve_menu'), mouse_pos, fonts.small,
-                       variant='secondary', icon_name='home', icon_size=18)
+                       variant='primary', icon_name='play', icon_size=16)
+    draw_modern_button(screen, pause_restart, translate('khoi_dong_lai'), mouse_pos, fonts.small,
+                       variant='warning', icon_name='restart', icon_size=16)
+    draw_modern_button(screen, pause_save_quit, translate('luu_va_thoat'), mouse_pos, fonts.small,
+                       variant='secondary', icon_name='save', icon_size=16)
 
     overlay_rects["pause_resume"] = pause_resume
-    overlay_rects["pause_quit"] = pause_quit
+    overlay_rects["pause_restart"] = pause_restart
+    overlay_rects["pause_save_quit"] = pause_save_quit
+    overlay_rects["pause_quit"] = pause_save_quit  # alias for backward compat
     return overlay_rects
 
 

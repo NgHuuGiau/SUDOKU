@@ -142,6 +142,17 @@ class SmoothIcons:
                 pts.append((cx + r * math.cos(angle), cy + r * math.sin(angle)))
             pygame.draw.polygon(surf, color, pts)
 
+        elif name == 'save':
+            # Floppy disk / save icon
+            rect = pygame.Rect(cx - s * 0.32, cy - s * 0.32, s * 0.64, s * 0.72)
+            pygame.draw.rect(surf, color, rect, border_radius=int(s * 0.06))
+            # Top metal part
+            top_rect = pygame.Rect(cx - s * 0.24, cy - s * 0.32, s * 0.48, s * 0.12)
+            pygame.draw.rect(surf, color, top_rect)
+            # Write protect notch
+            notch = pygame.Rect(cx - s * 0.08, cy - s * 0.28, s * 0.16, s * 0.06)
+            pygame.draw.rect(surf, (0, 0, 0, 0), notch)
+
         smooth_result = pygame.transform.smoothscale(surf, (size, size))
         cls._cache[key] = smooth_result
         return smooth_result

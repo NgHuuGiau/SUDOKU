@@ -261,6 +261,13 @@ class Game:
         x, y = pos
         if self.pause_resume_rect and self.pause_resume_rect.collidepoint(x, y):
             self.state.toggle_pause()
+        if self.pause_restart_rect and self.pause_restart_rect.collidepoint(x, y):
+            self._restart_game()
+        if self.pause_save_quit_rect and self.pause_save_quit_rect.collidepoint(x, y):
+            self.state.force_save()
+            self.running = False
+            self.quit_requested = True
+        # Backward compat
         if self.pause_quit_rect and self.pause_quit_rect.collidepoint(x, y):
             self.running = False
             self.quit_requested = True

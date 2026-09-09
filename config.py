@@ -73,6 +73,8 @@ GAME_DICT = {
         "shortcut_pause": "Pause/Resume",
         "shortcut_help": "Show Help",
         "close": "Close",
+        "khoi_dong_lai": "Restart",
+        "luu_va_thoat": "Save & Quit",
     },
     "vi": {
         "move": "Di chuyển: WASD / Mũi tên",
@@ -137,6 +139,8 @@ GAME_DICT = {
         "shortcut_pause": "Tạm dừng/Tiếp tục",
         "shortcut_help": "Hiển thị trợ giúp",
         "close": "Đóng",
+        "khoi_dong_lai": "Khởi Động Lại",
+        "luu_va_thoat": "Lưu & Thoát",
     },
 }
 
