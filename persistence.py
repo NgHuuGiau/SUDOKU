@@ -1,4 +1,4 @@
-"""Persistence module: save/load game state, best times, daily challenge, statistics."""
+"""Persistence module: save/load game state, best times, daily challenge, statistics, leaderboard."""
 import json
 import os
 from datetime import date
@@ -9,6 +9,7 @@ SAVE_FILE = os.path.join(os.path.dirname(__file__), "save_game.json")
 BEST_TIMES_FILE = os.path.join(os.path.dirname(__file__), "best_times.json")
 DAILY_STATS_FILE = os.path.join(os.path.dirname(__file__), "daily_stats.json")
 STATS_FILE = os.path.join(os.path.dirname(__file__), "stats.json")
+LEADERBOARD_FILE = os.path.join(os.path.dirname(__file__), "leaderboard.json")
 
 
 def _load_json(filepath: str, default: Any) -> Any:
@@ -279,3 +280,65 @@ def get_stats() -> dict:
     else:
         stats["avg_time"] = 0
     return stats
+
+
+# =============================================================================
+# Leaderboard (Top 10 per difficulty)
+# =============================================================================
+
+LEADERBOARD_MAX_ENTRIES = 10
+
+def load_leaderboard() -> dict:
+    return _load_json(LEADERBOARD_FILE, {
+        "easy": [],
+        "medium": [],
+        "hard": [],
+    })
+
+
+def save_leaderboard(leaderboard: dict) -> None:
+    _save_json(LEADERBOARD_FILE, leaderboard)
+
+
+def add_leaderboard_entry(difficulty: str, name: str, elapsed: int, date_str: str = None) -> bool:
+    """Add a new entry to the leaderboard. Returns True if entry made top 10."""
+    if date_str is None:
+        date_str = date.today().isoformat()
+    
+    leaderboard = load_leaderboard()
+    entries = leaderboard.get(difficulty, [])
+    
+    new_entry = {
+        "name": name[:20],  # Limit name length
+        "time": elapsed,
+        "date": date_str,
+    }
+    
+    entries.append(new_entry)
+    # Sort by time ascending (best first)
+    entries.sort(key=lambda x: x["time"])
+    # Keep only top 10
+    entries = entries[:LEADERBOARD_MAX_ENTRIES]
+    leaderboard[difficulty] = entries
+    
+    save_leaderboard(leaderboard)
+    
+    # Return True if entry is in top 10
+    return new_entry in entries
+
+
+def get_leaderboard(difficulty: str = None) -> dict | list:
+    """Get leaderboard for specific difficulty or all."""
+    leaderboard = load_leaderboard()
+    if difficulty:
+        return leaderboard.get(difficulty, [])
+    return leaderboard
+
+
+def is_top_10_time(difficulty: str, elapsed: int) -> bool:
+    """Check if a time would make the top 10 leaderboard."""
+    leaderboard = load_leaderboard()
+    entries = leaderboard.get(difficulty, [])
+    if len(entries) < LEADERBOARD_MAX_ENTRIES:
+        return True
+    return elapsed < entries[-1]["time"]

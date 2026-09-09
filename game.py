@@ -26,6 +26,8 @@ from persistence import (
     load_game_state,
     clear_save_file,
     has_save_file,
+    record_game_win,
+    is_top_10_time,
 )
 
 Board = List[List[int]]
@@ -325,6 +327,27 @@ class Game:
         for _ in range(count):
             self.particles.append(Particle(x, y, random.choice(colors)))
 
+    def _show_name_input_dialog(self) -> None:
+        """Show tkinter dialog to enter name for leaderboard."""
+        import tkinter as tk
+        from tkinter import simpledialog
+        from config import game_text
+        
+        root = tk.Tk()
+        root.withdraw()
+        root.attributes('-topmost', True)
+        
+        name = simpledialog.askstring(
+            game_text("new_highscore"),
+            game_text("enter_name"),
+            parent=root
+        )
+        root.destroy()
+        
+        if name and name.strip():
+            from persistence import add_leaderboard_entry
+            add_leaderboard_entry(self.state.difficulty, name.strip(), self.state.final_time)
+
     def _spawn_win_fireworks(self) -> None:
         burst_points = [
             (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 120),
@@ -383,7 +406,13 @@ class Game:
         if not self.state.game_over and check_win(self.state.board, self.state.solution):
             self.state.game_over = True
             self.state.final_time = self.state.get_elapsed_time()
-            update_best_time(self.state.difficulty, self.state.final_time)
+            is_new_best = update_best_time(self.state.difficulty, self.state.final_time)
+            # Record win for statistics
+            record_game_win(self.state.difficulty, self.state.final_time)
+            # Check if top 10 leaderboard time
+            from persistence import is_top_10_time
+            if is_top_10_time(self.state.difficulty, self.state.final_time):
+                self._show_name_input_dialog()
             clear_save_file()
             self._spawn_win_fireworks()
             if "win" in self.sounds:
