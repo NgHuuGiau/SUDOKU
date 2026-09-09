@@ -1,0 +1,281 @@
+"""Persistence module: save/load game state, best times, daily challenge, statistics."""
+import json
+import os
+from datetime import date
+from typing import Any
+
+
+SAVE_FILE = os.path.join(os.path.dirname(__file__), "save_game.json")
+BEST_TIMES_FILE = os.path.join(os.path.dirname(__file__), "best_times.json")
+DAILY_STATS_FILE = os.path.join(os.path.dirname(__file__), "daily_stats.json")
+STATS_FILE = os.path.join(os.path.dirname(__file__), "stats.json")
+
+
+def _load_json(filepath: str, default: Any) -> Any:
+    if os.path.exists(filepath):
+        try:
+            with open(filepath, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return default
+
+
+def _save_json(filepath: str, data: Any) -> None:
+    try:
+        with open(filepath, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
+
+def load_best_times() -> dict:
+    if os.path.exists(BEST_TIMES_FILE):
+        try:
+            with open(BEST_TIMES_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {"easy": None, "medium": None, "hard": None}
+
+
+def save_best_times(times: dict) -> None:
+    try:
+        with open(BEST_TIMES_FILE, "w", encoding="utf-8") as f:
+            json.dump(times, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
+
+def update_best_time(difficulty: str, elapsed: int) -> bool:
+    times = load_best_times()
+    current = times.get(difficulty)
+    if current is None or elapsed < current:
+        times[difficulty] = elapsed
+        save_best_times(times)
+        return True
+    return False
+
+
+def get_best_time(difficulty: str):
+    return load_best_times().get(difficulty)
+
+
+def save_game_state(state: Any) -> None:
+    data = {
+        "difficulty": state.difficulty,
+        "board": state.board,
+        "solution": state.solution,
+        "original": state.original,
+        "selected": state.selected,
+        "notes": [[list(s) for s in row] for row in state.notes],
+        "notes_mode": state.notes_mode,
+        "game_over": state.game_over,
+        "paused": state.paused,
+        "show_errors": state.show_errors,
+        "start_time": state.start_time,
+        "paused_time": state.paused_time,
+        "last_pause_start": state.last_pause_start,
+        "last_active_time": state.last_active_time,
+        "final_time": state.final_time,
+        "undo_stack": [
+            {
+                "board": [list(row) for row in board],
+                "notes": [[list(s) for s in row] for row in notes]
+            }
+            for board, notes in state.undo_stack
+        ],
+        "redo_stack": [
+            {
+                "board": [list(row) for row in board],
+                "notes": [[list(s) for s in row] for row in notes]
+            }
+            for board, notes in state.redo_stack
+        ],
+    }
+    try:
+        with open(SAVE_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False)
+    except Exception:
+        pass
+
+
+def load_game_state() -> Any | None:
+    if not os.path.exists(SAVE_FILE):
+        return None
+    try:
+        with open(SAVE_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except Exception:
+        return None
+
+    # Import GameState locally to avoid circular import
+    from game import GameState
+
+    state = GameState.__new__(GameState)
+    state.difficulty = data["difficulty"]
+    state.board = data["board"]
+    state.solution = data["solution"]
+    state.original = data["original"]
+    state.selected = data["selected"]
+    state.notes = [[set(s) for s in row] for row in data["notes"]]
+    state.notes_mode = data["notes_mode"]
+    state.game_over = data["game_over"]
+    state.paused = data["paused"]
+    state.show_errors = data["show_errors"]
+    state.start_time = data["start_time"]
+    state.paused_time = data["paused_time"]
+    state.last_pause_start = data["last_pause_start"]
+    state.last_active_time = data["last_active_time"]
+    state.final_time = data["final_time"]
+    state.undo_stack = [
+        (item["board"], [[set(s) for s in row] for row in item["notes"]])
+        for item in data["undo_stack"]
+    ]
+    state.redo_stack = [
+        (item["board"], [[set(s) for s in row] for row in item["notes"]])
+        for item in data["redo_stack"]
+    ]
+    return state
+
+
+def clear_save_file() -> None:
+    try:
+        os.remove(SAVE_FILE)
+    except Exception:
+        pass
+
+
+def has_save_file() -> bool:
+    return os.path.exists(SAVE_FILE)
+
+
+# =============================================================================
+# Daily Challenge Stats
+# =============================================================================
+
+def load_daily_stats() -> dict:
+    return _load_json(DAILY_STATS_FILE, {
+        "last_completed_date": None,
+        "streak": 0,
+        "total_completed": 0,
+        "best_streak": 0,
+    })
+
+
+def save_daily_stats(stats: dict) -> None:
+    _save_json(DAILY_STATS_FILE, stats)
+
+
+def mark_daily_challenge_completed(elapsed: int, difficulty: str) -> dict:
+    """Mark today's daily challenge as completed. Returns updated stats."""
+    today = date.today().isoformat()
+    stats = load_daily_stats()
+    
+    if stats["last_completed_date"] == today:
+        # Already completed today
+        return stats
+    
+    # Update streak
+    last_date = stats["last_completed_date"]
+    if last_date:
+        last = date.fromisoformat(last_date)
+        yesterday = date.today().replace(day=date.today().day - 1) if date.today().day > 1 else (date.today().replace(month=date.today().month - 1, day=28) if date.today().month > 1 else date(date.today().year - 1, 12, 31))
+        # Simple streak logic: if last completed was yesterday, increment
+        # For simplicity, we just check if it's a new day
+        if (date.today() - last).days == 1:
+            stats["streak"] += 1
+        else:
+            stats["streak"] = 1
+    else:
+        stats["streak"] = 1
+    
+    stats["last_completed_date"] = today
+    stats["total_completed"] += 1
+    stats["best_streak"] = max(stats["best_streak"], stats["streak"])
+    
+    save_daily_stats(stats)
+    return stats
+
+
+def get_daily_stats() -> dict:
+    return load_daily_stats()
+
+
+# =============================================================================
+# General Statistics
+# =============================================================================
+
+def load_stats() -> dict:
+    return _load_json(STATS_FILE, {
+        "games_played": 0,
+        "games_won": 0,
+        "total_time": 0,
+        "best_times": {"easy": None, "medium": None, "hard": None},
+        "by_difficulty": {
+            "easy": {"played": 0, "won": 0, "total_time": 0},
+            "medium": {"played": 0, "won": 0, "total_time": 0},
+            "hard": {"played": 0, "won": 0, "total_time": 0},
+        },
+        "current_streak": 0,
+        "best_streak": 0,
+        "last_win_date": None,
+    })
+
+
+def save_stats(stats: dict) -> None:
+    _save_json(STATS_FILE, stats)
+
+
+def record_game_start(difficulty: str) -> None:
+    stats = load_stats()
+    stats["games_played"] += 1
+    stats["by_difficulty"][difficulty]["played"] += 1
+    save_stats(stats)
+
+
+def record_game_win(difficulty: str, elapsed: int) -> dict:
+    stats = load_stats()
+    stats["games_won"] += 1
+    stats["total_time"] += elapsed
+    stats["by_difficulty"][difficulty]["won"] += 1
+    stats["by_difficulty"][difficulty]["total_time"] += elapsed
+    
+    # Update best time
+    current_best = stats["best_times"].get(difficulty)
+    if current_best is None or elapsed < current_best:
+        stats["best_times"][difficulty] = elapsed
+    
+    # Update streak
+    today = date.today().isoformat()
+    if stats["last_win_date"] == today:
+        pass  # Already counted today
+    else:
+        last_win = stats["last_win_date"]
+        if last_win:
+            last = date.fromisoformat(last_win)
+            if (date.today() - last).days == 1:
+                stats["current_streak"] += 1
+            else:
+                stats["current_streak"] = 1
+        else:
+            stats["current_streak"] = 1
+        stats["last_win_date"] = today
+        stats["best_streak"] = max(stats["best_streak"], stats["current_streak"])
+    
+    save_stats(stats)
+    return stats
+
+
+def get_stats() -> dict:
+    stats = load_stats()
+    # Compute derived stats
+    if stats["games_played"] > 0:
+        stats["win_rate"] = stats["games_won"] / stats["games_played"] * 100
+    else:
+        stats["win_rate"] = 0
+    if stats["games_won"] > 0:
+        stats["avg_time"] = stats["total_time"] / stats["games_won"]
+    else:
+        stats["avg_time"] = 0
+    return stats

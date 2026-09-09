@@ -1,6 +1,6 @@
 import copy
-import os
 import random
+import time
 from typing import List, Set, Tuple
 
 import pygame
@@ -17,10 +17,22 @@ from ui import (
     get_timer_rect,
     load_fonts,
 )
+from persistence import (
+    load_best_times,
+    save_best_times,
+    update_best_time,
+    get_best_time,
+    save_game_state,
+    load_game_state,
+    clear_save_file,
+    has_save_file,
+)
 
 Board = List[List[int]]
 NotesBoard = List[List[Set[int]]]
 Difficulty = str
+
+AUTO_SAVE_DEBOUNCE_MS = 500
 
 
 class GameState:
@@ -43,6 +55,8 @@ class GameState:
             (copy.deepcopy(self.board), copy.deepcopy(self.notes))
         ]
         self.redo_stack: List[Tuple[Board, List[List[Set[int]]]]] = []
+        self._last_auto_save_time = 0.0
+        save_game_state(self)
 
     def save_state(self) -> None:
         current = (copy.deepcopy(self.board), copy.deepcopy(self.notes))
@@ -53,11 +67,13 @@ class GameState:
     def undo(self) -> None:
         if len(self.undo_stack) > 1:
             self.redo_stack.append((copy.deepcopy(self.board), copy.deepcopy(self.notes)))
-            self.board, self.notes = self.undo_stack.pop()
+            self.undo_stack.pop()  # Discard current state
+            self.board, self.notes = self.undo_stack[-1]
             self.board = copy.deepcopy(self.board)
             for r in range(9):
                 for c in range(9):
                     self.notes[r][c] = copy.deepcopy(self.notes[r][c])
+        self.auto_save()
 
     def redo(self) -> None:
         if self.redo_stack:
@@ -65,6 +81,7 @@ class GameState:
             self.undo_stack.append((copy.deepcopy(self.board), copy.deepcopy(self.notes)))
             self.board = board_state
             self.notes = copy.deepcopy(notes_state)
+        self.auto_save()
 
     def place_number(self, num: int) -> None:
         r, c = self.selected
@@ -79,6 +96,7 @@ class GameState:
             self.board[r][c] = num
             self.notes[r][c].clear()
             self.save_state()
+        self.auto_save()
 
     def clear_cell(self) -> None:
         r, c = self.selected
@@ -89,6 +107,7 @@ class GameState:
         else:
             self.board[r][c] = 0
             self.save_state()
+        self.auto_save()
 
     def give_hint(self) -> None:
         r, c = self.selected
@@ -96,6 +115,7 @@ class GameState:
             self.board[r][c] = self.solution[r][c]
             self.notes[r][c].clear()
             self.save_state()
+        self.auto_save()
 
     def fill_possible_notes(self) -> None:
         for r in range(9):
@@ -108,6 +128,7 @@ class GameState:
                         if is_valid_placement(self.board, r, c, num):
                             self.notes[r][c].add(num)
         self.save_state()
+        self.auto_save()
 
     def toggle_pause(self) -> None:
         self.paused = not self.paused
@@ -133,6 +154,22 @@ class GameState:
         self.final_time = 0
         self.undo_stack = [(copy.deepcopy(self.board), copy.deepcopy(self.notes))]
         self.redo_stack.clear()
+        self._last_auto_save_time = 0.0
+        save_game_state(self)
+
+    def auto_save(self) -> None:
+        if self.game_over:
+            return
+        now = time.monotonic() * 1000
+        if now - self._last_auto_save_time >= AUTO_SAVE_DEBOUNCE_MS:
+            save_game_state(self)
+            self._last_auto_save_time = now
+
+    def force_save(self) -> None:
+        """Immediate save without debounce (for critical moments)."""
+        if not self.game_over:
+            save_game_state(self)
+            self._last_auto_save_time = time.monotonic() * 1000
 
     def get_elapsed_time(self) -> int:
         if self.game_over:
@@ -156,6 +193,7 @@ class Game:
         self.pause_quit_rect = None
         self.win_restart_rect = None
         self.win_quit_rect = None
+        self.header_pause_rect = None
 
     def _init_sounds(self) -> None:
         try:
@@ -183,9 +221,11 @@ class Game:
             if self.state.paused:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     self._handle_pause_click(event.pos)
+                if event.type == pygame.KEYDOWN and event.key in (pygame.K_ESCAPE, pygame.K_p):
+                    self.state.toggle_pause()
                 continue
 
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+            if event.type == pygame.KEYDOWN and event.key in (pygame.K_ESCAPE, pygame.K_p):
                 self.state.toggle_pause()
                 return True
 
@@ -215,44 +255,58 @@ class Game:
 
     def _handle_mouse(self, pos: Tuple[int, int]) -> None:
         x, y = pos
+
+        # 1. Nút Tạm dừng trên thanh Header
+        if self.header_pause_rect and self.header_pause_rect.collidepoint(x, y):
+            self.state.toggle_pause()
+            return
+
         if not self.state.paused and not self.state.game_over:
+            # 2. Chọn ô trên bàn cờ
             cell = get_cell_from_pos(x, y)
             if cell:
                 self.state.selected = list(cell)
                 return
 
-        layout = get_sidebar_layout(get_timer_rect().bottom)
-        main_actions = [
-            self._restart_game,
-            self.state.give_hint,
-            lambda: setattr(self.state, "show_errors", not self.state.show_errors),
-            self.state.toggle_pause,
-            lambda: setattr(self.state, "notes_mode", not self.state.notes_mode),
-            self.state.fill_possible_notes,
-        ]
-        for rect, action in zip(layout["main_buttons"], main_actions):
-            if rect.collidepoint(x, y):
-                action()
+            # 3. Các nút trên Sidebar
+            layout = get_sidebar_layout()
+
+            if layout["quick_undo"].collidepoint(x, y):
+                self.state.undo()
+                return
+            if layout["quick_redo"].collidepoint(x, y):
+                self.state.redo()
+                return
+            if layout["quick_notes"].collidepoint(x, y):
+                self.state.notes_mode = not self.state.notes_mode
+                return
+            if layout["quick_hint"].collidepoint(x, y):
+                self.state.give_hint()
                 return
 
-        if layout["undo"].collidepoint(x, y):
-            self.state.undo()
-            return
-        if layout["redo"].collidepoint(x, y):
-            self.state.redo()
-            return
-
-        for i, num_rect in enumerate(layout["numbers"]):
-            if num_rect.collidepoint(x, y):
-                self.state.place_number(i + 1)
+            if layout["clear"].collidepoint(x, y):
+                self.state.clear_cell()
+                return
+            if layout["auto_notes"].collidepoint(x, y):
+                self.state.fill_possible_notes()
                 return
 
-        if layout["clear"].collidepoint(x, y):
-            self.state.clear_cell()
-            return
+            for i, num_rect in enumerate(layout["numbers"]):
+                if num_rect.collidepoint(x, y):
+                    self.state.place_number(i + 1)
+                    return
+
+            if layout["new_game"].collidepoint(x, y):
+                self._restart_game()
+                return
+            if layout["menu"].collidepoint(x, y):
+                self.running = False
+                self.quit_requested = True
+                return
 
     def _restart_game(self) -> None:
         self.particles.clear()
+        clear_save_file()
         self.state.restart(self.state.difficulty)
 
     def _spawn_firework_burst(self, x: int, y: int, count: int = 38) -> None:
@@ -281,6 +335,8 @@ class Game:
     def _handle_keyboard(self, event) -> None:
         r, c = self.state.selected
         key = event.key
+
+        # Di chuyển ô chọn
         if key in (pygame.K_UP, pygame.K_w) and r > 0:
             self.state.selected[0] -= 1
         elif key in (pygame.K_DOWN, pygame.K_s) and r < 8:
@@ -289,6 +345,21 @@ class Game:
             self.state.selected[1] -= 1
         elif key in (pygame.K_RIGHT, pygame.K_d) and c < 8:
             self.state.selected[1] += 1
+
+        # Bật/Tắt chế độ ghi chú nhanh bằng Space hoặc N
+        elif key in (pygame.K_SPACE, pygame.K_n):
+            self.state.notes_mode = not self.state.notes_mode
+
+        # Hoàn tác / Làm lại bằng phím tắt
+        elif key == pygame.K_z and (pygame.key.get_mods() & pygame.KMOD_CTRL):
+            if pygame.key.get_mods() & pygame.KMOD_SHIFT:
+                self.state.redo()
+            else:
+                self.state.undo()
+        elif key == pygame.K_y and (pygame.key.get_mods() & pygame.KMOD_CTRL):
+            self.state.redo()
+
+        # Nhập số hoặc xóa
         elif self.state.original[r][c] == 0:
             if event.unicode.isdigit() and 1 <= int(event.unicode) <= 9:
                 self.state.place_number(int(event.unicode))
@@ -308,6 +379,8 @@ class Game:
         if not self.state.game_over and check_win(self.state.board, self.state.solution):
             self.state.game_over = True
             self.state.final_time = self.state.get_elapsed_time()
+            update_best_time(self.state.difficulty, self.state.final_time)
+            clear_save_file()
             self._spawn_win_fireworks()
             if "win" in self.sounds:
                 self.sounds["win"].play()
@@ -319,6 +392,7 @@ class Game:
         self.pause_quit_rect = overlay_rects["pause_quit"]
         self.win_restart_rect = overlay_rects["win_restart"]
         self.win_quit_rect = overlay_rects["win_quit"]
+        self.header_pause_rect = overlay_rects.get("header_pause")
 
     def run(self) -> bool:
         clock = pygame.time.Clock()
@@ -332,6 +406,8 @@ class Game:
         return self.state.game_over and not self.quit_requested
 
 
-def start_game(root, difficulty: str = "medium") -> bool:
+def start_game(root, difficulty: str = "medium", loaded_state=None) -> bool:
     game = Game(difficulty)
+    if loaded_state:
+        game.state = loaded_state
     return game.run()
