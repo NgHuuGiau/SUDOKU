@@ -437,17 +437,17 @@ class Game:
             self.state.notes_mode = not self.state.notes_mode
 
         # Hoàn tác / Làm lại bằng phím tắt
-        elif key == pygame.K_z and (pygame.key.get_mods() & pygame.KMOD_CTRL):
-            if pygame.key.get_mods() & pygame.KMOD_SHIFT:
+        elif key == pygame.K_z and (event.mod & pygame.KMOD_CTRL):
+            if event.mod & pygame.KMOD_SHIFT:
                 self.state.redo()
             else:
                 self.state.undo()
-        elif key == pygame.K_y and (pygame.key.get_mods() & pygame.KMOD_CTRL):
+        elif key == pygame.K_y and (event.mod & pygame.KMOD_CTRL):
             self.state.redo()
 
         # Nhập số hoặc xóa
         elif self.state.original[r][c] == 0:
-            if event.unicode.isdigit() and 1 <= int(event.unicode) <= 9:
+            if hasattr(event, 'unicode') and event.unicode.isdigit() and 1 <= int(event.unicode) <= 9:
                 self.state.place_number(int(event.unicode))
             elif key in (pygame.K_BACKSPACE, pygame.K_DELETE, pygame.K_KP0):
                 self.state.clear_cell()

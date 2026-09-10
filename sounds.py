@@ -5,15 +5,54 @@ import math
 import pygame
 
 
-def generate_tone(frequency: float, duration: float, volume: float = 0.5, sample_rate: int = 44100) -> pygame.mixer.Sound:
-    """Generate a simple sine wave tone."""
+def _generate_tone_base(
+    frequency: float,
+    duration: float,
+    volume: float = 0.5,
+    sample_rate: int = 44100,
+    freq_func=None,
+    envelope_func=None,
+) -> pygame.mixer.Sound:
+    """Base tone generator with customizable frequency and envelope functions."""
+    sample_rate = 44100 if sample_rate is None else sample_rate
     n_samples = int(sample_rate * duration)
     buf = array.array('h', [0] * n_samples)
     amplitude = int(32767 * volume)
 
     for i in range(n_samples):
         t = i / sample_rate
-        # Add a quick fade out to avoid clicks
+        # Default frequency function (constant)
+        freq = frequency if freq_func is None else freq_func(i, t, duration, sample_rate)
+        # Default envelope (fade in/out)
+        envelope = 1.0
+        if envelope_func:
+            envelope = envelope_func(i, t, n_samples, sample_rate, duration)
+        elif i < n_samples * 0.1:
+            envelope = i / (n_samples * 0.1)
+        elif i > n_samples * 0.8:
+            envelope = (n_samples - i) / (n_samples * 0.2)
+
+        freq = frequency if freq_func is None else freq_func(i, t, duration, sample_rate)
+        buf[i] = int(amplitude * envelope * math.sin(2 * math.pi * freq * t))
+
+    sound = pygame.mixer.Sound(buffer=buf)
+    return sound
+
+
+def generate_tone(
+    frequency: float,
+    duration: float,
+    volume: float = 0.5,
+    sample_rate: int = 44100,
+) -> pygame.mixer.Sound:
+    """Generate a simple sine wave tone."""
+    sample_rate = 44100 if sample_rate is None else sample_rate
+    n_samples = int(sample_rate * duration)
+    buf = array.array('h', [0] * n_samples)
+    amplitude = int(32767 * volume)
+
+    for i in range(n_samples):
+        t = i / sample_rate
         envelope = 1.0
         if i < n_samples * 0.1:
             envelope = i / (n_samples * 0.1)
@@ -168,21 +207,26 @@ class SoundManager:
 # Global sound manager instance
 _sound_manager = None
 
+
 def get_sound_manager() -> SoundManager:
     global _sound_manager
     if _sound_manager is None:
         _sound_manager = SoundManager()
     return _sound_manager
 
+
 def play_sound(name: str):
     """Convenience function to play a sound."""
     get_sound_manager().play(name)
 
+
 def set_sound_volume(volume: float):
     get_sound_manager().set_volume(volume)
 
+
 def toggle_sound():
     get_sound_manager().toggle()
+
 
 def is_sound_enabled() -> bool:
     return get_sound_manager().is_enabled()
