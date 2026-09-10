@@ -1,17 +1,16 @@
 """Tkinter-based menu for Sudoku."""
+import copy
 import os
 import tkinter as tk
-from tkinter import ttk, messagebox, font as tkfont
-from config import (
-    APP_TITLE, MENU_HEADING, MENU_TITLE, VERSION_TEXT,
-    chuyen_ngon_ngu, menu_text
-)
-from ui.screen import get_sudoku_icon_path, enable_high_dpi
-from persistence import has_save_file, load_game_state, get_daily_stats
-from logic import get_daily_challenge_info, generate_daily_challenge
 from datetime import date
-import copy
-from ui.colors import get_theme_manager, get_current_menu_colors
+from tkinter import font as tkfont
+from tkinter import messagebox, ttk
+
+from config import MENU_HEADING, MENU_TITLE, VERSION_TEXT, chuyen_ngon_ngu, menu_text
+from logic import generate_daily_challenge, get_daily_challenge_info
+from persistence import get_daily_stats, has_save_file, load_game_state
+from ui.colors import get_theme_manager
+from ui.screen import enable_high_dpi, get_sudoku_icon_path
 
 
 class MenuSudoku:
@@ -135,7 +134,10 @@ class MenuSudoku:
         # 5. Daily Challenge Card
         self.daily_card = self._tao_the_daily_challenge()
 
-        # 6. Difficulty Cards
+        # 6. Custom Difficulty Card (with slider)
+        self.custom_card = self._tao_the_custom_difficulty()
+
+        # 7. Difficulty Cards
         self.card_de = self._tao_the_do_kho(
             "easy", "[ 1 ] " + menu_text("de"), menu_text("de_desc"),
             self.MENU_COLORS['secondary'], self.MENU_COLORS['secondary_hover']
@@ -264,7 +266,7 @@ class MenuSudoku:
 
     def _tao_the_daily_challenge(self):
         stats = get_daily_stats()
-        info = get_daily_challenge_info(date.today())
+        get_daily_challenge_info(date.today())
         completed_today = stats["last_completed_date"] == date.today().isoformat()
 
         if completed_today:
@@ -339,6 +341,122 @@ class MenuSudoku:
 
         return {"card": card, "title_lbl": t_lbl, "desc_lbl": d_lbl, "completed": completed_today}
 
+    def _tao_the_custom_difficulty(self):
+        """Create custom difficulty card with slider."""
+        colors = self.MENU_COLORS
+
+        card = tk.Frame(self.main_frame, bg=colors['card'], padx=16, pady=12,
+                        highlightbackground=colors['warning'], highlightthickness=2,
+                        cursor="hand2")
+        card.pack(fill=tk.X, pady=(0, 8))
+
+        accent_bar = tk.Frame(card, bg=colors['warning'], width=4)
+        accent_bar.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 12))
+
+        info_frame = tk.Frame(card, bg=colors['card'])
+        info_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        # Custom difficulty title with slider value
+        self.custom_slider_value = tk.IntVar(value=48)  # Default to medium
+
+        title_frame = tk.Frame(info_frame, bg=colors['card'])
+        title_frame.pack(fill=tk.X)
+
+        t_lbl = tk.Label(title_frame, text="[ 🎚 ] " + menu_text("custom"),
+                         font=self.menu_fonts["card_title"], bg=colors['card'],
+                         fg=colors['warning'], anchor=tk.W)
+        t_lbl.pack(side=tk.LEFT)
+
+        # Empty cells counter
+        self.custom_cells_lbl = tk.Label(title_frame,
+                                         text=menu_text("empty_cells_label").format(n=self.custom_slider_value.get()),
+                                         font=self.menu_fonts["card_title"], bg=colors['card'],
+                                         fg=colors['warning'])
+        self.custom_cells_lbl.pack(side=tk.RIGHT)
+
+        d_lbl = tk.Label(info_frame, text=menu_text("custom_desc"), font=self.menu_fonts["card_desc"],
+                         bg=colors['card'], fg=colors['text_muted'], anchor=tk.W)
+        d_lbl.pack(fill=tk.X, pady=(4, 0))
+
+        # Slider
+        slider_frame = tk.Frame(info_frame, bg=colors['card'])
+        slider_frame.pack(fill=tk.X, pady=(8, 0))
+
+        self.custom_slider = tk.Scale(
+            slider_frame, from_=20, to=60, orient=tk.HORIZONTAL,
+            variable=self.custom_slider_value,
+            bg=colors['card'], fg=colors['warning'],
+            highlightthickness=0, troughcolor=colors['border'],
+            activebackground=colors['warning'],
+            length=300,
+            command=self._update_custom_slider
+        )
+        self.custom_slider.pack(fill=tk.X)
+
+        # Min/Max labels
+        min_max_frame = tk.Frame(slider_frame, bg=colors['card'])
+        min_max_frame.pack(fill=tk.X, pady=(4, 0))
+        tk.Label(min_max_frame, text="20", font=self.menu_fonts["card_desc"],
+                 bg=colors['card'], fg=colors['text_muted']).pack(side=tk.LEFT)
+        tk.Label(min_max_frame, text="60", font=self.menu_fonts["card_desc"],
+                 bg=colors['card'], fg=colors['text_muted']).pack(side=tk.RIGHT)
+
+        arrow_lbl = tk.Label(card, text="->", font=self.menu_fonts["card_title"],
+                             bg=colors['card'], fg=colors['warning'])
+        arrow_lbl.pack(side=tk.RIGHT, padx=6)
+
+        def on_click(event=None):
+            empty_cells = self.custom_slider_value.get()
+            # Create custom difficulty board
+            from game import GameState
+            from logic import generate_sudoku
+            board, solution = generate_sudoku("custom", empty_cells=empty_cells)
+            state = GameState.__new__(GameState)
+            state.difficulty = "custom"
+            state.board = board
+            state.solution = solution
+            state.original = [row[:] for row in board]
+            state.selected = [0, 0]
+            state.notes = [[set() for _ in range(9)] for _ in range(9)]
+            state.notes_mode = False
+            state.game_over = False
+            state.paused = False
+            state.show_errors = False
+            state.start_time = 0
+            state.paused_time = 0
+            state.last_pause_start = 0
+            state.last_active_time = 0
+            state.final_time = 0
+            state.undo_stack = [(copy.deepcopy(board), copy.deepcopy(state.notes))]
+            state.redo_stack = []
+            self._bat_dau_tro_choi("custom", state)
+
+        def on_enter(event=None):
+            card.config(highlightbackground=colors['warning'])
+
+        def on_leave(event=None):
+            card.config(highlightbackground=colors['warning'])
+
+        def update_slider_label(val):
+            self.custom_cells_lbl.config(text=menu_text("empty_cells_label").format(n=val))
+
+        self.custom_slider_value.trace_add("write", lambda *args: update_slider_label(self.custom_slider_value.get()))
+
+        for widget in (card, info_frame, title_frame, t_lbl, d_lbl, slider_frame, min_max_frame, arrow_lbl):
+            widget.bind("<Button-1>", on_click)
+            widget.bind("<Enter>", on_enter)
+            widget.bind("<Leave>", on_leave)
+
+        # Also bind to slider
+        self.custom_slider.bind("<ButtonRelease-1>", lambda e: None)  # Ensure click works
+
+        return {"card": card, "title_lbl": t_lbl, "desc_lbl": d_lbl, "slider": self.custom_slider}
+
+    def _update_custom_slider(self, val):
+        """Update the slider label when slider value changes."""
+        if hasattr(self, 'custom_cells_lbl'):
+            self.custom_cells_lbl.config(text=menu_text("empty_cells_label").format(n=val))
+
     def _chuyen_ngon_ngu(self):
         chuyen_ngon_ngu()
         self._cap_nhat_theme()
@@ -365,6 +483,11 @@ class MenuSudoku:
 
         self.card_kho["title_lbl"].config(text="[ 3 ] " + menu_text("kho"))
         self.card_kho["desc_lbl"].config(text=menu_text("kho_desc"))
+
+        if hasattr(self, 'custom_card') and self.custom_card:
+            self.custom_card["title_lbl"].config(text="[ 🎚 ] " + menu_text("custom"))
+            self.custom_card["desc_lbl"].config(text=menu_text("custom_desc"))
+            self.custom_cells_lbl.config(text=menu_text("empty_cells_label").format(n=self.custom_slider_value.get()))
 
         if self.resume_card:
             saved = load_game_state()

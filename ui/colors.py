@@ -1,8 +1,8 @@
 """Color constants and theme system for Sudoku UI."""
 from dataclasses import dataclass
 from typing import Literal
-from persistence import get_daily_stats, load_stats
 
+from persistence import load_stats
 
 ThemeMode = Literal["light", "dark"]
 
@@ -223,16 +223,16 @@ def get_menu_colors(theme: ThemeMode = "light") -> dict:
 
 class ThemeManager:
     """Manages theme state and provides current theme colors."""
-    
+
     _instance = None
     _theme: ThemeMode = "light"
-    
+
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls._instance._load_theme()
         return cls._instance
-    
+
     def _load_theme(self):
         """Load theme from persistent storage."""
         try:
@@ -240,7 +240,7 @@ class ThemeManager:
             self._theme = stats.get("theme", "light")
         except Exception:
             self._theme = "light"
-    
+
     def _save_theme(self):
         """Save theme to persistent storage."""
         try:
@@ -250,28 +250,28 @@ class ThemeManager:
             save_stats(stats)
         except Exception:
             pass
-    
+
     @property
     def theme(self) -> ThemeMode:
         return self._theme
-    
+
     @theme.setter
     def theme(self, value: ThemeMode):
         self._theme = value
         self._save_theme()
-    
+
     def toggle(self):
         self._theme = "dark" if self._theme == "light" else "light"
         self._save_theme()
-    
+
     @property
     def colors(self) -> ThemeColors:
         return DARK_THEME if self._theme == "dark" else LIGHT_THEME
-    
+
     @property
     def menu_colors(self) -> dict:
         return get_menu_colors(self._theme)
-    
+
     @property
     def is_dark(self) -> bool:
         return self._theme == "dark"
@@ -292,19 +292,19 @@ class _MenuColorsProxy:
     """Backward-compatible proxy for MENU_COLORS dict."""
     def __getitem__(self, key):
         return get_theme_manager().menu_colors[key]
-    
+
     def get(self, key, default=None):
         return get_theme_manager().menu_colors.get(key, default)
-    
+
     def __contains__(self, key):
         return key in get_theme_manager().menu_colors
-    
+
     def keys(self):
         return get_theme_manager().menu_colors.keys()
-    
+
     def values(self):
         return get_theme_manager().menu_colors.values()
-    
+
     def items(self):
         return get_theme_manager().menu_colors.items()
 

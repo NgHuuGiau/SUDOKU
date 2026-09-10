@@ -1,5 +1,6 @@
 """Drawing primitives for Sudoku UI."""
 import pygame
+
 from ui.colors import Colors
 
 

@@ -1,14 +1,23 @@
-import pygame
-import tkinter as tk
-from tkinter import ttk, messagebox, font as tkfont
-import os
+import copy
 import ctypes
-import random
 import math
+import os
+import random
+import tkinter as tk
 from dataclasses import dataclass
+from tkinter import font as tkfont
+from tkinter import messagebox, ttk
+
+import pygame
+
 from config import (
-    APP_TITLE, MENU_HEADING, MENU_TITLE, VERSION_TEXT,
-    chuyen_ngon_ngu, game_text, menu_text
+    APP_TITLE,
+    MENU_HEADING,
+    MENU_TITLE,
+    VERSION_TEXT,
+    chuyen_ngon_ngu,
+    game_text,
+    menu_text,
 )
 from persistence import has_save_file, load_game_state
 
@@ -667,7 +676,7 @@ def draw_board(screen: pygame.Surface, fonts: GameFonts, state, selected_cell=No
 
 
 def get_remaining_counts(board) -> dict:
-    counts = {num: 0 for num in range(1, 10)}
+    counts = dict.fromkeys(range(1, 10), 0)
     for row in board:
         for val in row:
             if 1 <= val <= 9:
@@ -1085,49 +1094,50 @@ class MenuSudoku:
         return {"card": card, "title_lbl": t_lbl, "desc_lbl": d_lbl}
 
     def _tao_the_daily_challenge(self):
-        from persistence import get_daily_stats
-        from logic import get_daily_challenge_info
         from datetime import date
-        
+
+        from logic import get_daily_challenge_info
+        from persistence import get_daily_stats
+
         stats = get_daily_stats()
-        info = get_daily_challenge_info(date.today())
+        get_daily_challenge_info(date.today())
         completed_today = stats["last_completed_date"] == date.today().isoformat()
-        
+
         if completed_today:
             title = "[ ✓ ] " + menu_text("daily_challenge")
             desc = f"{menu_text('completed_today')}  {menu_text('streak_label').format(n=stats['streak'])}"
             accent = MENU_COLORS['secondary']  # Green for completed
-            hover = MENU_COLORS['secondary_hover']
+            MENU_COLORS['secondary_hover']
         else:
             title = "[ ⚡ ] " + menu_text("daily_challenge")
             desc = f"{menu_text('daily_challenge_desc')}  {menu_text('streak_label').format(n=stats['streak'])}"
             accent = MENU_COLORS['primary']  # Blue for available
-            hover = MENU_COLORS['primary_hover']
-        
+            MENU_COLORS['primary_hover']
+
         card = tk.Frame(self.main_frame, bg=MENU_COLORS['card'], padx=16, pady=12,
                         highlightbackground=accent, highlightthickness=2,
                         cursor="hand2")
         card.pack(fill=tk.X, pady=(0, 8))
-        
+
         accent_bar = tk.Frame(card, bg=accent, width=4)
         accent_bar.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 12))
-        
+
         info_frame = tk.Frame(card, bg=MENU_COLORS['card'])
         info_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        
+
         t_lbl = tk.Label(info_frame, text=title,
                          font=self.menu_fonts["card_title"], bg=MENU_COLORS['card'],
                          fg=accent, anchor=tk.W)
         t_lbl.pack(fill=tk.X)
-        
+
         d_lbl = tk.Label(info_frame, text=desc, font=self.menu_fonts["card_desc"],
                          bg=MENU_COLORS['card'], fg=MENU_COLORS['text_muted'], anchor=tk.W)
         d_lbl.pack(fill=tk.X)
-        
+
         arrow_lbl = tk.Label(card, text="->", font=self.menu_fonts["card_title"],
                              bg=MENU_COLORS['card'], fg=accent)
         arrow_lbl.pack(side=tk.RIGHT, padx=6)
-        
+
         def on_click(event=None):
             if completed_today:
                 messagebox.showinfo(menu_text("daily_challenge"), menu_text("come_back_tomorrow"))
@@ -1155,18 +1165,18 @@ class MenuSudoku:
             state.undo_stack = [(copy.deepcopy(board), copy.deepcopy(state.notes))]
             state.redo_stack = []
             self._bat_dau_tro_choi("daily", state)
-        
+
         def on_enter(event=None):
             card.config(highlightbackground=accent)
-        
+
         def on_leave(event=None):
             card.config(highlightbackground=accent)
-        
+
         for widget in (card, info_frame, t_lbl, d_lbl, arrow_lbl):
             widget.bind("<Button-1>", on_click)
             widget.bind("<Enter>", on_enter)
             widget.bind("<Leave>", on_leave)
-        
+
         return {"card": card, "title_lbl": t_lbl, "desc_lbl": d_lbl, "completed": completed_today}
 
     def _chuyen_ngon_ngu(self):
@@ -1200,8 +1210,9 @@ class MenuSudoku:
 
         # Update daily challenge card
         if hasattr(self, 'daily_card') and self.daily_card:
-            from persistence import get_daily_stats
             from datetime import date
+
+            from persistence import get_daily_stats
             stats = get_daily_stats()
             completed_today = stats["last_completed_date"] == date.today().isoformat()
             if completed_today:

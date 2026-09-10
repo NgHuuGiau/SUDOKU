@@ -1,7 +1,6 @@
 """Geometry constants and layout calculations for Sudoku UI."""
 import pygame
 
-
 # Screen dimensions
 SCREEN_WIDTH = 960
 SCREEN_HEIGHT = 740
@@ -44,11 +43,13 @@ def get_sidebar_layout() -> dict:
 
     y += quick_btn_h + 12
 
-    # 2. Tools (Clear, Auto Notes)
-    tool_btn_w = (w - 10) // 2
+    # 2. Tools (Clear, Auto Notes, Export, Import)
+    tool_btn_w = (w - 22) // 4
     tool_btn_h = 42
     clear_rect = pygame.Rect(x, y, tool_btn_w, tool_btn_h)
-    auto_notes_rect = pygame.Rect(x + tool_btn_w + 10, y, tool_btn_w, tool_btn_h)
+    auto_notes_rect = pygame.Rect(x + tool_btn_w + 6, y, tool_btn_w, tool_btn_h)
+    export_rect = pygame.Rect(x + 2 * (tool_btn_w + 6), y, tool_btn_w, tool_btn_h)
+    import_rect = pygame.Rect(x + 3 * (tool_btn_w + 6), y, tool_btn_w, tool_btn_h)
 
     y += tool_btn_h + 18
 
@@ -83,6 +84,8 @@ def get_sidebar_layout() -> dict:
         "quick_check_errors": quick_buttons[4],
         "clear": clear_rect,
         "auto_notes": auto_notes_rect,
+        "export": export_rect,
+        "import": import_rect,
         "numbers": number_buttons,
         "new_game": new_game_rect,
         "menu": menu_rect,
@@ -92,7 +95,7 @@ def get_sidebar_layout() -> dict:
 
 
 def get_remaining_counts(board) -> dict:
-    counts = {num: 0 for num in range(1, 10)}
+    counts = dict.fromkeys(range(1, 10), 0)
     for row in board:
         for val in row:
             if 1 <= val <= 9:

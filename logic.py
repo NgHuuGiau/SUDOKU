@@ -1,21 +1,22 @@
 import copy
 import random
 from datetime import date
-from typing import List, Tuple, Optional, Set
+from typing import List, Optional, Tuple
 
 Board = List[List[int]]
 
 
-def generate_sudoku(difficulty: str = "medium", seed: Optional[int] = None) -> Tuple[Board, Board]:
+def generate_sudoku(difficulty: str = "medium", seed: Optional[int] = None, empty_cells: Optional[int] = None) -> Tuple[Board, Board]:
     """Generate a Sudoku puzzle.
-    
+
     Args:
-        difficulty: "easy", "medium", or "hard"
+        difficulty: "easy", "medium", "hard", or "custom"
         seed: Optional seed for reproducible generation (e.g., for daily challenge)
+        empty_cells: Number of empty cells for custom difficulty (20-60)
     """
     if seed is not None:
         random.seed(seed)
-    
+
     base = 3
     side = base * base
 
@@ -38,7 +39,11 @@ def generate_sudoku(difficulty: str = "medium", seed: Optional[int] = None) -> T
         "medium": 48,     # 48 empty cells -> 33 clues left
         "hard": 54,       # 54 empty cells -> 27 clues left
     }
-    target_empties = difficulties.get(difficulty, 48)
+
+    if difficulty == "custom" and empty_cells is not None:
+        target_empties = max(20, min(60, empty_cells))
+    else:
+        target_empties = difficulties.get(difficulty, 48)  # noqa: F821
 
     positions = list(range(side * side))
     random.shuffle(positions)
@@ -61,22 +66,22 @@ def generate_sudoku(difficulty: str = "medium", seed: Optional[int] = None) -> T
 
 def generate_daily_challenge(difficulty: str = "medium", challenge_date: Optional[date] = None) -> Tuple[Board, Board, int]:
     """Generate a daily challenge puzzle seeded by date.
-    
+
     Args:
         difficulty: "easy", "medium", or "hard"
         challenge_date: Date for the challenge (defaults to today)
-    
+
     Returns:
         Tuple of (board, solution, seed_used)
     """
     if challenge_date is None:
         challenge_date = date.today()
-    
+
     # Create deterministic seed from date: YYYYMMDD + difficulty hash
     seed = challenge_date.year * 10000 + challenge_date.month * 100 + challenge_date.day
     diff_hash = {"easy": 1, "medium": 2, "hard": 3}[difficulty]
     seed = seed * 10 + diff_hash
-    
+
     board, solution = generate_sudoku(difficulty, seed=seed)
     return board, solution, seed
 
@@ -85,7 +90,7 @@ def get_daily_challenge_info(challenge_date: Optional[date] = None) -> dict:
     """Get info about today's daily challenge."""
     if challenge_date is None:
         challenge_date = date.today()
-    
+
     return {
         "date": challenge_date.isoformat(),
         "date_str": challenge_date.strftime("%d/%m/%Y"),
@@ -113,7 +118,7 @@ def get_daily_challenge_info(challenge_date: Optional[date] = None) -> dict:
         "medium": 48,     # 48 empty cells -> 33 clues left
         "hard": 54,       # 54 empty cells -> 27 clues left
     }
-    target_empties = difficulties.get(difficulty, 48)
+    target_empties = difficulties.get(difficulty, 48)  # noqa: F821
 
     positions = list(range(side * side))
     random.shuffle(positions)
@@ -140,7 +145,7 @@ def get_daily_challenge_info(challenge_date: Optional[date] = None) -> dict:
 
 class DLXNode:
     __slots__ = ('left', 'right', 'up', 'down', 'column', 'row_id', 'col_id', 'size')
-    
+
     def __init__(self):
         self.left = self.right = self.up = self.down = self
         self.column = self
@@ -151,7 +156,7 @@ class DLXNode:
 
 class DLX:
     """Dancing Links implementation for exact cover problem (Sudoku)."""
-    
+
     def __init__(self, n_cols: int):
         self.header = DLXNode()
         self.columns = [DLXNode() for _ in range(n_cols)]
@@ -159,7 +164,7 @@ class DLX:
         self.solution = []
         self.solution_count = 0
         self.limit = 2
-        
+
         # Link column headers
         prev = self.header
         for i, col in enumerate(self.columns):
@@ -171,7 +176,7 @@ class DLX:
             prev = col
         prev.right = self.header
         self.header.left = prev
-    
+
     def add_row(self, row_id: int, cols: List[int]) -> None:
         """Add a row covering the given columns."""
         first = None
@@ -180,14 +185,14 @@ class DLX:
             node.row_id = row_id
             node.col_id = col_id
             node.column = self.columns[col_id]
-            
+
             # Vertical links
             node.up = self.columns[col_id].up
             node.down = self.columns[col_id]
             self.columns[col_id].up.down = node
             self.columns[col_id].up = node
             self.columns[col_id].size += 1
-            
+
             # Horizontal links
             if first is None:
                 first = node
@@ -198,7 +203,7 @@ class DLX:
                 first.left.right = node
                 first.left = node
             self.nodes.append(node)
-    
+
     def cover(self, col: DLXNode) -> None:
         """Remove column from header list and all rows in that column."""
         col.right.left = col.left
@@ -212,7 +217,7 @@ class DLX:
                 node.column.size -= 1
                 node = node.right
             row = row.down
-    
+
     def uncover(self, col: DLXNode) -> None:
         """Restore column and rows."""
         row = col.up
@@ -226,13 +231,13 @@ class DLX:
             row = row.up
         col.right.left = col
         col.left.right = col
-    
+
     def search(self, k: int = 0) -> bool:
         """Algorithm X with dancing links."""
         if self.header.right == self.header:
             self.solution_count += 1
             return self.solution_count >= self.limit
-        
+
         # Choose column with minimum size (heuristic)
         col = self.header.right
         min_size = col.size
@@ -242,10 +247,10 @@ class DLX:
                 min_size = c.size
                 col = c
             c = c.right
-        
+
         if min_size == 0:
             return False
-        
+
         self.cover(col)
         row = col.down
         while row != col:
@@ -254,20 +259,20 @@ class DLX:
             while node != row:
                 self.cover(node.column)
                 node = node.right
-            
+
             if self.search(k + 1):
                 return True
-            
+
             self.solution.pop()
             node = row.left
             while node != row:
                 self.uncover(node.column)
                 node = node.left
             row = row.down
-        
+
         self.uncover(col)
         return False
-    
+
     def count_solutions(self, limit: int = 2) -> int:
         self.limit = limit
         self.solution_count = 0
@@ -278,7 +283,7 @@ class DLX:
 
 def build_dlx_matrix(board: Board) -> DLX:
     """Build DLX matrix for a Sudoku board.
-    
+
     Constraints (4 types * 81 = 324 columns):
     1. Cell constraint: each cell has a number (81)
     2. Row constraint: each row has each number once (81)
@@ -286,14 +291,14 @@ def build_dlx_matrix(board: Board) -> DLX:
     4. Box constraint: each 3x3 box has each number once (81)
     """
     dlx = DLX(324)
-    
+
     # Pre-filled cells as mandatory rows
     for r in range(9):
         for c in range(9):
             val = board[r][c]
             if val != 0:
                 add_sudoku_row(dlx, r, c, val, is_given=True)
-    
+
     # Empty cells - all possible values
     for r in range(9):
         for c in range(9):
@@ -301,17 +306,17 @@ def build_dlx_matrix(board: Board) -> DLX:
                 for v in range(1, 10):
                     if is_valid_placement(board, r, c, v):
                         add_sudoku_row(dlx, r, c, v, is_given=False)
-    
+
     return dlx
 
 
 def add_sudoku_row(dlx: DLX, r: int, c: int, v: int, is_given: bool) -> None:
     """Add a row to DLX matrix for cell (r,c) = v.
-    
+
     Row ID encodes: r*81 + c*9 + (v-1) for unique identification
     """
     row_id = r * 81 + c * 9 + (v - 1)
-    
+
     # 4 constraints:
     # 1. Cell (r,c) has a value: 0-80
     cell_con = r * 9 + c
@@ -322,7 +327,7 @@ def add_sudoku_row(dlx: DLX, r: int, c: int, v: int, is_given: bool) -> None:
     # 4. Box b has value v: 243-323
     b = (r // 3) * 3 + (c // 3)
     box_con = 243 + b * 9 + (v - 1)
-    
+
     dlx.add_row(row_id, [cell_con, row_con, col_con, box_con])
 
 
@@ -337,7 +342,7 @@ def solve_board_dlx(board: Board) -> bool:
     dlx = build_dlx_matrix(board)
     if dlx.count_solutions(1) == 0:
         return False
-    
+
     # Reconstruct solution
     for row_id in dlx.solution:
         r = row_id // 81
@@ -375,3 +380,44 @@ def is_valid_placement(board: Board, row: int, col: int, num: int) -> bool:
 
 def check_win(board: Board, solution: Board) -> bool:
     return all(board[r][c] == solution[r][c] for r in range(9) for c in range(9))
+
+
+# =============================================================================
+# Import/Export Puzzle (81-character string format)
+# =============================================================================
+
+def board_to_string(board: Board) -> str:
+    """Convert board to 81-character string (0 for empty cells)."""
+    return ''.join(str(board[r][c]) for r in range(9) for c in range(9))
+
+
+def string_to_board(s: str) -> Board:
+    """Convert 81-character string to board (0 for empty cells)."""
+    if len(s) != 81:
+        raise ValueError("String must be exactly 81 characters")
+    board = [[0] * 9 for _ in range(9)]
+    for i, ch in enumerate(s):
+        if ch not in '0123456789':
+            raise ValueError(f"Invalid character: {ch}")
+        r, c = divmod(i, 9)
+        board[r][c] = int(ch)
+    return board
+
+
+def export_puzzle(board: Board, solution: Board) -> str:
+    """Export puzzle as JSON string with board and solution."""
+    import json
+    data = {
+        "board": board_to_string(board),
+        "solution": board_to_string(solution),
+    }
+    return json.dumps(data)
+
+
+def import_puzzle(data_str: str) -> tuple[Board, Board]:
+    """Import puzzle from JSON string."""
+    import json
+    data = json.loads(data_str)
+    board = string_to_board(data["board"])
+    solution = string_to_board(data["solution"])
+    return board, solution

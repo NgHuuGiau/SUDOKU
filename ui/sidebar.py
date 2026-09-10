@@ -1,14 +1,22 @@
 """Sidebar controls rendering for Sudoku UI."""
 import pygame
+
 from ui.colors import Colors
-from ui.geometry import SIDEBAR_X, get_sidebar_layout, get_remaining_counts
 from ui.drawing import draw_modern_button
+from ui.geometry import SIDEBAR_X, SIDEBAR_Y, get_remaining_counts, get_sidebar_layout
 from ui.icons import SmoothIcons
 
 
 def draw_sidebar(screen: pygame.Surface, fonts, mouse_pos, translate, state) -> dict:
     layout = get_sidebar_layout()
     rem_counts = get_remaining_counts(state.board)
+
+    # Calculate note counts per digit
+    note_counts = dict.fromkeys(range(1, 10), 0)
+    for r in range(9):
+        for c in range(9):
+            for d in state.notes[r][c]:
+                note_counts[d] += 1
 
     # 1. Quick Actions header
     sec1_label = fonts.badge.render(translate("thao_tac_nhanh"), True, Colors.STATUS_TEXT)
@@ -43,11 +51,15 @@ def draw_sidebar(screen: pygame.Surface, fonts, mouse_pos, translate, state) -> 
                        subtext=check_errors_subtext, sub_font=fonts.badge,
                        icon_name='check', icon_size=20)
 
-    # 2. Tools (Clear & Auto Notes)
+    # 2. Tools (Clear, Auto Notes, Export, Import)
     draw_modern_button(screen, layout["clear"], translate('xoa_btn'), mouse_pos, fonts.small,
                        variant='danger', icon_name='erase', icon_size=16)
     draw_modern_button(screen, layout["auto_notes"], translate('ghi_chu_tu_dong'), mouse_pos, fonts.badge,
                        variant='secondary', icon_name='sparkles', icon_size=16)
+    draw_modern_button(screen, layout["export"], translate('xuat_van'), mouse_pos, fonts.badge,
+                       variant='secondary', icon_name='save', icon_size=16)
+    draw_modern_button(screen, layout["import"], translate('nhap_van'), mouse_pos, fonts.badge,
+                       variant='secondary', icon_name='home', icon_size=16)
 
     # 3. Number pad header
     num_title_y = layout["clear"].bottom + 10
@@ -59,6 +71,7 @@ def draw_sidebar(screen: pygame.Surface, fonts, mouse_pos, translate, state) -> 
         digit = i + 1
         rem = rem_counts[digit]
         is_done = (rem == 0)
+        notes_for_digit = note_counts[digit]
 
         if is_done:
             sub_text = translate("con_lai_du")
@@ -73,6 +86,13 @@ def draw_sidebar(screen: pygame.Surface, fonts, mouse_pos, translate, state) -> 
         if is_done:
             chk_surf = SmoothIcons.get('check', 12, Colors.BTN_SUCCESS)
             screen.blit(chk_surf, chk_surf.get_rect(center=(num_rect.right - 12, num_rect.top + 12)))
+
+        # Show note count indicator
+        if notes_for_digit > 0 and not is_done:
+            indicator_rect = pygame.Rect(num_rect.right - 18, num_rect.top + 2, 16, 16)
+            pygame.draw.circle(screen, Colors.BTN_PRIMARY, indicator_rect.center, 7)
+            count_surf = fonts.tiny.render(str(min(notes_for_digit, 9)), True, Colors.WHITE)
+            screen.blit(count_surf, count_surf.get_rect(center=indicator_rect.center))
 
     # 4. Bottom actions (New Game & Menu)
     draw_modern_button(screen, layout["new_game"], translate('van_moi'), mouse_pos, fonts.small,

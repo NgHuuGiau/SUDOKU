@@ -1,12 +1,13 @@
 """Main game view renderer - combines all UI components."""
 import pygame
-from ui.screen import create_game_screen
-from ui.fonts import load_fonts, GameFonts
+
 from ui.board import draw_board
-from ui.sidebar import draw_sidebar
-from ui.modals import draw_header, draw_footer_helper, draw_win_modal, draw_pause_modal
+from ui.fonts import GameFonts, load_fonts
 from ui.geometry import get_timer_rect
 from ui.icons import Particle
+from ui.modals import draw_footer_helper, draw_header, draw_pause_modal, draw_win_modal
+from ui.screen import create_game_screen
+from ui.sidebar import draw_sidebar
 
 
 def draw_game_view(screen: pygame.Surface, fonts: GameFonts, state, mouse_pos, particles=None, translate=None) -> dict:
@@ -57,8 +58,6 @@ __all__ = [
     "draw_game_view",
     "Particle",
     "get_timer_rect",
-    "get_cell_from_pos",
-    "get_sidebar_layout",
     "draw_board",
     "draw_sidebar",
     "draw_header",

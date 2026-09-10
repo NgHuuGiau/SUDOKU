@@ -1,7 +1,8 @@
 """Smooth supersampled icons for Sudoku UI."""
 import math
-import pygame
 import random
+
+import pygame
 
 
 class SmoothIcons:

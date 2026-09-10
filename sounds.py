@@ -1,7 +1,8 @@
 """Sound manager for Sudoku game - generates simple tones programmatically."""
-import pygame
 import array
 import math
+
+import pygame
 
 
 def generate_tone(frequency: float, duration: float, volume: float = 0.5, sample_rate: int = 44100) -> pygame.mixer.Sound:
@@ -9,7 +10,7 @@ def generate_tone(frequency: float, duration: float, volume: float = 0.5, sample
     n_samples = int(sample_rate * duration)
     buf = array.array('h', [0] * n_samples)
     amplitude = int(32767 * volume)
-    
+
     for i in range(n_samples):
         t = i / sample_rate
         # Add a quick fade out to avoid clicks
@@ -19,7 +20,7 @@ def generate_tone(frequency: float, duration: float, volume: float = 0.5, sample
         elif i > n_samples * 0.8:
             envelope = (n_samples - i) / (n_samples * 0.2)
         buf[i] = int(amplitude * envelope * math.sin(2 * math.pi * frequency * t))
-    
+
     sound = pygame.mixer.Sound(buffer=buf)
     return sound
 
@@ -41,7 +42,7 @@ def generate_success(volume: float = 0.5) -> pygame.mixer.Sound:
     n_samples = int(sample_rate * duration)
     buf = array.array('h', [0] * n_samples)
     amplitude = int(32767 * volume)
-    
+
     for i in range(n_samples):
         t = i / sample_rate
         # Ascending chord: C5, E5, G5
@@ -53,11 +54,11 @@ def generate_success(volume: float = 0.5) -> pygame.mixer.Sound:
             envelope = i / (n_samples * 0.1)
         elif i > n_samples * 0.7:
             envelope = (n_samples - i) / (n_samples * 0.3)
-        val = (math.sin(2 * math.pi * freq1 * t) + 
-               math.sin(2 * math.pi * freq2 * t) + 
+        val = (math.sin(2 * math.pi * freq1 * t) +
+               math.sin(2 * math.pi * freq2 * t) +
                math.sin(2 * math.pi * freq3 * t)) / 3
         buf[i] = int(amplitude * envelope * val)
-    
+
     sound = pygame.mixer.Sound(buffer=buf)
     return sound
 
@@ -74,7 +75,7 @@ def generate_hint(volume: float = 0.4) -> pygame.mixer.Sound:
     n_samples = int(sample_rate * duration)
     buf = array.array('h', [0] * n_samples)
     amplitude = int(32767 * volume)
-    
+
     for i in range(n_samples):
         t = i / sample_rate
         # Gentle E6
@@ -85,7 +86,7 @@ def generate_hint(volume: float = 0.4) -> pygame.mixer.Sound:
         elif i > n_samples * 0.6:
             envelope = (n_samples - i) / (n_samples * 0.4)
         buf[i] = int(amplitude * envelope * math.sin(2 * math.pi * freq * t))
-    
+
     sound = pygame.mixer.Sound(buffer=buf)
     return sound
 
@@ -97,7 +98,7 @@ def generate_undo(volume: float = 0.3) -> pygame.mixer.Sound:
     n_samples = int(sample_rate * duration)
     buf = array.array('h', [0] * n_samples)
     amplitude = int(32767 * volume)
-    
+
     for i in range(n_samples):
         t = i / sample_rate
         # Descending tone
@@ -108,20 +109,20 @@ def generate_undo(volume: float = 0.3) -> pygame.mixer.Sound:
         elif i > n_samples * 0.7:
             envelope = (n_samples - i) / (n_samples * 0.3)
         buf[i] = int(amplitude * envelope * math.sin(2 * math.pi * freq * t))
-    
+
     sound = pygame.mixer.Sound(buffer=buf)
     return sound
 
 
 class SoundManager:
     """Manages all game sound effects."""
-    
+
     def __init__(self):
         self.sounds = {}
         self.enabled = True
         self.volume = 0.5
         self._init_sounds()
-    
+
     def _init_sounds(self):
         """Initialize all sound effects."""
         try:
@@ -137,7 +138,7 @@ class SoundManager:
         except Exception as e:
             print(f"Warning: Could not initialize sounds: {e}")
             self.sounds = {}
-    
+
     def play(self, name: str):
         """Play a sound by name."""
         if not self.enabled or name not in self.sounds:
@@ -146,7 +147,7 @@ class SoundManager:
             self.sounds[name].play()
         except Exception:
             pass
-    
+
     def set_volume(self, volume: float):
         """Set volume for all sounds (0.0 to 1.0)."""
         self.volume = max(0.0, min(1.0, volume))
@@ -155,11 +156,11 @@ class SoundManager:
                 sound.set_volume(self.volume)
             except Exception:
                 pass
-    
+
     def toggle(self):
         """Toggle sound on/off."""
         self.enabled = not self.enabled
-    
+
     def is_enabled(self) -> bool:
         return self.enabled
 

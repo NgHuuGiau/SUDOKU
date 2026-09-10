@@ -141,6 +141,8 @@ GAME_DICT = {
         "close": "Đóng",
         "khoi_dong_lai": "Khởi Động Lại",
         "luu_va_thoat": "Lưu & Thoát",
+        "xuat_van": "Xuất Ván",
+        "nhap_van": "Nhập Ván",
     },
 }
 
@@ -155,6 +157,9 @@ MENU_DICT = {
         "trung_binh_desc": "48 empty cells - Balanced and fun",
         "kho": "Hard",
         "kho_desc": "56 empty cells - True brain workout",
+        "custom": "Custom",
+        "custom_desc": "Choose your own difficulty (20-60 empty cells)",
+        "empty_cells_label": "Empty cells: {n}",
         "chuc_vui_ve": "Enjoy the game!",
         "chien_thang": "Victory!",
         "chuc_mung": "Congratulations! You solved the Sudoku.\nDo you want to play another game?",
@@ -180,6 +185,9 @@ MENU_DICT = {
         "trung_binh_desc": "48 ô trống - Cân bằng và thú vị",
         "kho": "Khó",
         "kho_desc": "56 ô trống - Thử thách cao cấp",
+        "custom": "Tùy chỉnh",
+        "custom_desc": "Tự chọn độ khó (20-60 ô trống)",
+        "empty_cells_label": "Ô trống: {n}",
         "chuc_vui_ve": "Chúc bạn có những phút giây giải trí tuyệt vời!",
         "chien_thang": "Chiến Thắng!",
         "chuc_mung": "Chúc mừng! Bạn đã giải thành công bảng Sudoku.\nBạn có muốn chơi tiếp ván mới không?",

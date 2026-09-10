@@ -5,31 +5,29 @@ from typing import List, Set, Tuple
 
 import pygame
 
+from error_handling import (
+    ErrorSeverity,
+    log_exception,
+)
 from logic import check_win, generate_sudoku, is_valid_placement
+from persistence import (
+    clear_save_file,
+    record_game_win,
+    save_game_state,
+    update_best_time,
+)
+from sounds import get_sound_manager, play_sound
 from ui import (
-    Particle,
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
+    Particle,
     create_game_screen,
     draw_game_view,
     get_cell_from_pos,
     get_sidebar_layout,
-    get_timer_rect,
     load_fonts,
+    trigger_number_placement_animation,
 )
-from persistence import (
-    load_best_times,
-    save_best_times,
-    update_best_time,
-    get_best_time,
-    save_game_state,
-    load_game_state,
-    clear_save_file,
-    has_save_file,
-    record_game_win,
-    is_top_10_time,
-)
-from sounds import get_sound_manager, play_sound
 
 Board = List[List[int]]
 NotesBoard = List[List[Set[int]]]
@@ -88,6 +86,7 @@ class GameState:
             play_sound('pop')
         self.auto_save()
 
+    @log_exception(ErrorSeverity.MEDIUM, user_action="place_number")
     def place_number(self, num: int) -> None:
         r, c = self.selected
         if self.original[r][c] != 0:
@@ -102,8 +101,10 @@ class GameState:
             self.notes[r][c].clear()
             self.save_state()
             play_sound('pop')
+            trigger_number_placement_animation(r, c)
         self.auto_save()
 
+    @log_exception(ErrorSeverity.MEDIUM, user_action="clear_cell")
     def clear_cell(self) -> None:
         r, c = self.selected
         if self.original[r][c] != 0:
@@ -116,6 +117,7 @@ class GameState:
             play_sound('click')
         self.auto_save()
 
+    @log_exception(ErrorSeverity.MEDIUM, user_action="give_hint")
     def give_hint(self) -> None:
         r, c = self.selected
         if self.original[r][c] == 0 and self.board[r][c] == 0:
@@ -125,6 +127,7 @@ class GameState:
             play_sound('hint')
         self.auto_save()
 
+    @log_exception(ErrorSeverity.MEDIUM, user_action="fill_possible_notes")
     def fill_possible_notes(self) -> None:
         for r in range(9):
             for c in range(9):
@@ -139,6 +142,7 @@ class GameState:
         play_sound('click')
         self.auto_save()
 
+    @log_exception(ErrorSeverity.LOW, user_action="toggle_pause")
     def toggle_pause(self) -> None:
         self.paused = not self.paused
         if self.paused:
@@ -207,9 +211,11 @@ class Game:
         self.help_rects = None
         self.show_help = False
 
+    @log_exception(ErrorSeverity.HIGH, user_action="_load_fonts")
     def _load_fonts(self) -> None:
         self.fonts = load_fonts()
 
+    @log_exception(ErrorSeverity.HIGH, user_action="handle_events")
     def handle_events(self) -> bool:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -353,19 +359,20 @@ class Game:
         """Show tkinter dialog to enter name for leaderboard."""
         import tkinter as tk
         from tkinter import simpledialog
+
         from config import game_text
-        
+
         root = tk.Tk()
         root.withdraw()
         root.attributes('-topmost', True)
-        
+
         name = simpledialog.askstring(
             game_text("new_highscore"),
             game_text("enter_name"),
             parent=root
         )
         root.destroy()
-        
+
         if name and name.strip():
             from persistence import add_leaderboard_entry
             add_leaderboard_entry(self.state.difficulty, name.strip(), self.state.final_time)
@@ -428,7 +435,7 @@ class Game:
         if not self.state.game_over and check_win(self.state.board, self.state.solution):
             self.state.game_over = True
             self.state.final_time = self.state.get_elapsed_time()
-            is_new_best = update_best_time(self.state.difficulty, self.state.final_time)
+            update_best_time(self.state.difficulty, self.state.final_time)
             # Record win for statistics
             record_game_win(self.state.difficulty, self.state.final_time)
             # Check if top 10 leaderboard time
@@ -450,8 +457,8 @@ class Game:
 
         # Draw help modal if active
         if self.show_help:
-            from ui.modals import draw_help_modal
             from config import game_text
+            from ui.modals import draw_help_modal
             self.help_rects = draw_help_modal(self.screen, self.fonts, pygame.mouse.get_pos(), game_text)
 
     def run(self) -> bool:

@@ -1,8 +1,9 @@
 """Modal overlays (Pause, Win) for Sudoku UI."""
 import pygame
+
 from ui.colors import Colors
-from ui.geometry import SCREEN_WIDTH, SCREEN_HEIGHT
-from ui.drawing import draw_rounded_card, draw_modern_button
+from ui.drawing import draw_modern_button, draw_rounded_card
+from ui.geometry import SCREEN_HEIGHT, SCREEN_WIDTH
 from ui.icons import SmoothIcons
 
 
@@ -96,7 +97,7 @@ def draw_pause_modal(screen: pygame.Surface, fonts, mouse_pos, translate) -> dic
 
 
 def draw_header(screen: pygame.Surface, fonts, state, mouse_pos, translate) -> dict:
-    from ui.geometry import BOARD_X, BOARD_Y, BOARD_SIZE
+    from ui.geometry import BOARD_X
     header_rect = pygame.Rect(BOARD_X, 18, SCREEN_WIDTH - BOARD_X * 2, 60)
     draw_rounded_card(screen, header_rect, Colors.BG_CARD, Colors.CARD_BORDER, radius=12)
 
@@ -150,7 +151,7 @@ def draw_header(screen: pygame.Surface, fonts, state, mouse_pos, translate) -> d
 
 
 def draw_footer_helper(screen: pygame.Surface, fonts, translate) -> None:
-    from ui.geometry import BOARD_X, SCREEN_WIDTH, SCREEN_HEIGHT
+    from ui.geometry import BOARD_X, SCREEN_HEIGHT, SCREEN_WIDTH
     helper_rect = pygame.Rect(BOARD_X, SCREEN_HEIGHT - 44, SCREEN_WIDTH - BOARD_X * 2, 32)
     pygame.draw.rect(screen, Colors.BG_CARD, helper_rect, border_radius=8)
     pygame.draw.rect(screen, Colors.CARD_BORDER, helper_rect, width=1, border_radius=8)
@@ -162,22 +163,22 @@ def draw_footer_helper(screen: pygame.Surface, fonts, translate) -> None:
 
 def draw_help_modal(screen: pygame.Surface, fonts, mouse_pos, translate) -> dict:
     """Draw keyboard shortcut help overlay (F1). Returns overlay rects for click handling."""
-    from ui.geometry import SCREEN_WIDTH, SCREEN_HEIGHT
-    
+    from ui.geometry import SCREEN_HEIGHT, SCREEN_WIDTH
+
     overlay_rects = {"help_close": None}
-    
+
     overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
     overlay.fill((15, 23, 42, 180))
     screen.blit(overlay, (0, 0))
-    
+
     card_w, card_h = 520, 480
     modal_rect = pygame.Rect((SCREEN_WIDTH - card_w) // 2, (SCREEN_HEIGHT - card_h) // 2, card_w, card_h)
     draw_rounded_card(screen, modal_rect, Colors.BG_CARD, Colors.CARD_BORDER, radius=16)
-    
+
     # Title
     title_surf = fonts.large.render(translate("keyboard_shortcuts"), True, Colors.FIXED_TEXT)
     screen.blit(title_surf, title_surf.get_rect(center=(modal_rect.centerx, modal_rect.top + 40)))
-    
+
     # Shortcut list
     shortcuts = [
         ("W / ↑", translate("shortcut_move_up")),
@@ -192,12 +193,12 @@ def draw_help_modal(screen: pygame.Surface, fonts, mouse_pos, translate) -> dict
         ("Esc / P", translate("shortcut_pause")),
         ("F1", translate("shortcut_help")),
     ]
-    
+
     y_start = modal_rect.top + 90
     line_height = 36
     key_col_x = modal_rect.left + 60
     desc_col_x = modal_rect.left + 200
-    
+
     for i, (key, desc) in enumerate(shortcuts):
         y = y_start + i * line_height
         # Key
@@ -209,13 +210,13 @@ def draw_help_modal(screen: pygame.Surface, fonts, mouse_pos, translate) -> dict
         # Description
         desc_surf = fonts.medium.render(desc, True, Colors.FIXED_TEXT)
         screen.blit(desc_surf, desc_surf.get_rect(midleft=(desc_col_x, y)))
-    
+
     # Close button
     btn_w, btn_h = 120, 44
     btn_y = modal_rect.bottom - 60
     help_close = pygame.Rect(modal_rect.centerx - btn_w // 2, btn_y, btn_w, btn_h)
     draw_modern_button(screen, help_close, translate('close'), mouse_pos, fonts.small,
                        variant='primary', icon_name='check', icon_size=16)
-    
+
     overlay_rects["help_close"] = help_close
     return overlay_rects

@@ -2,8 +2,10 @@
 import json
 import os
 from datetime import date
-from typing import Any, TypedDict, Literal, Union
+from typing import TYPE_CHECKING, Literal, TypedDict
 
+if TYPE_CHECKING:
+    from game import GameState
 
 SAVE_FILE = os.path.join(os.path.dirname(__file__), "save_game.json")
 BEST_TIMES_FILE = os.path.join(os.path.dirname(__file__), "best_times.json")
@@ -66,7 +68,7 @@ class SaveGameState(TypedDict):
 def _load_json(filepath: str, default: dict) -> dict:
     if os.path.exists(filepath):
         try:
-            with open(filepath, "r", encoding="utf-8") as f:
+            with open(filepath, encoding="utf-8") as f:
                 return json.load(f)
         except Exception:
             pass
@@ -84,7 +86,7 @@ def _save_json(filepath: str, data: dict) -> None:
 def load_best_times() -> dict[Difficulty, int | None]:
     if os.path.exists(BEST_TIMES_FILE):
         try:
-            with open(BEST_TIMES_FILE, "r", encoding="utf-8") as f:
+            with open(BEST_TIMES_FILE, encoding="utf-8") as f:
                 return json.load(f)
         except Exception:
             pass
@@ -156,7 +158,7 @@ def load_game_state() -> "GameState | None":
     if not os.path.exists(SAVE_FILE):
         return None
     try:
-        with open(SAVE_FILE, "r", encoding="utf-8") as f:
+        with open(SAVE_FILE, encoding="utf-8") as f:
             data = json.load(f)
     except Exception:
         return None
@@ -223,16 +225,16 @@ def mark_daily_challenge_completed(elapsed: int, difficulty: Difficulty) -> Dail
     """Mark today's daily challenge as completed. Returns updated stats."""
     today = date.today().isoformat()
     stats = load_daily_stats()
-    
+
     if stats["last_completed_date"] == today:
         # Already completed today
         return stats
-    
+
     # Update streak
     last_date = stats["last_completed_date"]
     if last_date:
         last = date.fromisoformat(last_date)
-        yesterday = date.today().replace(day=date.today().day - 1) if date.today().day > 1 else (date.today().replace(month=date.today().month - 1, day=28) if date.today().month > 1 else date(date.today().year - 1, 12, 31))
+        date.today().replace(day=date.today().day - 1) if date.today().day > 1 else (date.today().replace(month=date.today().month - 1, day=28) if date.today().month > 1 else date(date.today().year - 1, 12, 31))
         # Simple streak logic: if last completed was yesterday, increment
         # For simplicity, we just check if it's a new day
         if (date.today() - last).days == 1:
@@ -241,11 +243,11 @@ def mark_daily_challenge_completed(elapsed: int, difficulty: Difficulty) -> Dail
             stats["streak"] = 1
     else:
         stats["streak"] = 1
-    
+
     stats["last_completed_date"] = today
     stats["total_completed"] += 1
     stats["best_streak"] = max(stats["best_streak"], stats["streak"])
-    
+
     save_daily_stats(stats)
     return stats
 
@@ -293,12 +295,12 @@ def record_game_win(difficulty: Difficulty, elapsed: int) -> GameStats:
     stats["total_time"] += elapsed
     stats["by_difficulty"][difficulty]["won"] += 1
     stats["by_difficulty"][difficulty]["total_time"] += elapsed
-    
+
     # Update best time
     current_best = stats["best_times"].get(difficulty)
     if current_best is None or elapsed < current_best:
         stats["best_times"][difficulty] = elapsed
-    
+
     # Update streak
     today = date.today().isoformat()
     if stats["last_win_date"] == today:
@@ -315,7 +317,7 @@ def record_game_win(difficulty: Difficulty, elapsed: int) -> GameStats:
             stats["current_streak"] = 1
         stats["last_win_date"] = today
         stats["best_streak"] = max(stats["best_streak"], stats["current_streak"])
-    
+
     save_stats(stats)
     return stats
 
@@ -356,25 +358,25 @@ def add_leaderboard_entry(difficulty: Difficulty, name: str, elapsed: int, date_
     """Add a new entry to the leaderboard. Returns True if entry made top 10."""
     if date_str is None:
         date_str = date.today().isoformat()
-    
+
     leaderboard = load_leaderboard()
     entries = leaderboard.get(difficulty, [])
-    
+
     new_entry: LeaderboardEntry = {
         "name": name[:20],  # Limit name length
         "time": elapsed,
         "date": date_str,
     }
-    
+
     entries.append(new_entry)
     # Sort by time ascending (best first)
     entries.sort(key=lambda x: x["time"])
     # Keep only top 10
     entries = entries[:LEADERBOARD_MAX_ENTRIES]
     leaderboard[difficulty] = entries
-    
+
     save_leaderboard(leaderboard)
-    
+
     # Return True if entry is in top 10
     return new_entry in entries
 

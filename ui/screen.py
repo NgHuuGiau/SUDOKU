@@ -1,6 +1,7 @@
 """Screen initialization for Sudoku."""
-import os
 import ctypes
+import os
+
 import pygame
 
 
@@ -22,8 +23,8 @@ def get_sudoku_icon_path() -> str:
 
 
 def create_game_screen() -> pygame.Surface:
-    from ui.geometry import SCREEN_WIDTH, SCREEN_HEIGHT
     from config import APP_TITLE
+    from ui.geometry import SCREEN_HEIGHT, SCREEN_WIDTH
 
     enable_high_dpi()
     pygame.init()
