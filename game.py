@@ -1,7 +1,7 @@
 import copy
 import random
 import time
-from typing import List, Set, Tuple
+from typing import List, Literal, Set, Tuple
 
 import pygame
 
@@ -31,7 +31,7 @@ from ui import (
 
 Board = List[List[int]]
 NotesBoard = List[List[Set[int]]]
-Difficulty = str
+Difficulty = Literal["easy", "medium", "hard", "daily", "custom"]
 
 AUTO_SAVE_DEBOUNCE_MS = 500
 
@@ -102,7 +102,25 @@ class GameState:
             self.save_state()
             play_sound('pop')
             trigger_number_placement_animation(r, c)
+            self._check_completion_ripple(r, c)
         self.auto_save()
+
+    def _check_completion_ripple(self, r: int, c: int) -> None:
+        try:
+            from ui.board import trigger_completion_animation
+            # Check row r
+            if all(self.board[r][col] == self.solution[r][col] for col in range(9)):
+                trigger_completion_animation("row", r)
+            # Check col c
+            if all(self.board[row][c] == self.solution[row][c] for row in range(9)):
+                trigger_completion_animation("col", c)
+            # Check 3x3 box
+            br, bc = (r // 3) * 3, (c // 3) * 3
+            box_idx = (r // 3) * 3 + (c // 3)
+            if all(self.board[br + dr][bc + dc] == self.solution[br + dr][bc + dc] for dr in range(3) for dc in range(3)):
+                trigger_completion_animation("box", box_idx)
+        except Exception:
+            pass
 
     @log_exception(ErrorSeverity.MEDIUM, user_action="clear_cell")
     def clear_cell(self) -> None:
@@ -286,9 +304,21 @@ class Game:
     def _handle_mouse(self, pos: Tuple[int, int]) -> None:
         x, y = pos
 
-        # 1. Nút Tạm dừng trên thanh Header
+        # 1. Các nút trên thanh Header
         if self.header_pause_rect and self.header_pause_rect.collidepoint(x, y):
             self.state.toggle_pause()
+            return
+        if getattr(self, 'header_theme_rect', None) and self.header_theme_rect.collidepoint(x, y):
+            from ui.colors import get_theme_manager
+            get_theme_manager().cycle_theme()
+            play_sound('pop')
+            return
+        if getattr(self, 'header_sound_rect', None) and self.header_sound_rect.collidepoint(x, y):
+            from sounds import toggle_sound
+            toggle_sound()
+            return
+        if getattr(self, 'header_help_rect', None) and self.header_help_rect.collidepoint(x, y):
+            self.show_help = not self.show_help
             return
 
         if not self.state.paused and not self.state.game_over:
@@ -454,6 +484,9 @@ class Game:
         self.win_restart_rect = overlay_rects["win_restart"]
         self.win_quit_rect = overlay_rects["win_quit"]
         self.header_pause_rect = overlay_rects.get("header_pause")
+        self.header_theme_rect = overlay_rects.get("header_theme")
+        self.header_sound_rect = overlay_rects.get("header_sound")
+        self.header_help_rect = overlay_rects.get("header_help")
 
         # Draw help modal if active
         if self.show_help:

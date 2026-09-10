@@ -73,7 +73,7 @@ class Profiler:
             _ = stream.getvalue()
 
             # Parse stats
-            total_calls = stats.total_calls
+            total_calls = stats.total_calls if hasattr(stats, 'total_calls') else stats.total_calls()
             total_time = elapsed
 
             result = ProfileResult(
@@ -201,7 +201,7 @@ class MemoryTracker:
         # Force garbage collection for accurate reading
         gc.collect()
 
-        current, peak = tracemalloc.get_traffic()
+        current, peak = tracemalloc.get_traced_memory()
         current_mb = current / 1024 / 1024
         peak_mb = peak / 1024 / 1024
 
@@ -392,8 +392,8 @@ class PerformanceOptimizer:
         stats.print_stats(20)
 
         return {
-            "total_calls": profiler.total_calls,
-            "prim_calls": profiler.prim_calls,
+            "total_calls": stats.total_calls if hasattr(stats, 'total_calls') else stats.total_calls(),
+            "prim_calls": stats.prim_calls if hasattr(stats, 'prim_calls') else stats.prim_calls(),
             "total_time": sum(s[3] for s in profiler.stats.values()),
             "stats_output": stream.getvalue(),
         }

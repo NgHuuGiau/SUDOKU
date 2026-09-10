@@ -6,10 +6,10 @@ import pygame
 
 
 class SmoothIcons:
-    _cache = {}
+    _cache: dict[tuple[str, int, tuple[int, int, int]], pygame.Surface] = {}
 
     @classmethod
-    def get(cls, name: str, size: int, color) -> pygame.Surface:
+    def get(cls, name: str, size: int, color: tuple[int, int, int]) -> pygame.Surface:
         key = (name, size, color)
         if key in cls._cache:
             return cls._cache[key]
@@ -153,6 +153,61 @@ class SmoothIcons:
             # Write protect notch
             notch = pygame.Rect(cx - s * 0.08, cy - s * 0.28, s * 0.16, s * 0.06)
             pygame.draw.rect(surf, (0, 0, 0, 0), notch)
+
+        elif name == 'palette':
+            # Artist palette
+            r = s * 0.32
+            pygame.draw.circle(surf, color, (int(cx), int(cy)), int(r), width=int(s * 0.07))
+            # Thumb hole
+            pygame.draw.circle(surf, color, (int(cx + r * 0.35), int(cy + r * 0.35)), int(s * 0.07), width=int(s * 0.04))
+            # 3 paint dots
+            pygame.draw.circle(surf, color, (int(cx - r * 0.4), int(cy - r * 0.2)), int(s * 0.05))
+            pygame.draw.circle(surf, color, (int(cx), int(cy - r * 0.5)), int(s * 0.05))
+            pygame.draw.circle(surf, color, (int(cx + r * 0.4), int(cy - r * 0.2)), int(s * 0.05))
+
+        elif name == 'sound':
+            # Speaker box
+            pts = [
+                (cx - s * 0.28, cy - s * 0.12),
+                (cx - s * 0.12, cy - s * 0.12),
+                (cx + s * 0.08, cy - s * 0.30),
+                (cx + s * 0.08, cy + s * 0.30),
+                (cx - s * 0.12, cy + s * 0.12),
+                (cx - s * 0.28, cy + s * 0.12),
+            ]
+            pygame.draw.polygon(surf, color, pts)
+            # Sound waves
+            arc_r1 = pygame.Rect(cx - s * 0.06, cy - s * 0.16, s * 0.32, s * 0.32)
+            pygame.draw.arc(surf, color, arc_r1, -1.0, 1.0, int(s * 0.06))
+            arc_r2 = pygame.Rect(cx - s * 0.06, cy - s * 0.28, s * 0.48, s * 0.56)
+            pygame.draw.arc(surf, color, arc_r2, -1.0, 1.0, int(s * 0.06))
+
+        elif name == 'sound_mute':
+            # Speaker box
+            pts = [
+                (cx - s * 0.30, cy - s * 0.12),
+                (cx - s * 0.14, cy - s * 0.12),
+                (cx + s * 0.06, cy - s * 0.30),
+                (cx + s * 0.06, cy + s * 0.30),
+                (cx - s * 0.14, cy + s * 0.12),
+                (cx - s * 0.30, cy + s * 0.12),
+            ]
+            pygame.draw.polygon(surf, color, pts)
+            # X mark
+            x_cx = cx + s * 0.24
+            half = s * 0.12
+            pygame.draw.line(surf, color, (x_cx - half, cy - half), (x_cx + half, cy + half), int(s * 0.06))
+            pygame.draw.line(surf, color, (x_cx + half, cy - half), (x_cx - half, cy + half), int(s * 0.06))
+
+        elif name == 'help':
+            # Question mark
+            pygame.draw.circle(surf, color, (int(cx), int(cy)), int(s * 0.36), width=int(s * 0.06))
+            # Arc for question mark
+            top_arc = pygame.Rect(cx - s * 0.14, cy - s * 0.24, s * 0.28, s * 0.24)
+            pygame.draw.arc(surf, color, top_arc, 0.0, 3.14, int(s * 0.06))
+            pygame.draw.line(surf, color, (cx + s * 0.14, cy - s * 0.12), (cx, cy + s * 0.04), int(s * 0.06))
+            pygame.draw.line(surf, color, (cx, cy + s * 0.04), (cx, cy + s * 0.10), int(s * 0.06))
+            pygame.draw.circle(surf, color, (int(cx), int(cy + s * 0.20)), int(s * 0.04))
 
         smooth_result = pygame.transform.smoothscale(surf, (size, size))
         cls._cache[key] = smooth_result

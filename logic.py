@@ -113,12 +113,16 @@ def get_daily_challenge_info(challenge_date: Optional[date] = None) -> dict:
     board = [[nums[pattern(r, c)] for c in cols] for r in rows]
     full_board_solution = copy.deepcopy(board)
 
-    difficulties = {
+    difficulties: dict[str, int] = {
         "easy": 38,       # 38 empty cells -> 43 clues left
         "medium": 48,     # 48 empty cells -> 33 clues left
         "hard": 54,       # 54 empty cells -> 27 clues left
     }
-    target_empties = difficulties.get(difficulty, 48)  # noqa: F821
+
+    if difficulty == "custom" and empty_cells is not None:  # noqa: F821
+        target_empties = max(20, min(60, empty_cells))  # noqa: F821
+    else:
+        target_empties = difficulties.get(difficulty, 48)  # noqa: F821
 
     positions = list(range(side * side))
     random.shuffle(positions)
@@ -159,9 +163,9 @@ class DLX:
 
     def __init__(self, n_cols: int):
         self.header = DLXNode()
-        self.columns = [DLXNode() for _ in range(n_cols)]
-        self.nodes = []
-        self.solution = []
+        self.columns: list[DLXNode] = [DLXNode() for _ in range(n_cols)]
+        self.nodes: list[DLXNode] = []
+        self.solution: list[int] = []
         self.solution_count = 0
         self.limit = 2
 

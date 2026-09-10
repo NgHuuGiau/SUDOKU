@@ -54,7 +54,7 @@ class MenuSudoku:
     def _cai_dat_kieu(self):
         style = ttk.Style()
         style.theme_use('clam')
-        style.configure('.', font=self.menu_fonts["default"], background=self.self.MENU_COLORS['bg'])
+        style.configure('.', font=self.menu_fonts["default"], background=self.MENU_COLORS['bg'])
 
     def _cap_nhat_theme(self):
         """Apply current theme to root and main widgets."""
@@ -82,11 +82,11 @@ class MenuSudoku:
 
         # Theme toggle button
         self.btn_theme = tk.Button(
-            top_bar, text="🌙" if self.theme_manager.is_dark else "☀️",
+            top_bar, text=f"{self.theme_manager.theme_icon} {self.theme_manager.theme_name}",
             font=self.menu_fonts["lang_btn"], bg=colors['card'],
             fg=colors['primary'], activebackground=colors['badge_bg'],
             relief=tk.FLAT, bd=1, highlightthickness=1, highlightbackground=colors['border'],
-            cursor="hand2", padx=12, pady=3, command=self._toggle_theme
+            cursor="hand2", padx=10, pady=3, command=self._toggle_theme
         )
         self.btn_theme.pack(side=tk.RIGHT, padx=(8, 0))
 
@@ -462,12 +462,12 @@ class MenuSudoku:
         self._cap_nhat_theme()
 
     def _toggle_theme(self):
-        """Toggle between light and dark theme."""
-        self.theme_manager.toggle()
+        """Cycle between 4 themes."""
+        self.theme_manager.cycle_theme()
         self._cap_nhat_theme()
         # Update theme toggle button text
         if hasattr(self, 'btn_theme'):
-            self.btn_theme.config(text="☀️" if self.theme_manager.is_dark else "🌙")
+            self.btn_theme.config(text=f"{self.theme_manager.theme_icon} {self.theme_manager.theme_name}")
 
     def _cap_nhat_van_ban(self):
         self.app_badge.config(text=f"[ {menu_text('app_badge')} ]")
@@ -475,13 +475,23 @@ class MenuSudoku:
         self.subtitle_lbl.config(text=menu_text("thu_thach"))
         self.sec_title.config(text=menu_text("chon_do_kho"))
 
-        self.card_de["title_lbl"].config(text="[ 1 ] " + menu_text("de"))
+        from persistence import load_best_times
+        best_times = load_best_times()
+
+        def _get_best_badge(diff_name):
+            bt = best_times.get(diff_name)
+            if bt is not None:
+                bm, bs = divmod(bt, 60)
+                return f"   🏆 {bm:02}:{bs:02}"
+            return ""
+
+        self.card_de["title_lbl"].config(text="[ 1 ] " + menu_text("de") + _get_best_badge("easy"))
         self.card_de["desc_lbl"].config(text=menu_text("de_desc"))
 
-        self.card_tb["title_lbl"].config(text="[ 2 ] " + menu_text("trung_binh"))
+        self.card_tb["title_lbl"].config(text="[ 2 ] " + menu_text("trung_binh") + _get_best_badge("medium"))
         self.card_tb["desc_lbl"].config(text=menu_text("trung_binh_desc"))
 
-        self.card_kho["title_lbl"].config(text="[ 3 ] " + menu_text("kho"))
+        self.card_kho["title_lbl"].config(text="[ 3 ] " + menu_text("kho") + _get_best_badge("hard"))
         self.card_kho["desc_lbl"].config(text=menu_text("kho_desc"))
 
         if hasattr(self, 'custom_card') and self.custom_card:

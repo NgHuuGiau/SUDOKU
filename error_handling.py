@@ -79,6 +79,7 @@ class GameLogger:
 
     _instance: Optional["GameLogger"] = None
     _lock = threading.Lock()
+    _initialized: bool = False
 
     def __new__(cls):
         if cls._instance is None:
@@ -178,7 +179,7 @@ class GameLogger:
             traceback_str="".join(traceback.format_exception(type(exc), exc, exc.__traceback__)),
             module=last_frame.filename if last_frame else "unknown",
             function=last_frame.name if last_frame else "unknown",
-            line_number=last_frame.lineno if last_frame else 0,
+            line_number=last_frame.lineno if last_frame and last_frame.lineno is not None else 0,
             user_action=user_action,
             game_state=game_state,
             additional_data=additional_data or {}

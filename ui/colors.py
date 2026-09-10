@@ -4,7 +4,21 @@ from typing import Literal
 
 from persistence import load_stats
 
-ThemeMode = Literal["light", "dark"]
+ThemeMode = Literal["light", "dark", "frost", "cozy"]
+
+THEME_ORDER: list[ThemeMode] = ["light", "dark", "frost", "cozy"]
+THEME_NAMES = {
+    "light": "Sáng Tối Giản",
+    "dark": "Cyber Midnight",
+    "frost": "Nordic Frost",
+    "cozy": "Cozy Paper",
+}
+THEME_ICONS = {
+    "light": "☀️",
+    "dark": "🌙",
+    "frost": "❄️",
+    "cozy": "☕",
+}
 
 
 @dataclass(frozen=True)
@@ -64,9 +78,10 @@ class ThemeColors:
     TIMER_TEXT: tuple
     STATUS_TEXT: tuple
     GOLD: tuple
+    RIPPLE: tuple = (99, 102, 241)
 
 
-# Light theme (default)
+# 1. Light theme (Modern Minimalist Light)
 LIGHT_THEME = ThemeColors(
     BG_MAIN=(248, 250, 252),
     BG_CARD=(255, 255, 255),
@@ -74,7 +89,7 @@ LIGHT_THEME = ThemeColors(
     WHITE=(255, 255, 255),
 
     GRID_THIN=(226, 232, 240),
-    GRID_THICK=(51, 65, 85),
+    GRID_THICK=(71, 85, 105),
     GRID_OUTER=(15, 23, 42),
     CARD_BORDER=(226, 232, 240),
     SHADOW=(226, 232, 240),
@@ -115,58 +130,166 @@ LIGHT_THEME = ThemeColors(
     TIMER_TEXT=(15, 23, 42),
     STATUS_TEXT=(71, 85, 105),
     GOLD=(234, 179, 8),
+    RIPPLE=(99, 102, 241),
 )
 
 
-# Dark theme
+# 2. Dark theme (Cyber Midnight / AMOLED)
 DARK_THEME = ThemeColors(
-    BG_MAIN=(15, 23, 42),
-    BG_CARD=(30, 41, 59),
-    BG_BOARD=(30, 41, 59),
+    BG_MAIN=(11, 15, 25),
+    BG_CARD=(19, 27, 46),
+    BG_BOARD=(19, 27, 46),
     WHITE=(255, 255, 255),
 
-    GRID_THIN=(51, 65, 85),
-    GRID_THICK=(148, 163, 184),
-    GRID_OUTER=(226, 232, 240),
-    CARD_BORDER=(51, 65, 85),
-    SHADOW=(0, 0, 0),
+    GRID_THIN=(30, 41, 59),
+    GRID_THICK=(100, 116, 139),
+    GRID_OUTER=(56, 189, 248),
+    CARD_BORDER=(30, 41, 59),
+    SHADOW=(5, 8, 15),
 
     FIXED_TEXT=(248, 250, 252),
-    USER_TEXT=(96, 165, 250),
+    USER_TEXT=(56, 189, 248),
     HINT_TEXT=(52, 211, 153),
     ERROR_TEXT=(248, 113, 113),
     NOTE_TEXT=(148, 163, 184),
 
-    SELECTED_BG=(51, 65, 85),
-    SELECTED_BORDER=(96, 165, 250),
-    CROSSHAIR=(30, 41, 59),
-    SAME_NUMBER=(79, 70, 229),
+    SELECTED_BG=(30, 58, 95),
+    SELECTED_BORDER=(56, 189, 248),
+    CROSSHAIR=(19, 35, 55),
+    SAME_NUMBER=(49, 46, 129),
     ERROR_BG=(127, 29, 29),
 
-    BTN_PRIMARY=(96, 165, 250),
-    BTN_PRIMARY_HOVER=(129, 184, 255),
-    BTN_SECONDARY=(51, 65, 85),
-    BTN_SECONDARY_HOVER=(71, 85, 105),
-    BTN_SECONDARY_TEXT=(226, 232, 240),
+    BTN_PRIMARY=(56, 189, 248),
+    BTN_PRIMARY_HOVER=(14, 165, 233),
+    BTN_SECONDARY=(30, 41, 59),
+    BTN_SECONDARY_HOVER=(51, 65, 85),
+    BTN_SECONDARY_TEXT=(241, 245, 249),
 
-    BTN_ACTIVE=(51, 65, 85),
-    BTN_ACTIVE_BORDER=(96, 165, 250),
-    BTN_ACTIVE_TEXT=(129, 184, 255),
+    BTN_ACTIVE=(12, 74, 110),
+    BTN_ACTIVE_BORDER=(56, 189, 248),
+    BTN_ACTIVE_TEXT=(56, 189, 248),
 
     BTN_SUCCESS=(16, 185, 129),
     BTN_SUCCESS_HOVER=(52, 211, 153),
     BTN_WARNING=(245, 158, 11),
     BTN_WARNING_HOVER=(251, 191, 36),
     BTN_DANGER=(239, 68, 68),
-    BTN_DANGER_HOVER=(252, 130, 130),
+    BTN_DANGER_HOVER=(248, 113, 113),
 
-    NUM_DONE_BG=(51, 65, 85),
-    NUM_DONE_TEXT=(148, 163, 184),
+    NUM_DONE_BG=(23, 32, 54),
+    NUM_DONE_TEXT=(100, 116, 139),
 
-    HEADER_BG=(30, 41, 59),
+    HEADER_BG=(19, 27, 46),
     TIMER_TEXT=(248, 250, 252),
     STATUS_TEXT=(148, 163, 184),
     GOLD=(234, 179, 8),
+    RIPPLE=(56, 189, 248),
+)
+
+
+# 3. Frost theme (Nordic Frost)
+FROST_THEME = ThemeColors(
+    BG_MAIN=(14, 23, 38),
+    BG_CARD=(22, 34, 56),
+    BG_BOARD=(22, 34, 56),
+    WHITE=(255, 255, 255),
+
+    GRID_THIN=(31, 52, 84),
+    GRID_THICK=(125, 211, 252),
+    GRID_OUTER=(45, 212, 191),
+    CARD_BORDER=(31, 52, 84),
+    SHADOW=(7, 12, 20),
+
+    FIXED_TEXT=(240, 253, 250),
+    USER_TEXT=(45, 212, 191),
+    HINT_TEXT=(110, 231, 183),
+    ERROR_TEXT=(251, 113, 133),
+    NOTE_TEXT=(148, 163, 184),
+
+    SELECTED_BG=(19, 78, 74),
+    SELECTED_BORDER=(45, 212, 191),
+    CROSSHAIR=(22, 46, 74),
+    SAME_NUMBER=(6, 95, 70),
+    ERROR_BG=(136, 19, 55),
+
+    BTN_PRIMARY=(45, 212, 191),
+    BTN_PRIMARY_HOVER=(20, 184, 166),
+    BTN_SECONDARY=(26, 46, 74),
+    BTN_SECONDARY_HOVER=(41, 71, 112),
+    BTN_SECONDARY_TEXT=(226, 232, 240),
+
+    BTN_ACTIVE=(15, 118, 110),
+    BTN_ACTIVE_BORDER=(45, 212, 191),
+    BTN_ACTIVE_TEXT=(204, 251, 241),
+
+    BTN_SUCCESS=(20, 184, 166),
+    BTN_SUCCESS_HOVER=(45, 212, 191),
+    BTN_WARNING=(251, 146, 60),
+    BTN_WARNING_HOVER=(253, 186, 116),
+    BTN_DANGER=(244, 63, 94),
+    BTN_DANGER_HOVER=(251, 113, 133),
+
+    NUM_DONE_BG=(20, 36, 58),
+    NUM_DONE_TEXT=(100, 116, 139),
+
+    HEADER_BG=(22, 34, 56),
+    TIMER_TEXT=(240, 253, 250),
+    STATUS_TEXT=(125, 211, 252),
+    GOLD=(250, 204, 21),
+    RIPPLE=(45, 212, 191),
+)
+
+
+# 4. Cozy theme (Cozy Paper / Vintage Coffee)
+COZY_THEME = ThemeColors(
+    BG_MAIN=(253, 251, 247),
+    BG_CARD=(247, 242, 233),
+    BG_BOARD=(251, 248, 242),
+    WHITE=(255, 255, 255),
+
+    GRID_THIN=(230, 222, 209),
+    GRID_THICK=(146, 64, 14),
+    GRID_OUTER=(69, 26, 3),
+    CARD_BORDER=(230, 222, 209),
+    SHADOW=(220, 210, 195),
+
+    FIXED_TEXT=(43, 26, 13),
+    USER_TEXT=(194, 65, 12),
+    HINT_TEXT=(21, 128, 61),
+    ERROR_TEXT=(185, 28, 28),
+    NOTE_TEXT=(140, 115, 93),
+
+    SELECTED_BG=(255, 237, 213),
+    SELECTED_BORDER=(234, 88, 12),
+    CROSSHAIR=(243, 236, 224),
+    SAME_NUMBER=(254, 215, 170),
+    ERROR_BG=(254, 226, 226),
+
+    BTN_PRIMARY=(234, 88, 12),
+    BTN_PRIMARY_HOVER=(194, 65, 12),
+    BTN_SECONDARY=(239, 231, 216),
+    BTN_SECONDARY_HOVER=(222, 210, 190),
+    BTN_SECONDARY_TEXT=(56, 34, 17),
+
+    BTN_ACTIVE=(255, 237, 213),
+    BTN_ACTIVE_BORDER=(234, 88, 12),
+    BTN_ACTIVE_TEXT=(194, 65, 12),
+
+    BTN_SUCCESS=(22, 163, 74),
+    BTN_SUCCESS_HOVER=(34, 197, 94),
+    BTN_WARNING=(217, 119, 6),
+    BTN_WARNING_HOVER=(245, 158, 11),
+    BTN_DANGER=(220, 38, 38),
+    BTN_DANGER_HOVER=(239, 68, 68),
+
+    NUM_DONE_BG=(235, 227, 213),
+    NUM_DONE_TEXT=(168, 150, 130),
+
+    HEADER_BG=(247, 242, 233),
+    TIMER_TEXT=(43, 26, 13),
+    STATUS_TEXT=(120, 95, 75),
+    GOLD=(217, 119, 6),
+    RIPPLE=(234, 88, 12),
 )
 
 
@@ -196,29 +319,75 @@ MENU_COLORS_LIGHT = {
 }
 
 MENU_COLORS_DARK = {
-    'bg': '#0f172a',
+    'bg': '#0b0f19',
     'hero': '#f8fafc',
-    'card': '#1e293b',
-    'primary': '#60a5fa',
-    'primary_hover': '#93c5fd',
+    'card': '#131b2e',
+    'primary': '#38bdf8',
+    'primary_hover': '#0ea5e9',
     'secondary': '#34d399',
-    'secondary_hover': '#6ee7b7',
+    'secondary_hover': '#10b981',
     'warning': '#fbbf24',
-    'warning_hover': '#fcd34d',
+    'warning_hover': '#f59e0b',
     'danger': '#f87171',
-    'danger_hover': '#fca5a5',
+    'danger_hover': '#ef4444',
     'text_dark': '#f8fafc',
     'text_muted': '#94a3b8',
-    'text_light': '#0f172a',
-    'border': '#334155',
+    'text_light': '#0b0f19',
+    'border': '#1e293b',
     'badge_bg': '#1e3a5f',
-    'badge_fg': '#93c5fd',
+    'badge_fg': '#38bdf8',
+}
+
+MENU_COLORS_FROST = {
+    'bg': '#0e1726',
+    'hero': '#f0fdfa',
+    'card': '#162238',
+    'primary': '#2dd4bf',
+    'primary_hover': '#14b8a6',
+    'secondary': '#38bdf8',
+    'secondary_hover': '#0284c7',
+    'warning': '#fb923c',
+    'warning_hover': '#f97316',
+    'danger': '#fb7185',
+    'danger_hover': '#f43f5e',
+    'text_dark': '#f0fdfa',
+    'text_muted': '#7dd3fc',
+    'text_light': '#0e1726',
+    'border': '#1f3454',
+    'badge_bg': '#0f766e',
+    'badge_fg': '#ccfbf1',
+}
+
+MENU_COLORS_COZY = {
+    'bg': '#fdfbf7',
+    'hero': '#2b1a0d',
+    'card': '#f7f2e9',
+    'primary': '#ea580c',
+    'primary_hover': '#c2410c',
+    'secondary': '#16a34a',
+    'secondary_hover': '#15803d',
+    'warning': '#d97706',
+    'warning_hover': '#b45309',
+    'danger': '#dc2626',
+    'danger_hover': '#b91c1c',
+    'text_dark': '#2b1a0d',
+    'text_muted': '#8c735d',
+    'text_light': '#ffffff',
+    'border': '#e6ded1',
+    'badge_bg': '#fed7aa',
+    'badge_fg': '#9a3412',
 }
 
 
 def get_menu_colors(theme: ThemeMode = "light") -> dict:
     """Get menu colors for the given theme."""
-    return MENU_COLORS_DARK if theme == "dark" else MENU_COLORS_LIGHT
+    if theme == "dark":
+        return MENU_COLORS_DARK
+    elif theme == "frost":
+        return MENU_COLORS_FROST
+    elif theme == "cozy":
+        return MENU_COLORS_COZY
+    return MENU_COLORS_LIGHT
 
 
 class ThemeManager:
@@ -237,7 +406,8 @@ class ThemeManager:
         """Load theme from persistent storage."""
         try:
             stats = load_stats()
-            self._theme = stats.get("theme", "light")
+            t = stats.get("theme", "light")
+            self._theme = t if t in THEME_ORDER else "light"
         except Exception:
             self._theme = "light"
 
@@ -257,16 +427,39 @@ class ThemeManager:
 
     @theme.setter
     def theme(self, value: ThemeMode):
-        self._theme = value
-        self._save_theme()
+        if value in THEME_ORDER:
+            self._theme = value
+            self._save_theme()
 
     def toggle(self):
-        self._theme = "dark" if self._theme == "light" else "light"
+        """Cycle to the next theme."""
+        self.cycle_theme()
+
+    def cycle_theme(self) -> ThemeMode:
+        """Cycle to next theme in order."""
+        curr_idx = THEME_ORDER.index(self._theme) if self._theme in THEME_ORDER else 0
+        next_idx = (curr_idx + 1) % len(THEME_ORDER)
+        self._theme = THEME_ORDER[next_idx]
         self._save_theme()
+        return self._theme
+
+    @property
+    def theme_name(self) -> str:
+        return THEME_NAMES.get(self._theme, "Sáng Tối Giản")
+
+    @property
+    def theme_icon(self) -> str:
+        return THEME_ICONS.get(self._theme, "☀️")
 
     @property
     def colors(self) -> ThemeColors:
-        return DARK_THEME if self._theme == "dark" else LIGHT_THEME
+        if self._theme == "dark":
+            return DARK_THEME
+        elif self._theme == "frost":
+            return FROST_THEME
+        elif self._theme == "cozy":
+            return COZY_THEME
+        return LIGHT_THEME
 
     @property
     def menu_colors(self) -> dict:
@@ -274,7 +467,7 @@ class ThemeManager:
 
     @property
     def is_dark(self) -> bool:
-        return self._theme == "dark"
+        return self._theme in ("dark", "frost")
 
 
 # Backward compatibility - dynamic properties

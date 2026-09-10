@@ -1,17 +1,17 @@
 {
   "games_played": 1,
-  "games_won": 1,
-  "total_time": 120,
+  "games_won": 2,
+  "total_time": 240,
   "best_times": {
-    "easy": null,
+    "easy": 120,
     "medium": 120,
     "hard": null
   },
   "by_difficulty": {
     "easy": {
       "played": 0,
-      "won": 0,
-      "total_time": 0
+      "won": 1,
+      "total_time": 120
     },
     "medium": {
       "played": 1,
@@ -24,7 +24,8 @@
       "total_time": 0
     }
   },
-  "current_streak": 1,
-  "best_streak": 1,
-  "last_win_date": "2026-09-09"
+  "current_streak": 2,
+  "best_streak": 2,
+  "last_win_date": "2026-09-10",
+  "theme": "frost"
 }

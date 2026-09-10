@@ -14,9 +14,11 @@ This package provides all UI components for the Sudoku game:
 - menu: Tkinter-based main menu
 """
 
-from ui.board import draw_board, trigger_number_placement_animation
+from ui.board import draw_board, trigger_completion_animation, trigger_number_placement_animation
 from ui.colors import (
+    COZY_THEME,
     DARK_THEME,
+    FROST_THEME,
     LIGHT_THEME,
     MENU_COLORS,
     Colors,
@@ -45,7 +47,13 @@ from ui.geometry import (
 )
 from ui.icons import Particle, SmoothIcons
 from ui.menu import MenuSudoku, tao_nut_bat_dau
-from ui.modals import draw_footer_helper, draw_header, draw_pause_modal, draw_win_modal
+from ui.modals import (
+    draw_footer_helper,
+    draw_header,
+    draw_help_modal,
+    draw_pause_modal,
+    draw_win_modal,
+)
 from ui.screen import create_game_screen, enable_high_dpi, get_sudoku_icon_path
 from ui.sidebar import draw_sidebar
 from ui.view import draw_game_view
@@ -57,6 +65,8 @@ __all__ = [
     "ThemeColors",
     "LIGHT_THEME",
     "DARK_THEME",
+    "FROST_THEME",
+    "COZY_THEME",
     "ThemeManager",
     "get_theme_manager",
     "get_current_colors",
@@ -87,11 +97,13 @@ __all__ = [
     # Components
     "draw_board",
     "trigger_number_placement_animation",
+    "trigger_completion_animation",
     "draw_sidebar",
     "draw_header",
     "draw_footer_helper",
     "draw_win_modal",
     "draw_pause_modal",
+    "draw_help_modal",
     # Screen
     "create_game_screen",
     "enable_high_dpi",

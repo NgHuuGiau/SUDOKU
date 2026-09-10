@@ -171,7 +171,10 @@ class InputValidator:
 
         try:
             import json
-            return json.loads(data)
+            parsed = json.loads(data)
+            if not isinstance(parsed, dict):
+                raise ValidationError("JSON must be an object")
+            return parsed
         except json.JSONDecodeError as e:
             raise ValidationError(f"Invalid JSON: {e}") from e
 

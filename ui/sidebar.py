@@ -62,7 +62,7 @@ def draw_sidebar(screen: pygame.Surface, fonts, mouse_pos, translate, state) -> 
                        variant='secondary', icon_name='home', icon_size=16)
 
     # 3. Number pad header
-    num_title_y = layout["clear"].bottom + 10
+    num_title_y = layout["clear"].bottom + 12
     sec2_label = fonts.badge.render(translate("ban_phim_so"), True, Colors.STATUS_TEXT)
     screen.blit(sec2_label, (SIDEBAR_X + 2, num_title_y))
 
@@ -74,30 +74,36 @@ def draw_sidebar(screen: pygame.Surface, fonts, mouse_pos, translate, state) -> 
         notes_for_digit = note_counts[digit]
 
         if is_done:
-            sub_text = translate("con_lai_du")
             btn_variant = 'disabled'
+            draw_modern_button(screen, num_rect, str(digit), mouse_pos, fonts.medium,
+                               variant=btn_variant, subtext=translate("con_lai_du"), sub_font=fonts.badge, radius=10)
+            chk_surf = SmoothIcons.get('check', 14, Colors.BTN_SUCCESS)
+            screen.blit(chk_surf, chk_surf.get_rect(center=(num_rect.right - 14, num_rect.top + 14)))
         else:
-            sub_text = translate("con_lai_fmt").replace("{n}", str(rem))
             btn_variant = 'secondary'
+            draw_modern_button(screen, num_rect, str(digit), mouse_pos, fonts.medium,
+                               variant=btn_variant, radius=10)
 
-        draw_modern_button(screen, num_rect, str(digit), mouse_pos, fonts.medium,
-                           variant=btn_variant, subtext=sub_text, sub_font=fonts.badge, radius=8)
+            # Modern sleek pill for remaining count
+            pill_w, pill_h = 46, 16
+            pill_rect = pygame.Rect(num_rect.centerx - pill_w // 2, num_rect.bottom - 17, pill_w, pill_h)
+            pygame.draw.rect(screen, Colors.SELECTED_BG, pill_rect, border_radius=8)
+            pygame.draw.rect(screen, Colors.CARD_BORDER, pill_rect, width=1, border_radius=8)
+            rem_txt = f"còn {rem}"
+            rem_surf = fonts.tiny.render(rem_txt, True, Colors.BTN_ACTIVE_TEXT)
+            screen.blit(rem_surf, rem_surf.get_rect(center=pill_rect.center))
 
-        if is_done:
-            chk_surf = SmoothIcons.get('check', 12, Colors.BTN_SUCCESS)
-            screen.blit(chk_surf, chk_surf.get_rect(center=(num_rect.right - 12, num_rect.top + 12)))
-
-        # Show note count indicator
+        # Show note count indicator badge
         if notes_for_digit > 0 and not is_done:
-            indicator_rect = pygame.Rect(num_rect.right - 18, num_rect.top + 2, 16, 16)
+            indicator_rect = pygame.Rect(num_rect.right - 18, num_rect.top + 3, 16, 16)
             pygame.draw.circle(screen, Colors.BTN_PRIMARY, indicator_rect.center, 7)
             count_surf = fonts.tiny.render(str(min(notes_for_digit, 9)), True, Colors.WHITE)
             screen.blit(count_surf, count_surf.get_rect(center=indicator_rect.center))
 
     # 4. Bottom actions (New Game & Menu)
     draw_modern_button(screen, layout["new_game"], translate('van_moi'), mouse_pos, fonts.small,
-                       variant='warning', icon_name='restart', icon_size=16)
+                       variant='warning', icon_name='restart', icon_size=16, radius=10)
     draw_modern_button(screen, layout["menu"], translate('thoat_ve_menu'), mouse_pos, fonts.small,
-                       variant='secondary', icon_name='home', icon_size=16)
+                       variant='secondary', icon_name='home', icon_size=16, radius=10)
 
     return layout

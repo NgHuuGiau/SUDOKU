@@ -2,6 +2,7 @@
 import pygame
 
 from ui.board import draw_board
+from ui.colors import Colors
 from ui.fonts import GameFonts, load_fonts
 from ui.geometry import get_timer_rect
 from ui.icons import Particle
@@ -21,13 +22,16 @@ def draw_game_view(screen: pygame.Surface, fonts: GameFonts, state, mouse_pos, p
         "win_restart": None,
         "win_quit": None,
         "header_pause": None,
+        "header_theme": None,
+        "header_sound": None,
+        "header_help": None,
     }
 
-    screen.fill((248, 250, 252))  # Colors.BG_MAIN
+    screen.fill(Colors.BG_MAIN)
 
     # 1. Header
     header_res = draw_header(screen, fonts, state, mouse_pos, translate)
-    overlay_rects["header_pause"] = header_res["pause"]
+    overlay_rects.update(header_res)
 
     # 2. Board
     draw_board(screen, fonts, state)

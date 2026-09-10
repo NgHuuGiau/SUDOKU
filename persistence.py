@@ -15,8 +15,8 @@ LEADERBOARD_FILE = os.path.join(os.path.dirname(__file__), "leaderboard.json")
 
 
 # Type definitions
-Difficulty = Literal["easy", "medium", "hard", "daily"]
-ThemeMode = Literal["light", "dark"]
+Difficulty = Literal["easy", "medium", "hard", "daily", "custom"]
+ThemeMode = Literal["light", "dark", "frost", "cozy"]
 
 class LeaderboardEntry(TypedDict):
     name: str
@@ -27,6 +27,7 @@ class LeaderboardData(TypedDict):
     easy: list[LeaderboardEntry]
     medium: list[LeaderboardEntry]
     hard: list[LeaderboardEntry]
+    daily: list[LeaderboardEntry]
 
 class DailyStats(TypedDict):
     last_completed_date: str | None
@@ -44,6 +45,8 @@ class GameStats(TypedDict):
     best_streak: int
     last_win_date: str | None
     theme: ThemeMode
+    win_rate: float
+    avg_time: float
 
 class SaveGameState(TypedDict):
     difficulty: str
@@ -132,6 +135,7 @@ def save_game_state(state: "GameState") -> None:
         "last_pause_start": state.last_pause_start,
         "last_active_time": state.last_active_time,
         "final_time": state.final_time,
+        "_last_auto_save_time": state._last_auto_save_time,
         "undo_stack": [
             {
                 "board": [list(row) for row in board],
@@ -182,6 +186,7 @@ def load_game_state() -> "GameState | None":
     state.last_pause_start = data["last_pause_start"]
     state.last_active_time = data["last_active_time"]
     state.final_time = data["final_time"]
+    state._last_auto_save_time = data.get("_last_auto_save_time", 0.0)
     state.undo_stack = [
         (item["board"], [[set(s) for s in row] for row in item["notes"]])
         for item in data["undo_stack"]

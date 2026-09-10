@@ -97,28 +97,30 @@ def draw_pause_modal(screen: pygame.Surface, fonts, mouse_pos, translate) -> dic
 
 
 def draw_header(screen: pygame.Surface, fonts, state, mouse_pos, translate) -> dict:
+    from sounds import is_sound_enabled
     from ui.geometry import BOARD_X
+
     header_rect = pygame.Rect(BOARD_X, 18, SCREEN_WIDTH - BOARD_X * 2, 60)
-    draw_rounded_card(screen, header_rect, Colors.BG_CARD, Colors.CARD_BORDER, radius=12)
+    draw_rounded_card(screen, header_rect, Colors.BG_CARD, Colors.CARD_BORDER, radius=14)
 
     # 1. Logo & Title
-    logo_x = header_rect.left + 24
-    logo_surf = SmoothIcons.get('grid_logo', 24, Colors.BTN_PRIMARY)
+    logo_x = header_rect.left + 20
+    logo_surf = SmoothIcons.get('grid_logo', 26, Colors.BTN_PRIMARY)
     screen.blit(logo_surf, logo_surf.get_rect(midleft=(logo_x, header_rect.centery)))
 
     title_text = fonts.title.render("SUDOKU", True, Colors.FIXED_TEXT)
-    screen.blit(title_text, (logo_x + 32, header_rect.centery - title_text.get_height() // 2))
+    screen.blit(title_text, (logo_x + 36, header_rect.centery - title_text.get_height() // 2))
 
     # 2. Difficulty badge
     diff_key = state.difficulty
     diff_name = translate(diff_key)
     star_count = {"easy": 1, "medium": 2, "hard": 3, "daily": 2}.get(diff_key, 1)
 
-    diff_badge_rect = pygame.Rect(header_rect.left + 185, header_rect.centery - 18, 140, 36)
+    diff_badge_rect = pygame.Rect(header_rect.left + 195, header_rect.centery - 18, 140, 36)
     pygame.draw.rect(screen, Colors.SELECTED_BG, diff_badge_rect, border_radius=18)
     pygame.draw.rect(screen, Colors.SELECTED_BORDER, diff_badge_rect, width=1, border_radius=18)
 
-    star_start_x = diff_badge_rect.left + 16
+    star_start_x = diff_badge_rect.left + 14
     for s_idx in range(star_count):
         star_surf = SmoothIcons.get('star', 13, Colors.GOLD)
         screen.blit(star_surf, star_surf.get_rect(center=(star_start_x + s_idx * 14, diff_badge_rect.centery)))
@@ -127,27 +129,56 @@ def draw_header(screen: pygame.Surface, fonts, state, mouse_pos, translate) -> d
     diff_text_x = star_start_x + star_count * 14 + 6
     screen.blit(diff_surf, (diff_text_x, diff_badge_rect.centery - diff_surf.get_height() // 2))
 
-    # 3. Timer
-    elapsed = state.get_elapsed_time()
-    mins, secs = divmod(max(0, elapsed), 60)
-    time_str = f"{mins:02}:{secs:02}"
-    timer_x = header_rect.right - 235
-
-    clock_surf = SmoothIcons.get('clock', 20, Colors.TIMER_TEXT)
-    screen.blit(clock_surf, clock_surf.get_rect(midleft=(timer_x + 6, header_rect.centery)))
-
-    timer_surf = fonts.medium.render(time_str, True, Colors.TIMER_TEXT)
-    screen.blit(timer_surf, (timer_x + 32, header_rect.centery - timer_surf.get_height() // 2))
-
-    # 4. Pause button
-    pause_btn_rect = pygame.Rect(header_rect.right - 110, header_rect.centery - 18, 95, 36)
+    # 3. Action buttons on right side
+    # Pause button
+    pause_btn_rect = pygame.Rect(header_rect.right - 105, header_rect.centery - 18, 95, 36)
     pause_label = translate("tiep_tuc") if state.paused else translate("tam_dung_btn")
     pause_variant = 'warning' if state.paused else 'secondary'
     pause_icon = 'play' if state.paused else 'pause'
     draw_modern_button(screen, pause_btn_rect, pause_label, mouse_pos, fonts.small,
-                       variant=pause_variant, radius=8, icon_name=pause_icon, icon_size=16)
+                       variant=pause_variant, radius=10, icon_name=pause_icon, icon_size=16)
 
-    return {"pause": pause_btn_rect}
+    # Sound button (🔊 / 🔇)
+    sound_rect = pygame.Rect(pause_btn_rect.left - 44, header_rect.centery - 18, 38, 36)
+    sound_on = is_sound_enabled()
+    sound_icon = 'sound' if sound_on else 'sound_mute'
+    draw_modern_button(screen, sound_rect, "", mouse_pos, fonts.small,
+                       variant='secondary', radius=10, icon_name=sound_icon, icon_size=18)
+
+    # Theme switcher button (🎨)
+    theme_rect = pygame.Rect(sound_rect.left - 44, header_rect.centery - 18, 38, 36)
+    draw_modern_button(screen, theme_rect, "", mouse_pos, fonts.small,
+                       variant='secondary', radius=10, icon_name='palette', icon_size=18)
+
+    # Help button (❓)
+    help_rect = pygame.Rect(theme_rect.left - 44, header_rect.centery - 18, 38, 36)
+    draw_modern_button(screen, help_rect, "", mouse_pos, fonts.small,
+                       variant='secondary', radius=10, icon_name='help', icon_size=18)
+
+    # 4. Timer Box
+    elapsed = state.get_elapsed_time()
+    mins, secs = divmod(max(0, elapsed), 60)
+    time_str = f"{mins:02}:{secs:02}"
+    timer_box_w = 110
+    timer_x = help_rect.left - timer_box_w - 14
+
+    timer_bg_rect = pygame.Rect(timer_x, header_rect.centery - 18, timer_box_w, 36)
+    pygame.draw.rect(screen, Colors.BTN_SECONDARY, timer_bg_rect, border_radius=10)
+    pygame.draw.rect(screen, Colors.CARD_BORDER, timer_bg_rect, width=1, border_radius=10)
+
+    clock_surf = SmoothIcons.get('clock', 18, Colors.TIMER_TEXT)
+    screen.blit(clock_surf, clock_surf.get_rect(midleft=(timer_bg_rect.left + 10, header_rect.centery)))
+
+    timer_surf = fonts.medium.render(time_str, True, Colors.TIMER_TEXT)
+    screen.blit(timer_surf, (timer_bg_rect.left + 36, header_rect.centery - timer_surf.get_height() // 2))
+
+    return {
+        "pause": pause_btn_rect,
+        "header_pause": pause_btn_rect,
+        "header_sound": sound_rect,
+        "header_theme": theme_rect,
+        "header_help": help_rect,
+    }
 
 
 def draw_footer_helper(screen: pygame.Surface, fonts, translate) -> None:
