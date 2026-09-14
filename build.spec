@@ -4,6 +4,7 @@
 
 import sys
 import os
+import importlib.util
 
 block_cipher = None
 
@@ -15,16 +16,11 @@ IS_LINUX = sys.platform.startswith('linux')
 # Data files to include
 datas = [
     ('assets/preview', 'Picture'),
-    ('sounds', 'sounds'),
 ]
 
 # Hidden imports
 hiddenimports = [
     'pygame',
-    'tkinter',
-    'tkinter.ttk',
-    'tkinter.font',
-    'tkinter.messagebox',
     'json',
     'datetime',
     'copy',
@@ -32,6 +28,9 @@ hiddenimports = [
     'math',
     'ctypes',
 ]
+
+if importlib.util.find_spec('tkinter'):
+    hiddenimports.extend(['tkinter', 'tkinter.ttk', 'tkinter.font', 'tkinter.messagebox'])
 
 # Excludes to reduce binary size
 excludes = [

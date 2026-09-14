@@ -109,6 +109,7 @@ SUDOKU/
 |-- menu.py
 |-- requirements.txt
 |-- tests/
+|   |-- conftest.py
 |   |-- test_sudoku.py
 |   `-- test_ui_smoke.py
 |-- assets/
@@ -136,6 +137,19 @@ SUDOKU/
 pip install -r requirements.txt
 ```
 
+Khi phát triển hoặc đóng gói, cài thêm nhóm công cụ tương ứng từ `pyproject.toml`:
+
+```bash
+pip install -e ".[dev]"
+```
+
+### Dữ liệu người dùng
+
+Ván chơi, thống kê và bảng xếp hạng được lưu trong thư mục dữ liệu riêng của người dùng,
+không ghi vào thư mục mã nguồn. Trên Windows, vị trí mặc định là
+`%LOCALAPPDATA%\SudokuMaster`. Dữ liệu cũ trong thư mục dự án sẽ được di chuyển tự động
+khi game chạy lần đầu.
+
 ### Chạy game
 
 ```bash
@@ -156,9 +170,9 @@ python main.py
 - [x] Ghi nhận thời gian chơi tốt nhất
 - [x] Đóng gói thành bản `.exe` cho Windows
 - [ ] Bổ sung ảnh GIF hoặc video demo thực tế
-- [ ] Thêm hiệu ứng âm thanh khi nhập số, thắng, gợi ý
-- [ ] Thêm chế độ Daily Challenge (bảng mới mỗi ngày)
-- [ ] Thêm thống kê chi tiết (số ván chơi, tỷ lệ thắng, thời gian trung bình)
+- [x] Có hiệu ứng âm thanh khi nhập số, thắng và dùng gợi ý
+- [x] Có chế độ Daily Challenge (bảng mới mỗi ngày)
+- [x] Có thống kê cơ bản, tỷ lệ thắng và thời gian trung bình
 
 ## Giấy phép
 
