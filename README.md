@@ -1,6 +1,6 @@
 # Sudoku
 
-[![Python](https://img.shields.io/badge/Python-3.8%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![Pygame](https://img.shields.io/badge/Pygame-2.0%2B-1F6FEB)](https://www.pygame.org/)
 [![License](https://img.shields.io/badge/Gi%E1%BA%A5y%20ph%C3%A9p-MIT-22C55E)](LICENSE)
 
@@ -20,104 +20,39 @@ Mã nguồn được tách thành các phần riêng cho logic sinh bảng, ki�
 
 ## Xem trước giao diện
 
-### 1. Màn hình menu
+Ảnh preview dưới đây được chụp trực tiếp từ giao diện hiện tại, sau khi tái thiết kế lại menu, bàn chơi, modal và hệ thống icon.
+
+### Menu chính
 
 <div align="center">
-  <img src="./Picture/menu.png" alt="Menu" width="60%" />
+  <img src="./assets/preview/menu.png" alt="Menu" width="60%" />
 </div>
 
-Đây là màn hình đầu tiên khi mở game.
+Menu mới dùng các thẻ độ khó rõ ràng, thanh điều khiển gọn, icon đồng nhất và hỗ trợ đổi ngôn ngữ, theme, âm thanh.
 
-Chi tiết các thành phần:
-
-- Tiêu đề `SUDOKU` được đặt lớn ở giữa để tạo điểm nhấn chính.
-- Dòng mô tả `Thử thách trí tuệ của bạn!` giúp phần mở đầu có cảm giác như một sản phẩm hoàn chỉnh thay vì chỉ là màn hình chọn mode.
-- Khu vực `Chọn Độ Khó` chia rõ 3 mức:
-  - `Chơi Dễ`
-  - `Chơi Trung bình`
-  - `Chơi Khó`
-- Nút `Ngôn ngữ` cho phép đổi ngôn ngữ hiển thị trong game.
-- Phần chân trang có lời chúc và phiên bản `v1.0.0`, giúp giao diện gọn và có cảm giác chỉn chu hơn.
-
-Màn hình này đóng vai trò điều hướng nhanh trước khi vào ván chơi, đồng thời tạo ấn tượng đầu tiên khá tốt cho người xem repo.
-
-### 2. Màn hình chơi chính
+### Bàn chơi
 
 <div align="center">
-  <img src="./Picture/game.png" alt="Màn hình chơi" width="60%" />
+  <img src="./assets/preview/game.png" alt="Màn hình chơi" width="60%" />
 </div>
 
-Đây là giao diện quan trọng nhất của game, nơi toàn bộ trải nghiệm chơi được diễn ra.
+Màn hình chơi chia thành bảng `9x9` lớn ở bên trái và sidebar thao tác ở bên phải. Số, trạng thái ô, timer, keypad và các nút hoàn tác được bố trí theo nhóm để dễ quét bằng mắt.
 
-Chi tiết từng khu vực:
-
-- Bên trái là bảng Sudoku `9x9`, được chia rõ bằng các đường đậm cho từng khối `3x3`.
-- Ô đang chọn có viền nổi bật màu vàng, giúp người chơi biết chính xác vị trí đang thao tác.
-- Các ô cùng hàng, cùng cột hoặc liên quan được tô nền nhẹ để tăng khả năng tập trung khi giải đố.
-- Một số ô có nền nhấn màu vàng nhạt, hỗ trợ việc theo dõi số hoặc trạng thái kiểm tra.
-- Các con số cố định và số người chơi nhập được hiển thị rõ, kích thước lớn, dễ nhìn.
-
-Khu vực điều khiển bên phải:
-
-- Đồng hồ ở phía trên hiển thị thời gian chơi hiện tại.
-- Các nút chức năng chính gồm:
-  - `Ván mới`
-  - `Gợi ý`
-  - `Kiểm tra`
-  - `Tạm dừng`
-  - `Ghi chú`
-  - `Ghi chú tự động`
-- Bên dưới là hai nút:
-  - `Hoàn tác`
-  - `Làm lại`
-- Cụm số từ `1` đến `9` cho phép nhập nhanh trực tiếp bằng chuột.
-- Nút `Xóa` dùng để xóa giá trị trong ô hiện tại.
-
-Thanh hướng dẫn cuối màn hình:
-
-- `WASD: Di chuyển`
-- `1-9: Nhập`
-- `Backspace: Xóa`
-
-Thiết kế này cho thấy game không chỉ tập trung vào logic mà còn chú ý đến khả năng thao tác thực tế của người chơi.
-
-### 3. Màn hình tạm dừng
+### Tạm dừng
 
 <div align="center">
-  <img src="./Picture/stop.png" alt="Tạm dừng" width="60%" />
+  <img src="./assets/preview/stop.png" alt="Tạm dừng" width="60%" />
 </div>
 
-Khi người chơi nhấn tạm dừng hoặc `Esc`, game sẽ hiển thị một lớp phủ mờ lên toàn bộ màn hình chơi.
+Modal tạm dừng phủ nền mờ, giữ lại ngữ cảnh bàn chơi và đặt các thao tác tiếp tục, khởi động lại, lưu & thoát trong một cụm nút dễ nhận biết.
 
-Chi tiết giao diện:
-
-- Phần nền được làm tối để người chơi biết game đang bị khóa thao tác.
-- Tiêu đề lớn `ĐANG TẠM DỪNG` nằm giữa màn hình, rất dễ nhận biết.
-- Hai nút hành động chính:
-  - `TIẾP TỤC`
-  - `Thoát`
-- Bảng Sudoku phía sau vẫn còn hiển thị mờ, giúp giữ ngữ cảnh của ván đang chơi.
-
-Điểm mạnh của màn hình này là người chơi không bị mất cảm giác đang ở đâu trong ván cờ, nhưng vẫn tách rõ trạng thái tạm dừng với trạng thái chơi bình thường.
-
-### 4. Màn hình chiến thắng
+### Chiến thắng
 
 <div align="center">
-  <img src="./Picture/win.png" alt="Chiến thắng" width="60%" />
+  <img src="./assets/preview/win.png" alt="Chiến thắng" width="60%" />
 </div>
 
-Khi giải xong bảng Sudoku, game chuyển sang trạng thái chiến thắng với hiệu ứng ăn mừng trực quan.
-
-Chi tiết giao diện:
-
-- Dòng chữ `Chiến Thắng!` nổi bật ở trung tâm màn hình.
-- Hiệu ứng hạt màu ở phía bên phải tạo cảm giác vui mắt và tăng tính hoàn thiện cho game.
-- Hai nút điều hướng sau khi thắng:
-  - `Chơi tiếp`
-  - `Về Menu`
-- Nền game phía sau vẫn được giữ lại theo kiểu làm mờ, giúp chuyển trạng thái mượt hơn thay vì cắt cảnh đột ngột.
-
-Đây là một chi tiết nhỏ nhưng rất có giá trị nếu dùng dự án này để trình bày trên GitHub hoặc làm sản phẩm học tập, vì nó cho thấy game có vòng đời giao diện đầy đủ.
+Màn hình chiến thắng dùng modal nổi bật với thời gian hoàn thành, icon trophy và hai lựa chọn chơi lại hoặc về menu.
 
 ## Điểm nổi bật
 
@@ -155,7 +90,7 @@ Chi tiết giao diện:
 - `main.py`: điểm khởi đầu để chạy ứng dụng
 - `game.py`: quản lý vòng lặp game, trạng thái và sự kiện
 - `logic.py`: xử lý sinh bảng Sudoku và kiểm tra logic
-- `ui.py`: vẽ giao diện, bố cục và tương tác
+- `ui/`: các thành phần giao diện Pygame, bố cục và tương tác
 - `config.py`: quản lý text hiển thị và ngôn ngữ
 
 ## Cấu trúc thư mục
@@ -165,18 +100,26 @@ SUDOKU/
 |-- main.py
 |-- game.py
 |-- logic.py
-|-- ui.py
+|-- ui/
+|   |-- board.py
+|   |-- menu.py
+|   |-- sidebar.py
+|   `-- view.py
 |-- config.py
 |-- menu.py
 |-- requirements.txt
-|-- Picture/
-|   |-- menu.png
-|   |-- game.png
-|   |-- stop.png
-|   |-- win.png
-|   `-- SUDOKU.ico
+|-- tests/
+|   |-- test_sudoku.py
+|   `-- test_ui_smoke.py
 |-- assets/
 |   `-- preview/
+|       |-- menu.png
+|       |-- game.png
+|       |-- stop.png
+|       |-- win.png
+|       `-- SUDOKU.ico
+|-- build.spec
+|-- build.bat
 `-- README.md
 ```
 
@@ -184,7 +127,7 @@ SUDOKU/
 
 ### Yêu cầu
 
-- Python `3.8+`
+- Python `3.10+`
 - `pip`
 
 ### Cài thư viện

@@ -14,7 +14,7 @@ IS_LINUX = sys.platform.startswith('linux')
 
 # Data files to include
 datas = [
-    ('Picture', 'Picture'),
+    ('assets/preview', 'Picture'),
     ('sounds', 'sounds'),
 ]
 
@@ -82,7 +82,7 @@ if IS_WINDOWS:
         target_arch=None,
         codesign_identity=None,
         entitlements_file=None,
-        icon='Picture/SUDOKU.ico',
+        icon='assets/preview/SUDOKU.ico',
     )
 elif IS_MACOS:
     exe = EXE(
@@ -105,13 +105,13 @@ elif IS_MACOS:
         target_arch=None,
         codesign_identity=None,
         entitlements_file=None,
-        icon='Picture/SUDOKU.icns' if os.path.exists('Picture/SUDOKU.icns') else None,
+        icon='assets/preview/SUDOKU.icns' if os.path.exists('assets/preview/SUDOKU.icns') else None,
     )
     
     app = BUNDLE(
         exe,
         name='SudokuMaster.app',
-        icon='Picture/SUDOKU.icns' if os.path.exists('Picture/SUDOKU.icns') else None,
+        icon='assets/preview/SUDOKU.icns' if os.path.exists('assets/preview/SUDOKU.icns') else None,
         bundle_identifier='com.sudokumaster.game',
         info_plist={
             'CFBundleName': 'Sudoku Master',
