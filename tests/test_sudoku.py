@@ -1,7 +1,5 @@
 """Unit tests for Sudoku game."""
 
-import os
-
 import pytest
 
 from game import GameState
@@ -135,20 +133,9 @@ class TestPersistence:
 
     def setup_method(self):
         clear_save_file()
-        # Clear best times
-        for f in ["best_times.json", "save_game.json"]:
-            try:
-                os.remove(f)
-            except Exception:
-                pass
 
     def teardown_method(self):
         clear_save_file()
-        for f in ["best_times.json", "save_game.json"]:
-            try:
-                os.remove(f)
-            except Exception:
-                pass
 
     def test_save_load_game_state(self):
         state = GameState("easy")
