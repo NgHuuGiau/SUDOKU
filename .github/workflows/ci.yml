@@ -28,8 +28,10 @@ jobs:
           pip install pytest pytest-cov
 
       - name: Run tests
+        env:
+          SDL_VIDEODRIVER: dummy
         run: |
-          python -m pytest test_sudoku.py -v --tb=short --cov=. --cov-report=xml
+          python -m pytest -v --tb=short --cov=. --cov-report=xml
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
@@ -60,7 +62,7 @@ jobs:
 
       - name: Run mypy
         run: |
-          mypy game.py logic.py persistence.py --ignore-missing-imports || true
+          mypy . --ignore-missing-imports
 
   build-windows:
     name: Build Windows Executable

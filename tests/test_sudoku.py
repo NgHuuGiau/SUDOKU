@@ -1,4 +1,5 @@
 """Unit tests for Sudoku game."""
+
 import os
 
 import pytest
@@ -8,7 +9,9 @@ from logic import (
     check_win,
     count_solutions,
     count_solutions_dlx,
+    export_puzzle,
     generate_sudoku,
+    import_puzzle,
     is_valid_placement,
     solve_board,
     solve_board_dlx,
@@ -55,34 +58,34 @@ class TestLogic:
         assert 30 <= clues <= 36
 
     def test_is_valid_placement_empty_board(self):
-        board = [[0]*9 for _ in range(9)]
+        board = [[0] * 9 for _ in range(9)]
         assert is_valid_placement(board, 0, 0, 1)
         assert is_valid_placement(board, 4, 4, 9)
 
     def test_is_valid_placement_row_conflict(self):
-        board = [[0]*9 for _ in range(9)]
+        board = [[0] * 9 for _ in range(9)]
         board[0][0] = 5
         assert not is_valid_placement(board, 0, 1, 5)  # Same row
-        assert is_valid_placement(board, 0, 1, 6)      # Different number
+        assert is_valid_placement(board, 0, 1, 6)  # Different number
 
     def test_is_valid_placement_col_conflict(self):
-        board = [[0]*9 for _ in range(9)]
+        board = [[0] * 9 for _ in range(9)]
         board[0][0] = 5
         assert not is_valid_placement(board, 1, 0, 5)  # Same col
 
     def test_is_valid_placement_box_conflict(self):
-        board = [[0]*9 for _ in range(9)]
+        board = [[0] * 9 for _ in range(9)]
         board[0][0] = 5
         assert not is_valid_placement(board, 1, 1, 5)  # Same 3x3 box
-        assert is_valid_placement(board, 3, 3, 5)      # Different box
+        assert is_valid_placement(board, 3, 3, 5)  # Different box
 
     def test_is_valid_placement_zero_allowed(self):
-        board = [[5]*9 for _ in range(9)]
+        board = [[5] * 9 for _ in range(9)]
         assert is_valid_placement(board, 0, 0, 0)  # Zero always valid
 
     def test_check_win(self):
-        board = [[1]*9 for _ in range(9)]
-        solution = [[1]*9 for _ in range(9)]
+        board = [[1] * 9 for _ in range(9)]
+        solution = [[1] * 9 for _ in range(9)]
         assert check_win(board, solution)
 
         board[0][0] = 2
@@ -95,7 +98,7 @@ class TestLogic:
 
     def test_count_solutions_multiple(self):
         # Empty board has many solutions
-        board = [[0]*9 for _ in range(9)]
+        board = [[0] * 9 for _ in range(9)]
         assert count_solutions(board, limit=2) >= 2
         assert count_solutions_dlx(board, limit=2) >= 2
 
@@ -111,6 +114,21 @@ class TestLogic:
         assert solve_board(empty)
         assert empty == solution
 
+    def test_seed_is_reproducible_without_global_rng_side_effect(self):
+        first = generate_sudoku("medium", seed=1234)
+        second = generate_sudoku("medium", seed=1234)
+        assert first == second
+
+    def test_export_import_round_trip(self):
+        board, solution = generate_sudoku("easy", seed=42)
+        assert import_puzzle(export_puzzle(board, solution)) == (board, solution)
+
+    def test_import_rejects_mismatched_solution(self):
+        board, solution = generate_sudoku("easy", seed=42)
+        solution[0][0] = solution[0][1]
+        with pytest.raises(ValueError):
+            import_puzzle(export_puzzle(board, solution))
+
 
 class TestPersistence:
     """Tests for persistence module."""
@@ -118,7 +136,7 @@ class TestPersistence:
     def setup_method(self):
         clear_save_file()
         # Clear best times
-        for f in ['best_times.json', 'save_game.json']:
+        for f in ["best_times.json", "save_game.json"]:
             try:
                 os.remove(f)
             except Exception:
@@ -126,7 +144,7 @@ class TestPersistence:
 
     def teardown_method(self):
         clear_save_file()
-        for f in ['best_times.json', 'save_game.json']:
+        for f in ["best_times.json", "save_game.json"]:
             try:
                 os.remove(f)
             except Exception:
@@ -152,6 +170,7 @@ class TestPersistence:
         assert has_save_file()
 
         loaded = load_game_state()
+        assert loaded is not None
         assert loaded is not None
         assert loaded.difficulty == "easy"
         assert loaded.board == original_board
@@ -203,6 +222,7 @@ class TestPersistence:
 
         save_game_state(state)
         loaded = load_game_state()
+        assert loaded is not None
 
         assert len(loaded.undo_stack) == undo_len
         assert len(loaded.redo_stack) == redo_len
@@ -340,14 +360,15 @@ class TestGameState:
         # Just verify it returns non-negative
         assert state.get_elapsed_time() >= 0
 
+
 def test_auto_save_debounce():
-        state = GameState("easy")
-        # First save happens immediately in __init__
-        # Rapid calls should be debounced
-        # We can't easily test timing without mocking, but verify method exists
-        state.auto_save()
-        state.force_save()
-        assert hasattr(state, '_last_auto_save_time')
+    state = GameState("easy")
+    # First save happens immediately in __init__
+    # Rapid calls should be debounced
+    # We can't easily test timing without mocking, but verify method exists
+    state.auto_save()
+    state.force_save()
+    assert hasattr(state, "_last_auto_save_time")
 
 
 class TestIntegration:
@@ -366,6 +387,7 @@ class TestIntegration:
         save_game_state(state)
         loaded = load_game_state()
 
+        assert loaded is not None
         assert loaded.board == state.board
         assert loaded.difficulty == state.difficulty
 

@@ -30,3 +30,6 @@ settings.txt
 !pyproject.toml
 !package.json
 !package-lock.json
+
+# Local encryption/config material
+config.key
