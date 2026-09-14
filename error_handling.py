@@ -2,6 +2,7 @@
 Comprehensive error handling and logging system for Sudoku.
 Provides structured logging, error tracking, and graceful degradation.
 """
+
 import json
 import logging
 import os
@@ -15,7 +16,7 @@ from datetime import datetime
 from enum import Enum
 from functools import wraps
 from pathlib import Path
-from typing import Callable, Optional, ParamSpec, TypeVar
+from typing import Callable, Optional, ParamSpec, TypeVar, cast
 
 # Type variables for decorators
 P = ParamSpec("P")
@@ -24,6 +25,7 @@ R = TypeVar("R")
 
 class LogLevel(Enum):
     """Log levels matching standard logging module."""
+
     DEBUG = logging.DEBUG
     INFO = logging.INFO
     WARNING = logging.WARNING
@@ -33,15 +35,17 @@ class LogLevel(Enum):
 
 class ErrorSeverity(Enum):
     """Error severity for categorization."""
-    LOW = "low"          # Minor issues, recoverable
-    MEDIUM = "medium"    # Significant issues, may affect functionality
-    HIGH = "high"        # Major issues, core functionality affected
+
+    LOW = "low"  # Minor issues, recoverable
+    MEDIUM = "medium"  # Significant issues, may affect functionality
+    HIGH = "high"  # Major issues, core functionality affected
     CRITICAL = "critical"  # System-threatening, immediate attention needed
 
 
 @dataclass
 class ErrorContext:
     """Context information for errors."""
+
     error_id: str
     timestamp: str
     severity: ErrorSeverity
@@ -65,6 +69,7 @@ class ErrorContext:
 @dataclass
 class PerformanceMetric:
     """Performance metric tracking."""
+
     operation: str
     duration_ms: float
     timestamp: str
@@ -113,8 +118,7 @@ class GameLogger:
         console_handler = logging.StreamHandler(sys.stdout)
         console_handler.setLevel(logging.INFO)
         console_format = logging.Formatter(
-            "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
-            datefmt="%H:%M:%S"
+            "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s", datefmt="%H:%M:%S"
         )
         console_handler.setFormatter(console_format)
         self.logger.addHandler(console_handler)
@@ -123,27 +127,21 @@ class GameLogger:
         log_dir = Path(os.path.dirname(__file__)) / "logs"
         log_dir.mkdir(exist_ok=True)
 
-        file_handler = logging.FileHandler(
-            log_dir / "sudoku.log",
-            encoding="utf-8"
-        )
+        file_handler = logging.FileHandler(log_dir / "sudoku.log", encoding="utf-8")
         file_handler.setLevel(logging.DEBUG)
         file_format = logging.Formatter(
             "%(asctime)s | %(levelname)-8s | %(name)s | %(funcName)s:%(lineno)d | %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S"
+            datefmt="%Y-%m-%d %H:%M:%S",
         )
         file_handler.setFormatter(file_format)
         self.logger.addHandler(file_handler)
 
         # Error file handler (errors only)
-        error_handler = logging.FileHandler(
-            log_dir / "sudoku_errors.log",
-            encoding="utf-8"
-        )
+        error_handler = logging.FileHandler(log_dir / "sudoku_errors.log", encoding="utf-8")
         error_handler.setLevel(logging.ERROR)
         error_format = logging.Formatter(
             "%(asctime)s | %(levelname)-8s | %(name)s | %(funcName)s:%(lineno)d | %(message)s\n%(exc_info)s",
-            datefmt="%Y-%m-%d %H:%M:%S"
+            datefmt="%Y-%m-%d %H:%M:%S",
         )
         error_handler.setFormatter(error_format)
         self.logger.addHandler(error_handler)
@@ -163,9 +161,14 @@ class GameLogger:
     def critical(self, message: str, **kwargs):
         self.logger.critical(message, **kwargs)
 
-    def log_exception(self, exc: Exception, severity: ErrorSeverity = ErrorSeverity.HIGH,
-                      user_action: Optional[str] = None, game_state: Optional[dict] = None,
-                      additional_data: Optional[dict] = None) -> ErrorContext:
+    def log_exception(
+        self,
+        exc: Exception,
+        severity: ErrorSeverity = ErrorSeverity.HIGH,
+        user_action: Optional[str] = None,
+        game_state: Optional[dict] = None,
+        additional_data: Optional[dict] = None,
+    ) -> ErrorContext:
         """Log an exception with full context."""
         tb = traceback.extract_tb(exc.__traceback__)
         last_frame = tb[-1] if tb else None
@@ -182,18 +185,18 @@ class GameLogger:
             line_number=last_frame.lineno if last_frame and last_frame.lineno is not None else 0,
             user_action=user_action,
             game_state=game_state,
-            additional_data=additional_data or {}
+            additional_data=additional_data or {},
         )
 
         with self._metrics_lock:
             self._error_history.append(error_context)
             if len(self._error_history) > self._max_history:
-                self._error_history = self._error_history[-self._max_history:]
+                self._error_history = self._error_history[-self._max_history :]
 
         # Log to standard logger
         self.logger.error(
             f"[{severity.value.upper()}] {error_context.error_id} | {error_context.message}",
-            exc_info=exc
+            exc_info=exc,
         )
 
         return error_context
@@ -203,9 +206,11 @@ class GameLogger:
         with self._metrics_lock:
             self._performance_metrics.append(metric)
             if len(self._performance_metrics) > self._max_history:
-                self._performance_metrics = self._performance_metrics[-self._max_history:]
+                self._performance_metrics = self._performance_metrics[-self._max_history :]
 
-    def get_error_history(self, limit: int = 100, severity: Optional[ErrorSeverity] = None) -> list[ErrorContext]:
+    def get_error_history(
+        self, limit: int = 100, severity: Optional[ErrorSeverity] = None
+    ) -> list[ErrorContext]:
         """Get recent error history."""
         with self._metrics_lock:
             errors = self._error_history
@@ -232,7 +237,7 @@ class GameLogger:
                 "avg_duration_ms": sum(durations) / len(durations),
                 "min_duration_ms": min(durations),
                 "max_duration_ms": max(durations),
-                "operations": list({m.operation for m in metrics})
+                "operations": list({m.operation for m in metrics}),
             }
 
     def export_errors(self, filepath: str, severity: Optional[ErrorSeverity] = None):
@@ -246,11 +251,14 @@ class GameLogger:
 logger = GameLogger()
 
 
-def log_exception(severity: ErrorSeverity = ErrorSeverity.HIGH,
-                  user_action: Optional[str] = None,
-                  game_state: Optional[dict] = None,
-                  additional_data: Optional[dict] = None):
+def log_exception(
+    severity: ErrorSeverity = ErrorSeverity.HIGH,
+    user_action: Optional[str] = None,
+    game_state: Optional[dict] = None,
+    additional_data: Optional[dict] = None,
+):
     """Decorator to automatically log exceptions."""
+
     def decorator(func: Callable[P, R]) -> Callable[P, R]:
         @wraps(func)
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
@@ -258,19 +266,23 @@ def log_exception(severity: ErrorSeverity = ErrorSeverity.HIGH,
                 return func(*args, **kwargs)
             except Exception as e:
                 logger.log_exception(
-                    e, severity=severity,
+                    e,
+                    severity=severity,
                     user_action=user_action or f"Calling {func.__name__}",
                     game_state=game_state,
-                    additional_data=additional_data
+                    additional_data=additional_data,
                 )
                 raise
+
         return wrapper
+
     return decorator
 
 
 @contextmanager
-def log_performance(operation: str, logger_instance: Optional[GameLogger] = None,
-                    metadata: Optional[dict] = None):
+def log_performance(
+    operation: str, logger_instance: Optional[GameLogger] = None, metadata: Optional[dict] = None
+):
     """Context manager to measure and log performance."""
     log = logger_instance or logger
     start_time = time.perf_counter()
@@ -292,7 +304,7 @@ def log_performance(operation: str, logger_instance: Optional[GameLogger] = None
             timestamp=datetime.now().isoformat(),
             success=success,
             memory_mb=end_memory - start_memory if start_memory and end_memory else None,
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
         log.record_performance(metric)
 
@@ -304,8 +316,9 @@ def _get_memory_mb() -> Optional[float]:
     """Get current memory usage in MB."""
     try:
         import psutil
+
         process = psutil.Process(os.getpid())
-        return process.memory_info().rss / 1024 / 1024
+        return float(process.memory_info().rss) / 1024 / 1024
     except ImportError:
         return None
 
@@ -326,7 +339,9 @@ class SafeExecutor:
     async def execute_async(self, func: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R:
         """Execute async function with safety limits."""
         import asyncio
-        return await asyncio.wait_for(func(*args, **kwargs), timeout=self.timeout)
+
+        result = func(*args, **kwargs)
+        return await asyncio.wait_for(cast("asyncio.Future[R]", result), timeout=self.timeout)
 
 
 class CircuitBreaker:
@@ -343,7 +358,7 @@ class CircuitBreaker:
     def call(self, func: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R:
         with self._lock:
             if self.state == "open":
-                if time.time() - self.last_failure_time > self.recovery_timeout:
+                if self.last_failure_time is not None and time.time() - self.last_failure_time > self.recovery_timeout:
                     self.state = "half-open"
                 else:
                     raise CircuitBreakerOpenError("Circuit breaker is open")

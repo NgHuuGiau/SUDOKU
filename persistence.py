@@ -1,8 +1,12 @@
 """Persistence module: save/load game state, best times, daily challenge, statistics, leaderboard."""
+
 import json
+import logging
 import os
 from datetime import date
-from typing import TYPE_CHECKING, Literal, TypedDict
+from typing import TYPE_CHECKING, Any, Literal, TypedDict, cast
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from game import GameState
@@ -18,22 +22,27 @@ LEADERBOARD_FILE = os.path.join(os.path.dirname(__file__), "leaderboard.json")
 Difficulty = Literal["easy", "medium", "hard", "daily", "custom"]
 ThemeMode = Literal["light", "dark", "frost", "cozy"]
 
+
 class LeaderboardEntry(TypedDict):
     name: str
     time: int
     date: str
+
 
 class LeaderboardData(TypedDict):
     easy: list[LeaderboardEntry]
     medium: list[LeaderboardEntry]
     hard: list[LeaderboardEntry]
     daily: list[LeaderboardEntry]
+    custom: list[LeaderboardEntry]
+
 
 class DailyStats(TypedDict):
     last_completed_date: str | None
     streak: int
     total_completed: int
     best_streak: int
+
 
 class GameStats(TypedDict):
     games_played: int
@@ -47,6 +56,7 @@ class GameStats(TypedDict):
     theme: ThemeMode
     win_rate: float
     avg_time: float
+
 
 class SaveGameState(TypedDict):
     difficulty: str
@@ -68,31 +78,38 @@ class SaveGameState(TypedDict):
     redo_stack: list[dict[str, list]]
 
 
-def _load_json(filepath: str, default: dict) -> dict:
+def _load_json(filepath: str, default: dict[str, Any]) -> dict[str, Any]:
     if os.path.exists(filepath):
         try:
             with open(filepath, encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            pass
+                value = json.load(f)
+                return value if isinstance(value, dict) else default
+        except (OSError, json.JSONDecodeError) as exc:
+            logger.warning("Could not load %s: %s", filepath, exc)
     return default
 
 
-def _save_json(filepath: str, data: dict) -> None:
+def _save_json(filepath: str, data: dict[str, Any]) -> None:
+    temp_path = f"{filepath}.tmp"
     try:
-        with open(filepath, "w", encoding="utf-8") as f:
+        with open(temp_path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
-    except Exception:
-        pass
+        os.replace(temp_path, filepath)
+    except OSError as exc:
+        logger.warning("Could not save %s: %s", filepath, exc)
+        try:
+            os.remove(temp_path)
+        except OSError:
+            pass
 
 
 def load_best_times() -> dict[Difficulty, int | None]:
     if os.path.exists(BEST_TIMES_FILE):
         try:
             with open(BEST_TIMES_FILE, encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            pass
+                return cast(dict[Difficulty, int | None], json.load(f))
+        except (OSError, json.JSONDecodeError) as exc:
+            logger.warning("Could not load %s: %s", BEST_TIMES_FILE, exc)
     return {"easy": None, "medium": None, "hard": None}
 
 
@@ -100,8 +117,8 @@ def save_best_times(times: dict[Difficulty, int | None]) -> None:
     try:
         with open(BEST_TIMES_FILE, "w", encoding="utf-8") as f:
             json.dump(times, f, ensure_ascii=False, indent=2)
-    except Exception:
-        pass
+    except OSError as exc:
+        logger.warning("Could not save %s: %s", BEST_TIMES_FILE, exc)
 
 
 def update_best_time(difficulty: Difficulty, elapsed: int) -> bool:
@@ -139,23 +156,19 @@ def save_game_state(state: "GameState") -> None:
         "undo_stack": [
             {
                 "board": [list(row) for row in board],
-                "notes": [[list(s) for s in row] for row in notes]
+                "notes": [[list(s) for s in row] for row in notes],
             }
             for board, notes in state.undo_stack
         ],
         "redo_stack": [
             {
                 "board": [list(row) for row in board],
-                "notes": [[list(s) for s in row] for row in notes]
+                "notes": [[list(s) for s in row] for row in notes],
             }
             for board, notes in state.redo_stack
         ],
     }
-    try:
-        with open(SAVE_FILE, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False)
-    except Exception:
-        pass
+    _save_json(SAVE_FILE, data)
 
 
 def load_game_state() -> "GameState | None":
@@ -164,7 +177,8 @@ def load_game_state() -> "GameState | None":
     try:
         with open(SAVE_FILE, encoding="utf-8") as f:
             data = json.load(f)
-    except Exception:
+    except (OSError, json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
+        logger.warning("Could not load saved game: %s", exc)
         return None
 
     # Import GameState locally to avoid circular import
@@ -201,8 +215,10 @@ def load_game_state() -> "GameState | None":
 def clear_save_file() -> None:
     try:
         os.remove(SAVE_FILE)
-    except Exception:
-        pass
+    except FileNotFoundError:
+        return
+    except OSError as exc:
+        logger.warning("Could not remove save file: %s", exc)
 
 
 def has_save_file() -> bool:
@@ -213,17 +229,21 @@ def has_save_file() -> bool:
 # Daily Challenge Stats
 # =============================================================================
 
+
 def load_daily_stats() -> DailyStats:
-    return _load_json(DAILY_STATS_FILE, {
-        "last_completed_date": None,
-        "streak": 0,
-        "total_completed": 0,
-        "best_streak": 0,
-    })
+    return cast(DailyStats, _load_json(
+        DAILY_STATS_FILE,
+        {
+            "last_completed_date": None,
+            "streak": 0,
+            "total_completed": 0,
+            "best_streak": 0,
+        },
+    ))
 
 
 def save_daily_stats(stats: DailyStats) -> None:
-    _save_json(DAILY_STATS_FILE, stats)
+    _save_json(DAILY_STATS_FILE, cast(dict[str, Any], stats))
 
 
 def mark_daily_challenge_completed(elapsed: int, difficulty: Difficulty) -> DailyStats:
@@ -239,7 +259,6 @@ def mark_daily_challenge_completed(elapsed: int, difficulty: Difficulty) -> Dail
     last_date = stats["last_completed_date"]
     if last_date:
         last = date.fromisoformat(last_date)
-        date.today().replace(day=date.today().day - 1) if date.today().day > 1 else (date.today().replace(month=date.today().month - 1, day=28) if date.today().month > 1 else date(date.today().year - 1, 12, 31))
         # Simple streak logic: if last completed was yesterday, increment
         # For simplicity, we just check if it's a new day
         if (date.today() - last).days == 1:
@@ -265,26 +284,30 @@ def get_daily_stats() -> DailyStats:
 # General Statistics
 # =============================================================================
 
+
 def load_stats() -> GameStats:
-    return _load_json(STATS_FILE, {
-        "games_played": 0,
-        "games_won": 0,
-        "total_time": 0,
-        "best_times": {"easy": None, "medium": None, "hard": None},
-        "by_difficulty": {
-            "easy": {"played": 0, "won": 0, "total_time": 0},
-            "medium": {"played": 0, "won": 0, "total_time": 0},
-            "hard": {"played": 0, "won": 0, "total_time": 0},
+    return cast(GameStats, _load_json(
+        STATS_FILE,
+        {
+            "games_played": 0,
+            "games_won": 0,
+            "total_time": 0,
+            "best_times": {"easy": None, "medium": None, "hard": None},
+            "by_difficulty": {
+                "easy": {"played": 0, "won": 0, "total_time": 0},
+                "medium": {"played": 0, "won": 0, "total_time": 0},
+                "hard": {"played": 0, "won": 0, "total_time": 0},
+            },
+            "current_streak": 0,
+            "best_streak": 0,
+            "last_win_date": None,
+            "theme": "light",
         },
-        "current_streak": 0,
-        "best_streak": 0,
-        "last_win_date": None,
-        "theme": "light",
-    })
+    ))
 
 
 def save_stats(stats: GameStats) -> None:
-    _save_json(STATS_FILE, stats)
+    _save_json(STATS_FILE, cast(dict[str, Any], stats))
 
 
 def record_game_start(difficulty: Difficulty) -> None:
@@ -347,19 +370,27 @@ def get_stats() -> GameStats:
 
 LEADERBOARD_MAX_ENTRIES = 10
 
+
 def load_leaderboard() -> LeaderboardData:
-    return _load_json(LEADERBOARD_FILE, {
-        "easy": [],
-        "medium": [],
-        "hard": [],
-    })
+    return cast(LeaderboardData, _load_json(
+        LEADERBOARD_FILE,
+        {
+            "easy": [],
+            "medium": [],
+            "hard": [],
+            "daily": [],
+            "custom": [],
+        },
+    ))
 
 
 def save_leaderboard(leaderboard: LeaderboardData) -> None:
-    _save_json(LEADERBOARD_FILE, leaderboard)
+    _save_json(LEADERBOARD_FILE, cast(dict[str, Any], leaderboard))
 
 
-def add_leaderboard_entry(difficulty: Difficulty, name: str, elapsed: int, date_str: str | None = None) -> bool:
+def add_leaderboard_entry(
+    difficulty: Difficulty, name: str, elapsed: int, date_str: str | None = None
+) -> bool:
     """Add a new entry to the leaderboard. Returns True if entry made top 10."""
     if date_str is None:
         date_str = date.today().isoformat()
@@ -386,7 +417,9 @@ def add_leaderboard_entry(difficulty: Difficulty, name: str, elapsed: int, date_
     return new_entry in entries
 
 
-def get_leaderboard(difficulty: Difficulty | None = None) -> LeaderboardData | list[LeaderboardEntry]:
+def get_leaderboard(
+    difficulty: Difficulty | None = None,
+) -> LeaderboardData | list[LeaderboardEntry]:
     """Get leaderboard for specific difficulty or all."""
     leaderboard = load_leaderboard()
     if difficulty:

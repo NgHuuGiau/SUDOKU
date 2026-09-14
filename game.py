@@ -1,7 +1,7 @@
 import copy
 import random
 import time
-from typing import List, Literal, Set, Tuple
+from typing import List, Literal, Set, Tuple, cast
 
 import pygame
 
@@ -12,6 +12,7 @@ from error_handling import (
 from logic import check_win, generate_sudoku, is_valid_placement
 from persistence import (
     clear_save_file,
+    load_game_state,
     record_game_win,
     save_game_state,
     update_best_time,
@@ -74,7 +75,7 @@ class GameState:
             for r in range(9):
                 for c in range(9):
                     self.notes[r][c] = copy.deepcopy(self.notes[r][c])
-            play_sound('undo')
+            play_sound("undo")
         self.auto_save()
 
     def redo(self) -> None:
@@ -83,7 +84,7 @@ class GameState:
             self.undo_stack.append((copy.deepcopy(self.board), copy.deepcopy(self.notes)))
             self.board = board_state
             self.notes = copy.deepcopy(notes_state)
-            play_sound('pop')
+            play_sound("pop")
         self.auto_save()
 
     @log_exception(ErrorSeverity.MEDIUM, user_action="place_number")
@@ -100,7 +101,7 @@ class GameState:
             self.board[r][c] = num
             self.notes[r][c].clear()
             self.save_state()
-            play_sound('pop')
+            play_sound("pop")
             trigger_number_placement_animation(r, c)
             self._check_completion_ripple(r, c)
         self.auto_save()
@@ -108,6 +109,7 @@ class GameState:
     def _check_completion_ripple(self, r: int, c: int) -> None:
         try:
             from ui.board import trigger_completion_animation
+
             # Check row r
             if all(self.board[r][col] == self.solution[r][col] for col in range(9)):
                 trigger_completion_animation("row", r)
@@ -117,7 +119,11 @@ class GameState:
             # Check 3x3 box
             br, bc = (r // 3) * 3, (c // 3) * 3
             box_idx = (r // 3) * 3 + (c // 3)
-            if all(self.board[br + dr][bc + dc] == self.solution[br + dr][bc + dc] for dr in range(3) for dc in range(3)):
+            if all(
+                self.board[br + dr][bc + dc] == self.solution[br + dr][bc + dc]
+                for dr in range(3)
+                for dc in range(3)
+            ):
                 trigger_completion_animation("box", box_idx)
         except Exception:
             pass
@@ -132,7 +138,7 @@ class GameState:
         else:
             self.board[r][c] = 0
             self.save_state()
-            play_sound('click')
+            play_sound("click")
         self.auto_save()
 
     @log_exception(ErrorSeverity.MEDIUM, user_action="give_hint")
@@ -142,7 +148,7 @@ class GameState:
             self.board[r][c] = self.solution[r][c]
             self.notes[r][c].clear()
             self.save_state()
-            play_sound('hint')
+            play_sound("hint")
         self.auto_save()
 
     @log_exception(ErrorSeverity.MEDIUM, user_action="fill_possible_notes")
@@ -157,7 +163,7 @@ class GameState:
                         if is_valid_placement(self.board, r, c, num):
                             self.notes[r][c].add(num)
         self.save_state()
-        play_sound('click')
+        play_sound("click")
         self.auto_save()
 
     @log_exception(ErrorSeverity.LOW, user_action="toggle_pause")
@@ -167,7 +173,7 @@ class GameState:
             self.last_pause_start = pygame.time.get_ticks()
         else:
             self.paused_time += pygame.time.get_ticks() - self.last_pause_start
-        play_sound('click')
+        play_sound("click")
 
     def restart(self, difficulty: Difficulty) -> None:
         self.difficulty = difficulty
@@ -188,7 +194,7 @@ class GameState:
         self.redo_stack.clear()
         self._last_auto_save_time = 0.0
         save_game_state(self)
-        play_sound('click')
+        play_sound("click")
 
     def auto_save(self) -> None:
         if self.game_over:
@@ -213,20 +219,32 @@ class GameState:
 
 
 class Game:
-    def __init__(self, difficulty: Difficulty = "medium"):
+    """Full game session (PLAYING state). Manages one Sudoku game."""
+
+    def __init__(self, difficulty: Difficulty = "medium", loaded_state=None):
         self.screen = create_game_screen()
         self._load_fonts()
-        self.state = GameState(difficulty)
+        if loaded_state:
+            self.state = loaded_state
+            self.state.start_time = pygame.time.get_ticks()
+        else:
+            self.state = GameState(difficulty)
         self.particles: List[Particle] = []
         self.sound_manager = get_sound_manager()
         self.running = True
         self.quit_requested = False
+        self.go_to_menu = False
         self.pause_resume_rect = None
+        self.pause_restart_rect = None
+        self.pause_save_quit_rect = None
         self.pause_quit_rect = None
         self.win_restart_rect = None
         self.win_quit_rect = None
         self.header_pause_rect = None
-        self.help_rects = None
+        self.header_theme_rect = None
+        self.header_sound_rect = None
+        self.header_help_rect = None
+        self.help_rects: dict[str, pygame.Rect] | None = None
         self.show_help = False
 
     @log_exception(ErrorSeverity.HIGH, user_action="_load_fonts")
@@ -279,56 +297,62 @@ class Game:
             self._restart_game()
         if self.win_quit_rect and self.win_quit_rect.collidepoint(x, y):
             self.running = False
-            self.quit_requested = True
+            self.go_to_menu = True
 
     def _handle_pause_click(self, pos):
         x, y = pos
         if self.pause_resume_rect and self.pause_resume_rect.collidepoint(x, y):
             self.state.toggle_pause()
-        if self.pause_restart_rect and self.pause_restart_rect.collidepoint(x, y):
+        if self.pause_restart_rect is not None and self.pause_restart_rect.collidepoint(x, y):
             self._restart_game()
-        if self.pause_save_quit_rect and self.pause_save_quit_rect.collidepoint(x, y):
+        if self.pause_save_quit_rect is not None and self.pause_save_quit_rect.collidepoint(x, y):
             self.state.force_save()
             self.running = False
-            self.quit_requested = True
+            self.go_to_menu = True
         # Backward compat
         if self.pause_quit_rect and self.pause_quit_rect.collidepoint(x, y):
             self.running = False
-            self.quit_requested = True
+            self.go_to_menu = True
 
     def _handle_help_click(self, pos):
         x, y = pos
-        if self.help_rects and self.help_rects.get("help_close") and self.help_rects["help_close"].collidepoint(x, y):
+        if (
+            self.help_rects
+            and self.help_rects.get("help_close")
+            and self.help_rects["help_close"].collidepoint(x, y)
+        ):
             self.show_help = False
 
     def _handle_mouse(self, pos: Tuple[int, int]) -> None:
         x, y = pos
 
-        # 1. Các nút trên thanh Header
+        # 1. Header buttons
         if self.header_pause_rect and self.header_pause_rect.collidepoint(x, y):
             self.state.toggle_pause()
             return
-        if getattr(self, 'header_theme_rect', None) and self.header_theme_rect.collidepoint(x, y):
+        if self.header_theme_rect is not None and self.header_theme_rect.collidepoint(x, y):
             from ui.colors import get_theme_manager
+
             get_theme_manager().cycle_theme()
-            play_sound('pop')
+            play_sound("pop")
             return
-        if getattr(self, 'header_sound_rect', None) and self.header_sound_rect.collidepoint(x, y):
+        if self.header_sound_rect is not None and self.header_sound_rect.collidepoint(x, y):
             from sounds import toggle_sound
+
             toggle_sound()
             return
-        if getattr(self, 'header_help_rect', None) and self.header_help_rect.collidepoint(x, y):
+        if self.header_help_rect is not None and self.header_help_rect.collidepoint(x, y):
             self.show_help = not self.show_help
             return
 
         if not self.state.paused and not self.state.game_over:
-            # 2. Chọn ô trên bàn cờ
+            # 2. Board cell selection
             cell = get_cell_from_pos(x, y)
             if cell:
                 self.state.selected = list(cell)
                 return
 
-            # 3. Các nút trên Sidebar
+            # 3. Sidebar buttons
             layout = get_sidebar_layout()
 
             if layout["quick_undo"].collidepoint(x, y):
@@ -365,8 +389,50 @@ class Game:
                 return
             if layout["menu"].collidepoint(x, y):
                 self.running = False
-                self.quit_requested = True
+                self.go_to_menu = True
                 return
+
+            # Export / Import
+            if layout.get("export") and layout["export"].collidepoint(x, y):
+                self._handle_export()
+                return
+            if layout.get("import") and layout["import"].collidepoint(x, y):
+                self._handle_import()
+                return
+
+    def _handle_export(self) -> None:
+        try:
+            row_strings = []
+            for row in self.state.board:
+                row_strings.append("".join(str(n) for n in row))
+            puzzle_str = "".join(row_strings)
+            import tkinter as tk
+
+            root = tk.Tk()
+            root.withdraw()
+            from tkinter import messagebox
+
+            messagebox.showinfo("Export Puzzle", f"Copy:\n{puzzle_str}", parent=root)
+            root.destroy()
+        except Exception:
+            pass
+
+    def _handle_import(self) -> None:
+        try:
+            import tkinter as tk
+            from tkinter import simpledialog
+
+            root = tk.Tk()
+            root.withdraw()
+            s = simpledialog.askstring("Import Puzzle", "Paste 81-char puzzle string:", parent=root)
+            root.destroy()
+            if s and len(s.strip()) == 81 and all(c.isdigit() for c in s.strip()):
+                nums = [int(c) for c in s.strip()]
+                self.state.board = [nums[i * 9 : (i + 1) * 9] for i in range(9)]
+                self.state.original = [row[:] for row in self.state.board]
+                self.state.notes = [[set() for _ in range(9)] for _ in range(9)]
+        except Exception:
+            pass
 
     def _restart_game(self) -> None:
         self.particles.clear()
@@ -394,17 +460,16 @@ class Game:
 
         root = tk.Tk()
         root.withdraw()
-        root.attributes('-topmost', True)
+        root.attributes("-topmost", True)
 
         name = simpledialog.askstring(
-            game_text("new_highscore"),
-            game_text("enter_name"),
-            parent=root
+            game_text("new_highscore"), game_text("enter_name"), parent=root
         )
         root.destroy()
 
         if name and name.strip():
             from persistence import add_leaderboard_entry
+
             add_leaderboard_entry(self.state.difficulty, name.strip(), self.state.final_time)
 
     def _spawn_win_fireworks(self) -> None:
@@ -422,7 +487,6 @@ class Game:
         r, c = self.state.selected
         key = event.key
 
-        # Di chuyển ô chọn
         if key in (pygame.K_UP, pygame.K_w) and r > 0:
             self.state.selected[0] -= 1
         elif key in (pygame.K_DOWN, pygame.K_s) and r < 8:
@@ -432,11 +496,9 @@ class Game:
         elif key in (pygame.K_RIGHT, pygame.K_d) and c < 8:
             self.state.selected[1] += 1
 
-        # Bật/Tắt chế độ ghi chú nhanh bằng Space hoặc N
         elif key in (pygame.K_SPACE, pygame.K_n):
             self.state.notes_mode = not self.state.notes_mode
 
-        # Hoàn tác / Làm lại bằng phím tắt
         elif key == pygame.K_z and (event.mod & pygame.KMOD_CTRL):
             if event.mod & pygame.KMOD_SHIFT:
                 self.state.redo()
@@ -445,9 +507,12 @@ class Game:
         elif key == pygame.K_y and (event.mod & pygame.KMOD_CTRL):
             self.state.redo()
 
-        # Nhập số hoặc xóa
         elif self.state.original[r][c] == 0:
-            if hasattr(event, 'unicode') and event.unicode.isdigit() and 1 <= int(event.unicode) <= 9:
+            if (
+                hasattr(event, "unicode")
+                and event.unicode.isdigit()
+                and 1 <= int(event.unicode) <= 9
+            ):
                 self.state.place_number(int(event.unicode))
             elif key in (pygame.K_BACKSPACE, pygame.K_DELETE, pygame.K_KP0):
                 self.state.clear_cell()
@@ -466,20 +531,23 @@ class Game:
             self.state.game_over = True
             self.state.final_time = self.state.get_elapsed_time()
             update_best_time(self.state.difficulty, self.state.final_time)
-            # Record win for statistics
             record_game_win(self.state.difficulty, self.state.final_time)
-            # Check if top 10 leaderboard time
             from persistence import is_top_10_time
+
             if is_top_10_time(self.state.difficulty, self.state.final_time):
                 self._show_name_input_dialog()
             clear_save_file()
             self._spawn_win_fireworks()
-            play_sound('success')
+            play_sound("success")
 
     def render(self) -> None:
         mouse_pos = pygame.mouse.get_pos()
-        overlay_rects = draw_game_view(self.screen, self.fonts, self.state, mouse_pos, self.particles)
+        overlay_rects = draw_game_view(
+            self.screen, self.fonts, self.state, mouse_pos, self.particles
+        )
         self.pause_resume_rect = overlay_rects["pause_resume"]
+        self.pause_restart_rect = overlay_rects.get("pause_restart")
+        self.pause_save_quit_rect = overlay_rects.get("pause_save_quit")
         self.pause_quit_rect = overlay_rects["pause_quit"]
         self.win_restart_rect = overlay_rects["win_restart"]
         self.win_quit_rect = overlay_rects["win_quit"]
@@ -488,26 +556,219 @@ class Game:
         self.header_sound_rect = overlay_rects.get("header_sound")
         self.header_help_rect = overlay_rects.get("header_help")
 
-        # Draw help modal if active
         if self.show_help:
             from config import game_text
             from ui.modals import draw_help_modal
-            self.help_rects = draw_help_modal(self.screen, self.fonts, pygame.mouse.get_pos(), game_text)
 
-    def run(self) -> bool:
+            self.help_rects = draw_help_modal(
+                self.screen, self.fonts, pygame.mouse.get_pos(), game_text
+            )
+
+    def run(self) -> str:
+        """Run the game session. Returns 'menu' or 'quit'."""
         clock = pygame.time.Clock()
         while self.running:
             if not self.handle_events():
-                break
+                return "quit"
             self.update()
             self.render()
             clock.tick(60)
+        return "menu" if self.go_to_menu else "quit"
+
+
+# ──────────────────────────────────────────────
+#  MAIN APPLICATION CONTROLLER
+# ──────────────────────────────────────────────
+class AppController:
+    """Full Pygame application: Menu ↔ Game, all in one window, 60 FPS."""
+
+    # App states
+    STATE_MENU = "menu"
+    STATE_PLAYING = "playing"
+    STATE_LEADERBOARD = "leaderboard"
+
+    def __init__(self):
+        # create_game_screen handles enable_high_dpi + pygame.init internally
+        self.screen = create_game_screen()
+        self.fonts = load_fonts()
+        self.clock = pygame.time.Clock()
+        self.state = self.STATE_MENU
+        self.running = True
+
+        # Menu state
+        self.custom_cells = 40
+        self.leaderboard_diff = "medium"
+
+        # Active game session
+        self.game_session: Game | None = None
+
+    def _handle_menu_events(self, menu_rects: dict) -> None:
+        from config import chuyen_ngon_ngu
+        from sounds import toggle_sound
+        from ui.colors import get_theme_manager
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+                return
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_1:
+                    self._start_game("easy")
+                elif event.key == pygame.K_2:
+                    self._start_game("medium")
+                elif event.key == pygame.K_3:
+                    self._start_game("hard")
+                elif event.key == pygame.K_ESCAPE:
+                    self.running = False
+            if event.type != pygame.MOUSEBUTTONDOWN:
+                continue
+
+            pos = event.pos
+
+            if menu_rects.get("resume") and menu_rects["resume"].collidepoint(pos):
+                saved = load_game_state()
+                self._start_game(saved.difficulty if saved else "medium", loaded_state=saved)
+
+            elif menu_rects.get("daily") and menu_rects["daily"].collidepoint(pos):
+                self._start_game("daily")
+
+            elif menu_rects.get("easy") and menu_rects["easy"].collidepoint(pos):
+                self._start_game("easy")
+            elif menu_rects.get("medium") and menu_rects["medium"].collidepoint(pos):
+                self._start_game("medium")
+            elif menu_rects.get("hard") and menu_rects["hard"].collidepoint(pos):
+                self._start_game("hard")
+
+            elif menu_rects.get("custom") and menu_rects["custom"].collidepoint(pos):
+                # Only start if not clicking stepper buttons
+                if not (
+                    menu_rects.get("custom_dec") and menu_rects["custom_dec"].collidepoint(pos)
+                ) and not (
+                    menu_rects.get("custom_inc") and menu_rects["custom_inc"].collidepoint(pos)
+                ):
+                    self._start_game("custom", custom_cells=self.custom_cells)
+
+            elif menu_rects.get("custom_dec") and menu_rects["custom_dec"].collidepoint(pos):
+                self.custom_cells = max(20, self.custom_cells - 2)
+            elif menu_rects.get("custom_inc") and menu_rects["custom_inc"].collidepoint(pos):
+                self.custom_cells = min(60, self.custom_cells + 2)
+
+            elif menu_rects.get("theme") and menu_rects["theme"].collidepoint(pos):
+                get_theme_manager().cycle_theme()
+                play_sound("pop")
+            elif menu_rects.get("sound") and menu_rects["sound"].collidepoint(pos):
+                toggle_sound()
+            elif menu_rects.get("lang") and menu_rects["lang"].collidepoint(pos):
+                chuyen_ngon_ngu()
+            elif menu_rects.get("stats") and menu_rects["stats"].collidepoint(pos):
+                self.state = self.STATE_LEADERBOARD
+            elif menu_rects.get("help") and menu_rects["help"].collidepoint(pos):
+                self.state = self.STATE_LEADERBOARD
+
+    def _start_game(self, difficulty: str, loaded_state=None, custom_cells: int = 40) -> None:
+        from logic import generate_sudoku
+
+        if difficulty == "custom" and loaded_state is None:
+            board, solution = generate_sudoku("custom", empty_cells=custom_cells)
+            gs = GameState.__new__(GameState)
+            gs.difficulty = "custom"
+            gs.board = board
+            gs.solution = solution
+            gs.original = [row[:] for row in board]
+            gs.selected = [0, 0]
+            gs.notes = [[set() for _ in range(9)] for _ in range(9)]
+            gs.notes_mode = False
+            gs.game_over = False
+            gs.paused = False
+            gs.show_errors = False
+            gs.start_time = pygame.time.get_ticks()
+            gs.paused_time = 0
+            gs.last_pause_start = 0
+            gs.last_active_time = 0
+            gs.final_time = 0
+            gs._last_auto_save_time = 0.0
+            import copy
+
+            gs.undo_stack = [(copy.deepcopy(board), copy.deepcopy(gs.notes))]
+            gs.redo_stack = []
+            loaded_state = gs
+
+        self.game_session = Game(cast(Difficulty, difficulty), loaded_state=loaded_state)
+        assert self.game_session is not None
+        self.game_session.screen = self.screen
+        self.game_session._load_fonts()
+        self.state = self.STATE_PLAYING
+
+    def _run_game_session(self) -> None:
+        """Run one Game session tick-by-tick and return to menu when done."""
+        assert self.game_session is not None
+        clock = self.clock
+        while self.game_session.running:
+            if not self.game_session.handle_events():
+                self.running = False
+                return
+            self.game_session.update()
+            self.game_session.render()
+            clock.tick(60)
+        # Session ended - go back to menu
+        self.state = self.STATE_MENU
+        self.game_session = None
+
+    def _handle_leaderboard_events(self, lb_rects: dict) -> None:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+                return
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                self.state = self.STATE_MENU
+                return
+            if event.type != pygame.MOUSEBUTTONDOWN:
+                continue
+            pos = event.pos
+            if lb_rects.get("leaderboard_close") and lb_rects["leaderboard_close"].collidepoint(
+                pos
+            ):
+                self.state = self.STATE_MENU
+            for d in ("easy", "medium", "hard", "daily"):
+                if lb_rects.get(f"tab_{d}") and lb_rects[f"tab_{d}"].collidepoint(pos):
+                    self.leaderboard_diff = d
+
+    def run(self) -> None:
+        """Main application loop."""
+        from config import game_text
+        from ui.menu import draw_menu_view
+        from ui.modals import draw_leaderboard_modal
+
+        while self.running:
+            mouse_pos = pygame.mouse.get_pos()
+
+            if self.state == self.STATE_MENU:
+                menu_rects = draw_menu_view(
+                    self.screen, self.fonts, mouse_pos, custom_cells=self.custom_cells
+                )
+                pygame.display.flip()
+                self._handle_menu_events(menu_rects)
+
+            elif self.state == self.STATE_PLAYING:
+                if self.game_session:
+                    self._run_game_session()
+                else:
+                    self.state = self.STATE_MENU
+
+            elif self.state == self.STATE_LEADERBOARD:
+                lb_rects = draw_leaderboard_modal(
+                    self.screen, self.fonts, mouse_pos, game_text, active_diff=self.leaderboard_diff
+                )
+                pygame.display.flip()
+                self._handle_leaderboard_events(lb_rects)
+
+            self.clock.tick(60)
+
         pygame.quit()
-        return self.state.game_over and not self.quit_requested
 
 
-def start_game(root, difficulty: str = "medium", loaded_state=None) -> bool:
-    game = Game(difficulty)
-    if loaded_state:
-        game.state = loaded_state
-    return game.run()
+def start_game(root=None, difficulty: str = "medium", loaded_state=None) -> bool:
+    """Legacy entry point: runs one game session and returns win status."""
+    game = Game(cast(Difficulty, difficulty), loaded_state=loaded_state)
+    result = game.run()
+    return result != "quit"

@@ -2,6 +2,7 @@
 Security hardening module for Sudoku.
 Provides input validation, sanitization, and security utilities.
 """
+
 import hashlib
 import hmac
 import html
@@ -42,31 +43,31 @@ class InputValidator:
     """Comprehensive input validation."""
 
     # Regex patterns for validation
-    SUDOKU_BOARD_PATTERN = re.compile(r'^[0-9]{81}$')
-    SUDOKU_CELL_PATTERN = re.compile(r'^[0-9]$')
-    FILENAME_PATTERN = re.compile(r'^[a-zA-Z0-9_\-\.]+$')
-    ALPHANUMERIC_PATTERN = re.compile(r'^[a-zA-Z0-9_\-\s]+$')
-    USERNAME_PATTERN = re.compile(r'^[a-zA-Z0-9_\-]{3,20}$')
+    SUDOKU_BOARD_PATTERN = re.compile(r"^[0-9]{81}$")
+    SUDOKU_CELL_PATTERN = re.compile(r"^[0-9]$")
+    FILENAME_PATTERN = re.compile(r"^[a-zA-Z0-9_\-\.]+$")
+    ALPHANUMERIC_PATTERN = re.compile(r"^[a-zA-Z0-9_\-\s]+$")
+    USERNAME_PATTERN = re.compile(r"^[a-zA-Z0-9_\-]{3,20}$")
 
     # Dangerous patterns to detect
     SQL_INJECTION_PATTERNS = [
-        re.compile(r'(\b(SELECT|INSERT|UPDATE|DELETE|DROP|UNION|ALTER|CREATE)\b)', re.IGNORECASE),
-        re.compile(r'(\b(OR|AND)\s+\d+\s*=\s*\d+)', re.IGNORECASE),
-        re.compile(r'(--|;|\/\*|\*\/)', re.IGNORECASE),
+        re.compile(r"(\b(SELECT|INSERT|UPDATE|DELETE|DROP|UNION|ALTER|CREATE)\b)", re.IGNORECASE),
+        re.compile(r"(\b(OR|AND)\s+\d+\s*=\s*\d+)", re.IGNORECASE),
+        re.compile(r"(--|;|\/\*|\*\/)", re.IGNORECASE),
     ]
 
     XSS_PATTERNS = [
-        re.compile(r'<script[^>]*>.*?</script>', re.IGNORECASE | re.DOTALL),
-        re.compile(r'javascript:', re.IGNORECASE),
-        re.compile(r'on\w+\s*=', re.IGNORECASE),
-        re.compile(r'<iframe', re.IGNORECASE),
+        re.compile(r"<script[^>]*>.*?</script>", re.IGNORECASE | re.DOTALL),
+        re.compile(r"javascript:", re.IGNORECASE),
+        re.compile(r"on\w+\s*=", re.IGNORECASE),
+        re.compile(r"<iframe", re.IGNORECASE),
     ]
 
     PATH_TRAVERSAL_PATTERNS = [
-        re.compile(r'\.\./'),
-        re.compile(r'\.\.\\'),
-        re.compile(r'%2e%2e%2f', re.IGNORECASE),
-        re.compile(r'%2e%2e%5c', re.IGNORECASE),
+        re.compile(r"\.\./"),
+        re.compile(r"\.\.\\"),
+        re.compile(r"%2e%2e%2f", re.IGNORECASE),
+        re.compile(r"%2e%2e%5c", re.IGNORECASE),
     ]
 
     @classmethod
@@ -127,7 +128,9 @@ class InputValidator:
         username = username.strip()
 
         if not cls.USERNAME_PATTERN.match(username):
-            raise ValidationError("Username must be 3-20 alphanumeric characters, underscore or hyphen")
+            raise ValidationError(
+                "Username must be 3-20 alphanumeric characters, underscore or hyphen"
+            )
 
         return username
 
@@ -142,7 +145,7 @@ class InputValidator:
 
         # Additional XSS pattern removal
         for pattern in cls.XSS_PATTERNS:
-            text = pattern.sub('', text)
+            text = pattern.sub("", text)
 
         return text
 
@@ -171,6 +174,7 @@ class InputValidator:
 
         try:
             import json
+
             parsed = json.loads(data)
             if not isinstance(parsed, dict):
                 raise ValidationError("JSON must be an object")
@@ -184,7 +188,7 @@ class SecureFileHandler:
 
     def __init__(self, base_dir: Union[str, Path], allowed_extensions: Optional[List[str]] = None):
         self.base_dir = Path(base_dir).resolve()
-        self.allowed_extensions = allowed_extensions or ['.json', '.txt', '.png', '.jpg', '.ico']
+        self.allowed_extensions = allowed_extensions or [".json", ".txt", ".png", ".jpg", ".ico"]
 
         # Ensure base directory exists
         self.base_dir.mkdir(parents=True, exist_ok=True)
@@ -228,7 +232,9 @@ class SecureFileHandler:
 
         return filepath.read_bytes()
 
-    def write_file(self, filename: str, content: Union[str, bytes], overwrite: bool = False) -> Path:
+    def write_file(
+        self, filename: str, content: Union[str, bytes], overwrite: bool = False
+    ) -> Path:
         """Safely write a file."""
         filepath = self._validate_path(self.base_dir / filename)
 
@@ -239,7 +245,7 @@ class SecureFileHandler:
         filepath.parent.mkdir(parents=True, exist_ok=True)
 
         if isinstance(content, str):
-            filepath.write_text(content, encoding='utf-8')
+            filepath.write_text(content, encoding="utf-8")
         else:
             filepath.write_bytes(content)
 
@@ -310,7 +316,7 @@ class SecureConfig:
 
     def _generate_key(self) -> bytes:
         """Generate or load encryption key."""
-        key_file = self.config_path.with_suffix('.key')
+        key_file = self.config_path.with_suffix(".key")
         if key_file.exists():
             return key_file.read_bytes()
 
@@ -342,7 +348,7 @@ class SecureConfig:
         try:
             encrypted = self._encrypt(json.dumps(self._config))
             # Write atomically
-            temp_path = self.config_path.with_suffix('.tmp')
+            temp_path = self.config_path.with_suffix(".tmp")
             temp_path.write_bytes(encrypted)
             temp_path.replace(self.config_path)
         except Exception as e:
@@ -352,12 +358,14 @@ class SecureConfig:
     def _encrypt(self, data: str) -> bytes:
         """Encrypt data using Fernet."""
         from cryptography.fernet import Fernet
+
         f = Fernet(self.key)
         return f.encrypt(data.encode())
 
     def _decrypt(self, data: bytes) -> str:
         """Decrypt data using Fernet."""
         from cryptography.fernet import Fernet
+
         f = Fernet(self.key)
         return f.decrypt(data).decode()
 
@@ -390,7 +398,7 @@ def hash_password(password: str, salt: Optional[bytes] = None) -> tuple[bytes, b
         salt = secrets.token_bytes(16)
 
     # Use PBKDF2 with SHA-256, 100000 iterations
-    key = hashlib.pbkdf2_hmac('sha256', password.encode(), salt, 100000)
+    key = hashlib.pbkdf2_hmac("sha256", password.encode(), salt, 100000)
     return key, salt
 
 
@@ -416,19 +424,22 @@ rate_limiter = RateLimiter()
 
 def rate_limit(max_requests: int = 60, window_seconds: float = 60.0):
     """Decorator for rate limiting function calls."""
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         def wrapper(*args, **kwargs):
             # Use function name as key, or first arg if it's a user identifier
             key = f"{func.__module__}.{func.__name__}"
-            if args and hasattr(args[0], 'user_id'):
+            if args and hasattr(args[0], "user_id"):
                 key = f"{key}:{args[0].user_id}"
 
             if not rate_limiter.check_rate_limit(key, max_requests, window_seconds):
                 raise RateLimitError(f"Rate limit exceeded for {func.__name__}")
 
             return func(*args, **kwargs)
+
         return wrapper
+
     return decorator
 
 

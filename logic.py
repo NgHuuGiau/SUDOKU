@@ -6,7 +6,9 @@ from typing import List, Optional, Tuple
 Board = List[List[int]]
 
 
-def generate_sudoku(difficulty: str = "medium", seed: Optional[int] = None, empty_cells: Optional[int] = None) -> Tuple[Board, Board]:
+def generate_sudoku(
+    difficulty: str = "medium", seed: Optional[int] = None, empty_cells: Optional[int] = None
+) -> Tuple[Board, Board]:
     """Generate a Sudoku puzzle.
 
     Args:
@@ -14,8 +16,7 @@ def generate_sudoku(difficulty: str = "medium", seed: Optional[int] = None, empt
         seed: Optional seed for reproducible generation (e.g., for daily challenge)
         empty_cells: Number of empty cells for custom difficulty (20-60)
     """
-    if seed is not None:
-        random.seed(seed)
+    rng = random.Random(seed)
 
     base = 3
     side = base * base
@@ -24,7 +25,7 @@ def generate_sudoku(difficulty: str = "medium", seed: Optional[int] = None, empt
         return (base * (r % base) + r // base + c) % side
 
     def shuffle(s):
-        return random.sample(s, len(s))
+        return rng.sample(s, len(s))
 
     r_base = range(base)
     rows = [g * base + r for g in shuffle(r_base) for r in shuffle(r_base)]
@@ -35,9 +36,9 @@ def generate_sudoku(difficulty: str = "medium", seed: Optional[int] = None, empt
     full_board_solution = copy.deepcopy(board)
 
     difficulties = {
-        "easy": 38,       # 38 empty cells -> 43 clues left
-        "medium": 48,     # 48 empty cells -> 33 clues left
-        "hard": 54,       # 54 empty cells -> 27 clues left
+        "easy": 38,  # 38 empty cells -> 43 clues left
+        "medium": 48,  # 48 empty cells -> 33 clues left
+        "hard": 54,  # 54 empty cells -> 27 clues left
     }
 
     if difficulty == "custom" and empty_cells is not None:
@@ -46,7 +47,7 @@ def generate_sudoku(difficulty: str = "medium", seed: Optional[int] = None, empt
         target_empties = difficulties.get(difficulty, 48)  # noqa: F821
 
     positions = list(range(side * side))
-    random.shuffle(positions)
+    rng.shuffle(positions)
 
     removed = 0
     for pos in positions:
@@ -64,7 +65,9 @@ def generate_sudoku(difficulty: str = "medium", seed: Optional[int] = None, empt
     return board, full_board_solution
 
 
-def generate_daily_challenge(difficulty: str = "medium", challenge_date: Optional[date] = None) -> Tuple[Board, Board, int]:
+def generate_daily_challenge(
+    difficulty: str = "medium", challenge_date: Optional[date] = None
+) -> Tuple[Board, Board, int]:
     """Generate a daily challenge puzzle seeded by date.
 
     Args:
@@ -96,59 +99,15 @@ def get_daily_challenge_info(challenge_date: Optional[date] = None) -> dict:
         "date_str": challenge_date.strftime("%d/%m/%Y"),
         "weekday": challenge_date.strftime("%A"),
     }
-    base = 3
-    side = base * base
-
-    def pattern(r, c):
-        return (base * (r % base) + r // base + c) % side
-
-    def shuffle(s):
-        return random.sample(s, len(s))
-
-    r_base = range(base)
-    rows = [g * base + r for g in shuffle(r_base) for r in shuffle(r_base)]
-    cols = [g * base + c for g in shuffle(r_base) for c in shuffle(r_base)]
-    nums = shuffle(range(1, side + 1))
-
-    board = [[nums[pattern(r, c)] for c in cols] for r in rows]
-    full_board_solution = copy.deepcopy(board)
-
-    difficulties: dict[str, int] = {
-        "easy": 38,       # 38 empty cells -> 43 clues left
-        "medium": 48,     # 48 empty cells -> 33 clues left
-        "hard": 54,       # 54 empty cells -> 27 clues left
-    }
-
-    if difficulty == "custom" and empty_cells is not None:  # noqa: F821
-        target_empties = max(20, min(60, empty_cells))  # noqa: F821
-    else:
-        target_empties = difficulties.get(difficulty, 48)  # noqa: F821
-
-    positions = list(range(side * side))
-    random.shuffle(positions)
-
-    removed = 0
-    for pos in positions:
-        if removed >= target_empties:
-            break
-        r, c = pos // side, pos % side
-        val = board[r][c]
-        board[r][c] = 0
-
-        if count_solutions_dlx(board) == 1:
-            removed += 1
-        else:
-            board[r][c] = val
-
-    return board, full_board_solution
 
 
 # =============================================================================
 # DLX (Dancing Links / Algorithm X) - Fast exact cover solver for Sudoku
 # =============================================================================
 
+
 class DLXNode:
-    __slots__ = ('left', 'right', 'up', 'down', 'column', 'row_id', 'col_id', 'size')
+    __slots__ = ("left", "right", "up", "down", "column", "row_id", "col_id", "size")
 
     def __init__(self):
         self.left = self.right = self.up = self.down = self
@@ -390,9 +349,10 @@ def check_win(board: Board, solution: Board) -> bool:
 # Import/Export Puzzle (81-character string format)
 # =============================================================================
 
+
 def board_to_string(board: Board) -> str:
     """Convert board to 81-character string (0 for empty cells)."""
-    return ''.join(str(board[r][c]) for r in range(9) for c in range(9))
+    return "".join(str(board[r][c]) for r in range(9) for c in range(9))
 
 
 def string_to_board(s: str) -> Board:
@@ -401,7 +361,7 @@ def string_to_board(s: str) -> Board:
         raise ValueError("String must be exactly 81 characters")
     board = [[0] * 9 for _ in range(9)]
     for i, ch in enumerate(s):
-        if ch not in '0123456789':
+        if ch not in "0123456789":
             raise ValueError(f"Invalid character: {ch}")
         r, c = divmod(i, 9)
         board[r][c] = int(ch)
@@ -411,6 +371,7 @@ def string_to_board(s: str) -> Board:
 def export_puzzle(board: Board, solution: Board) -> str:
     """Export puzzle as JSON string with board and solution."""
     import json
+
     data = {
         "board": board_to_string(board),
         "solution": board_to_string(solution),
@@ -421,7 +382,14 @@ def export_puzzle(board: Board, solution: Board) -> str:
 def import_puzzle(data_str: str) -> tuple[Board, Board]:
     """Import puzzle from JSON string."""
     import json
+
     data = json.loads(data_str)
+    if not isinstance(data, dict) or "board" not in data or "solution" not in data:
+        raise ValueError("Puzzle data must contain board and solution")
     board = string_to_board(data["board"])
     solution = string_to_board(data["solution"])
+    if count_solutions(solution, limit=1) != 1:
+        raise ValueError("Solution is not a valid completed board")
+    if any(board[r][c] and board[r][c] != solution[r][c] for r in range(9) for c in range(9)):
+        raise ValueError("Puzzle clues do not match the solution")
     return board, solution

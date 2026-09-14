@@ -2,6 +2,7 @@
 Performance profiling and optimization utilities for Sudoku.
 Provides profiling, benchmarking, memory tracking, and optimization tools.
 """
+
 import cProfile
 import functools
 import gc
@@ -24,6 +25,7 @@ R = TypeVar("R")
 @dataclass
 class ProfileResult:
     """Result of a profiling session."""
+
     function_name: str
     call_count: int
     total_time: float
@@ -36,6 +38,7 @@ class ProfileResult:
 @dataclass
 class MemorySnapshot:
     """Memory usage snapshot."""
+
     timestamp: str
     current_mb: float
     peak_mb: float
@@ -67,13 +70,13 @@ class Profiler:
             elapsed = time.perf_counter() - start_time
 
             # Get stats
-            stats = pstats.Stats(profiler).sort_stats('cumulative')
+            stats = pstats.Stats(profiler).sort_stats("cumulative")
             stream = io.StringIO()
             stats.print_stats(20)
             _ = stream.getvalue()
 
             # Parse stats
-            total_calls = stats.total_calls if hasattr(stats, 'total_calls') else stats.total_calls()
+            total_calls = int(getattr(stats, "total_calls", 0))
             total_time = elapsed
 
             result = ProfileResult(
@@ -83,7 +86,7 @@ class Profiler:
                 cumulative_time=total_time,
                 per_call_time=total_time / max(total_calls, 1),
                 timestamp=datetime.now().isoformat(),
-                metadata=metadata or {}
+                metadata=metadata or {},
             )
 
             with self._lock:
@@ -93,6 +96,7 @@ class Profiler:
 
     def profile_function(self, name: Optional[str] = None, metadata: Optional[dict] = None):
         """Decorator for profiling a function."""
+
         def decorator(func: Callable[P, R]) -> Callable[P, R]:
             profile_name = name or f"{func.__module__}.{func.__qualname__}"
 
@@ -100,7 +104,9 @@ class Profiler:
             def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
                 with self.profile(profile_name, metadata):
                     return func(*args, **kwargs)
+
             return wrapper
+
         return decorator
 
     def start_profiling(self):
@@ -120,15 +126,16 @@ class Profiler:
                 total_time=0,
                 cumulative_time=0,
                 per_call_time=0,
-                timestamp=datetime.now().isoformat()
+                timestamp=datetime.now().isoformat(),
             )
 
         self._profiler.disable()
         self._profiling_active = False
 
-        stats = pstats.Stats(self._profiler).sort_stats('cumulative')
-        total_calls = stats.total_calls
-        total_time = sum(stats.stats[func][3] for func in stats.stats)
+        stats = pstats.Stats(self._profiler).sort_stats("cumulative")
+        total_calls = int(getattr(stats, "total_calls", 0))
+        raw_stats = getattr(stats, "stats", {})
+        total_time = sum(value[3] for value in raw_stats.values())
 
         result = ProfileResult(
             function_name=name,
@@ -136,7 +143,7 @@ class Profiler:
             total_time=total_time,
             cumulative_time=total_time,
             per_call_time=total_time / max(total_calls, 1),
-            timestamp=datetime.now().isoformat()
+            timestamp=datetime.now().isoformat(),
         )
 
         with self._lock:
@@ -169,11 +176,10 @@ class Profiler:
         """Export all profiles to JSON."""
         with self._lock:
             data = {
-                name: [asdict(p) for p in profiles]
-                for name, profiles in self._profiles.items()
+                name: [asdict(p) for p in profiles] for name, profiles in self._profiles.items()
             }
 
-        with open(filepath, 'w', encoding='utf-8') as f:
+        with open(filepath, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
 
 
@@ -221,7 +227,7 @@ class MemoryTracker:
             peak_mb=peak_mb,
             growth_mb=growth,
             object_count=obj_count,
-            gc_counts=gc_counts
+            gc_counts=gc_counts,
         )
 
     def start_tracking(self, interval: float = 1.0):
@@ -254,7 +260,7 @@ class MemoryTracker:
                 with self._lock:
                     self._snapshots.append(snapshot)
                     if len(self._snapshots) > self._max_snapshots:
-                        self._snapshots = self._snapshots[-self._max_snapshots:]
+                        self._snapshots = self._snapshots[-self._max_snapshots :]
 
     def take_snapshot(self) -> MemorySnapshot:
         """Manually take a memory snapshot."""
@@ -262,7 +268,7 @@ class MemoryTracker:
         with self._lock:
             self._snapshots.append(snapshot)
             if len(self._snapshots) > self._max_snapshots:
-                self._snapshots = self._snapshots[-self._max_snapshots:]
+                self._snapshots = self._snapshots[-self._max_snapshots :]
         return snapshot
 
     def get_snapshots(self, limit: int = 100) -> List[MemorySnapshot]:
@@ -280,18 +286,20 @@ class MemoryTracker:
 
         leaks = []
         for i in range(window, len(snapshots)):
-            window_snapshots = snapshots[i-window:i]
+            window_snapshots = snapshots[i - window : i]
             current = snapshots[i]
 
             avg_growth = sum(s.growth_mb for s in window_snapshots) / len(window_snapshots)
             if current.growth_mb - avg_growth > threshold_mb:
-                leaks.append({
-                    "timestamp": current.timestamp,
-                    "growth_mb": current.growth_mb,
-                    "threshold_exceeded": current.growth_mb - avg_growth,
-                    "object_count": current.object_count,
-                    "suspected_leak": True
-                })
+                leaks.append(
+                    {
+                        "timestamp": current.timestamp,
+                        "growth_mb": current.growth_mb,
+                        "threshold_exceeded": current.growth_mb - avg_growth,
+                        "object_count": current.object_count,
+                        "suspected_leak": True,
+                    }
+                )
 
         return leaks
 
@@ -322,7 +330,7 @@ class MemoryTracker:
         with self._lock:
             data = [asdict(s) for s in self._snapshots]
 
-        with open(filepath, 'w', encoding='utf-8') as f:
+        with open(filepath, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
 
     def clear(self):
@@ -343,8 +351,9 @@ class PerformanceOptimizer:
     def enable_fast_math():
         """Enable fast math operations."""
         import math
+
         # Enable fast math optimizations where available
-        if hasattr(math, 'fma'):
+        if hasattr(math, "fma"):
             pass  # Use fused multiply-add
 
     @staticmethod
@@ -367,6 +376,7 @@ class PerformanceOptimizer:
     def get_memory_usage() -> Dict[str, float]:
         """Get detailed memory usage."""
         import psutil
+
         process = psutil.Process()
         mem = process.memory_info()
 
@@ -387,13 +397,13 @@ class PerformanceOptimizer:
         finally:
             profiler.disable()
 
-        stats = pstats.Stats(profiler).sort_stats('cumulative')
+        stats = pstats.Stats(profiler).sort_stats("cumulative")
         stream = io.StringIO()
         stats.print_stats(20)
 
         return {
-            "total_calls": stats.total_calls if hasattr(stats, 'total_calls') else stats.total_calls(),
-            "prim_calls": stats.prim_calls if hasattr(stats, 'prim_calls') else stats.prim_calls(),
+            "total_calls": int(getattr(stats, "total_calls", 0)),
+            "prim_calls": int(getattr(stats, "prim_calls", 0)),
             "total_time": sum(s[3] for s in profiler.stats.values()),
             "stats_output": stream.getvalue(),
         }
@@ -413,6 +423,7 @@ def profile(name: Optional[str] = None, metadata: Optional[dict] = None):
 
 def track_memory():
     """Decorator to track memory before/after function."""
+
     def decorator(func: Callable[P, R]) -> Callable[P, R]:
         @functools.wraps(func)
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
@@ -424,14 +435,18 @@ def track_memory():
             diff = (after - before) / 1024 / 1024
             if diff > 1:  # Log if > 1MB
                 import logging
+
                 logging.warning(f"Memory growth in {func.__name__}: {diff:.2f}MB")
             return result
+
         return wrapper
+
     return decorator
 
 
 def time_it(name: Optional[str] = None):
     """Decorator to time function execution."""
+
     def decorator(func: Callable[P, R]) -> Callable[P, R]:
         @functools.wraps(func)
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
@@ -440,9 +455,12 @@ def time_it(name: Optional[str] = None):
             elapsed = (time.perf_counter() - start) * 1000
             if elapsed > 100:  # Log if > 100ms
                 import logging
+
                 logging.warning(f"Slow function {func.__name__}: {elapsed:.1f}ms")
             return result
+
         return wrapper
+
     return decorator
 
 
@@ -456,6 +474,7 @@ def profile_block(name: str):
         result = profiler.stop_profiling(name)
         if result.total_time > 0.1:
             import logging
+
             logging.warning(f"Block {name} took {result.total_time:.3f}s")
 
 

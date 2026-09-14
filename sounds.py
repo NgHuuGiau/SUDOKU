@@ -1,4 +1,5 @@
 """Sound manager for Sudoku game - generates simple tones programmatically."""
+
 import array
 import math
 
@@ -16,7 +17,7 @@ def _generate_tone_base(
     """Base tone generator with customizable frequency and envelope functions."""
     sample_rate = 44100 if sample_rate is None else sample_rate
     n_samples = int(sample_rate * duration)
-    buf = array.array('h', [0] * n_samples)
+    buf = array.array("h", [0] * n_samples)
     amplitude = int(32767 * volume)
 
     for i in range(n_samples):
@@ -48,7 +49,7 @@ def generate_tone(
     """Generate a simple sine wave tone."""
     sample_rate = 44100 if sample_rate is None else sample_rate
     n_samples = int(sample_rate * duration)
-    buf = array.array('h', [0] * n_samples)
+    buf = array.array("h", [0] * n_samples)
     amplitude = int(32767 * volume)
 
     for i in range(n_samples):
@@ -79,7 +80,7 @@ def generate_success(volume: float = 0.5) -> pygame.mixer.Sound:
     sample_rate = 44100
     duration = 0.5
     n_samples = int(sample_rate * duration)
-    buf = array.array('h', [0] * n_samples)
+    buf = array.array("h", [0] * n_samples)
     amplitude = int(32767 * volume)
 
     for i in range(n_samples):
@@ -93,9 +94,11 @@ def generate_success(volume: float = 0.5) -> pygame.mixer.Sound:
             envelope = i / (n_samples * 0.1)
         elif i > n_samples * 0.7:
             envelope = (n_samples - i) / (n_samples * 0.3)
-        val = (math.sin(2 * math.pi * freq1 * t) +
-               math.sin(2 * math.pi * freq2 * t) +
-               math.sin(2 * math.pi * freq3 * t)) / 3
+        val = (
+            math.sin(2 * math.pi * freq1 * t)
+            + math.sin(2 * math.pi * freq2 * t)
+            + math.sin(2 * math.pi * freq3 * t)
+        ) / 3
         buf[i] = int(amplitude * envelope * val)
 
     sound = pygame.mixer.Sound(buffer=buf)
@@ -112,7 +115,7 @@ def generate_hint(volume: float = 0.4) -> pygame.mixer.Sound:
     sample_rate = 44100
     duration = 0.3
     n_samples = int(sample_rate * duration)
-    buf = array.array('h', [0] * n_samples)
+    buf = array.array("h", [0] * n_samples)
     amplitude = int(32767 * volume)
 
     for i in range(n_samples):
@@ -135,7 +138,7 @@ def generate_undo(volume: float = 0.3) -> pygame.mixer.Sound:
     sample_rate = 44100
     duration = 0.15
     n_samples = int(sample_rate * duration)
-    buf = array.array('h', [0] * n_samples)
+    buf = array.array("h", [0] * n_samples)
     amplitude = int(32767 * volume)
 
     for i in range(n_samples):
@@ -166,12 +169,12 @@ class SoundManager:
         """Initialize all sound effects."""
         try:
             self.sounds = {
-                'click': generate_click(),
-                'pop': generate_pop(),
-                'success': generate_success(),
-                'error': generate_error(),
-                'hint': generate_hint(),
-                'undo': generate_undo(),
+                "click": generate_click(),
+                "pop": generate_pop(),
+                "success": generate_success(),
+                "error": generate_error(),
+                "hint": generate_hint(),
+                "undo": generate_undo(),
             }
             self.set_volume(self.volume)
         except Exception as e:
