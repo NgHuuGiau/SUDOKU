@@ -1,4 +1,7 @@
 """Modal overlays (Pause, Win) for Sudoku UI."""
+
+from typing import Any, cast
+
 import pygame
 
 from ui.colors import Colors
@@ -7,8 +10,8 @@ from ui.geometry import SCREEN_HEIGHT, SCREEN_WIDTH
 from ui.icons import SmoothIcons
 
 
-def draw_win_modal(screen: pygame.Surface, fonts, mouse_pos, translate, state, particles) -> dict:
-    overlay_rects = {"win_restart": None, "win_quit": None}
+def draw_win_modal(screen: pygame.Surface, fonts, mouse_pos, translate, state, particles) -> dict[str, pygame.Rect | None]:
+    overlay_rects: dict[str, pygame.Rect | None] = {"win_restart": None, "win_quit": None}
 
     overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
     overlay.fill((15, 23, 42, 170))
@@ -19,14 +22,16 @@ def draw_win_modal(screen: pygame.Surface, fonts, mouse_pos, translate, state, p
             p.draw(screen)
 
     card_w, card_h = 460, 320
-    modal_rect = pygame.Rect((SCREEN_WIDTH - card_w) // 2, (SCREEN_HEIGHT - card_h) // 2, card_w, card_h)
+    modal_rect = pygame.Rect(
+        (SCREEN_WIDTH - card_w) // 2, (SCREEN_HEIGHT - card_h) // 2, card_w, card_h
+    )
     draw_rounded_card(screen, modal_rect, Colors.BG_CARD, Colors.CARD_BORDER, radius=16)
 
     # Trophy
-    trophy_surf = SmoothIcons.get('trophy', 48, Colors.GOLD)
+    trophy_surf = SmoothIcons.get("trophy", 48, Colors.GOLD)
     screen.blit(trophy_surf, trophy_surf.get_rect(center=(modal_rect.centerx, modal_rect.top + 50)))
 
-    win_title = fonts.large.render(translate('chien_thang'), True, Colors.GOLD)
+    win_title = fonts.large.render(translate("chien_thang"), True, Colors.GOLD)
     screen.blit(win_title, win_title.get_rect(center=(modal_rect.centerx, modal_rect.top + 95)))
 
     sub_msg = fonts.small.render(translate("chuc_mung_thang"), True, Colors.STATUS_TEXT)
@@ -43,32 +48,55 @@ def draw_win_modal(screen: pygame.Surface, fonts, mouse_pos, translate, state, p
     win_restart = pygame.Rect(modal_rect.centerx - btn_w - 12, btn_y, btn_w, btn_h)
     win_quit = pygame.Rect(modal_rect.centerx + 12, btn_y, btn_w, btn_h)
 
-    draw_modern_button(screen, win_restart, translate('choi_tiep'), mouse_pos, fonts.small,
-                       variant='primary', icon_name='restart', icon_size=18)
-    draw_modern_button(screen, win_quit, translate('thoat_ve_menu'), mouse_pos, fonts.small,
-                       variant='secondary', icon_name='home', icon_size=18)
+    draw_modern_button(
+        screen,
+        win_restart,
+        translate("choi_tiep"),
+        mouse_pos,
+        fonts.small,
+        variant="primary",
+        icon_name="restart",
+        icon_size=18,
+    )
+    draw_modern_button(
+        screen,
+        win_quit,
+        translate("thoat_ve_menu"),
+        mouse_pos,
+        fonts.small,
+        variant="secondary",
+        icon_name="home",
+        icon_size=18,
+    )
 
     overlay_rects["win_restart"] = win_restart
     overlay_rects["win_quit"] = win_quit
     return overlay_rects
 
 
-def draw_pause_modal(screen: pygame.Surface, fonts, mouse_pos, translate) -> dict:
-    overlay_rects = {"pause_resume": None, "pause_quit": None, "pause_restart": None, "pause_save_quit": None}
+def draw_pause_modal(screen: pygame.Surface, fonts, mouse_pos, translate) -> dict[str, pygame.Rect | None]:
+    overlay_rects: dict[str, pygame.Rect | None] = {
+        "pause_resume": None,
+        "pause_quit": None,
+        "pause_restart": None,
+        "pause_save_quit": None,
+    }
 
     overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
     overlay.fill((15, 23, 42, 180))
     screen.blit(overlay, (0, 0))
 
     card_w, card_h = 420, 320
-    modal_rect = pygame.Rect((SCREEN_WIDTH - card_w) // 2, (SCREEN_HEIGHT - card_h) // 2, card_w, card_h)
+    modal_rect = pygame.Rect(
+        (SCREEN_WIDTH - card_w) // 2, (SCREEN_HEIGHT - card_h) // 2, card_w, card_h
+    )
     draw_rounded_card(screen, modal_rect, Colors.BG_CARD, Colors.CARD_BORDER, radius=16)
 
     # Pause icon
-    pause_surf = SmoothIcons.get('pause', 36, Colors.FIXED_TEXT)
+    pause_surf = SmoothIcons.get("pause", 36, Colors.FIXED_TEXT)
     screen.blit(pause_surf, pause_surf.get_rect(center=(modal_rect.centerx, modal_rect.top + 45)))
 
-    pause_title = fonts.large.render(translate('tam_dung'), True, Colors.FIXED_TEXT)
+    pause_title = fonts.large.render(translate("tam_dung"), True, Colors.FIXED_TEXT)
     screen.blit(pause_title, pause_title.get_rect(center=(modal_rect.centerx, modal_rect.top + 90)))
 
     # 3 buttons: Resume, Restart, Save & Quit
@@ -82,12 +110,36 @@ def draw_pause_modal(screen: pygame.Surface, fonts, mouse_pos, translate) -> dic
     pause_restart = pygame.Rect(start_x + btn_w + spacing, btn_y, btn_w, btn_h)
     pause_save_quit = pygame.Rect(start_x + 2 * (btn_w + spacing), btn_y, btn_w, btn_h)
 
-    draw_modern_button(screen, pause_resume, translate('tiep_tuc'), mouse_pos, fonts.small,
-                       variant='primary', icon_name='play', icon_size=16)
-    draw_modern_button(screen, pause_restart, translate('khoi_dong_lai'), mouse_pos, fonts.small,
-                       variant='warning', icon_name='restart', icon_size=16)
-    draw_modern_button(screen, pause_save_quit, translate('luu_va_thoat'), mouse_pos, fonts.small,
-                       variant='secondary', icon_name='save', icon_size=16)
+    draw_modern_button(
+        screen,
+        pause_resume,
+        translate("tiep_tuc"),
+        mouse_pos,
+        fonts.small,
+        variant="primary",
+        icon_name="play",
+        icon_size=16,
+    )
+    draw_modern_button(
+        screen,
+        pause_restart,
+        translate("khoi_dong_lai"),
+        mouse_pos,
+        fonts.small,
+        variant="warning",
+        icon_name="restart",
+        icon_size=16,
+    )
+    draw_modern_button(
+        screen,
+        pause_save_quit,
+        translate("luu_va_thoat"),
+        mouse_pos,
+        fonts.small,
+        variant="secondary",
+        icon_name="save",
+        icon_size=16,
+    )
 
     overlay_rects["pause_resume"] = pause_resume
     overlay_rects["pause_restart"] = pause_restart
@@ -105,7 +157,7 @@ def draw_header(screen: pygame.Surface, fonts, state, mouse_pos, translate) -> d
 
     # 1. Logo & Title
     logo_x = header_rect.left + 20
-    logo_surf = SmoothIcons.get('grid_logo', 26, Colors.BTN_PRIMARY)
+    logo_surf = SmoothIcons.get("grid_logo", 26, Colors.BTN_PRIMARY)
     screen.blit(logo_surf, logo_surf.get_rect(midleft=(logo_x, header_rect.centery)))
 
     title_text = fonts.title.render("SUDOKU", True, Colors.FIXED_TEXT)
@@ -122,8 +174,11 @@ def draw_header(screen: pygame.Surface, fonts, state, mouse_pos, translate) -> d
 
     star_start_x = diff_badge_rect.left + 14
     for s_idx in range(star_count):
-        star_surf = SmoothIcons.get('star', 13, Colors.GOLD)
-        screen.blit(star_surf, star_surf.get_rect(center=(star_start_x + s_idx * 14, diff_badge_rect.centery)))
+        star_surf = SmoothIcons.get("star", 13, Colors.GOLD)
+        screen.blit(
+            star_surf,
+            star_surf.get_rect(center=(star_start_x + s_idx * 14, diff_badge_rect.centery)),
+        )
 
     diff_surf = fonts.small.render(diff_name, True, Colors.BTN_ACTIVE_TEXT)
     diff_text_x = star_start_x + star_count * 14 + 6
@@ -133,27 +188,63 @@ def draw_header(screen: pygame.Surface, fonts, state, mouse_pos, translate) -> d
     # Pause button
     pause_btn_rect = pygame.Rect(header_rect.right - 105, header_rect.centery - 18, 95, 36)
     pause_label = translate("tiep_tuc") if state.paused else translate("tam_dung_btn")
-    pause_variant = 'warning' if state.paused else 'secondary'
-    pause_icon = 'play' if state.paused else 'pause'
-    draw_modern_button(screen, pause_btn_rect, pause_label, mouse_pos, fonts.small,
-                       variant=pause_variant, radius=10, icon_name=pause_icon, icon_size=16)
+    pause_variant = "warning" if state.paused else "secondary"
+    pause_icon = "play" if state.paused else "pause"
+    draw_modern_button(
+        screen,
+        pause_btn_rect,
+        pause_label,
+        mouse_pos,
+        fonts.small,
+        variant=pause_variant,
+        radius=10,
+        icon_name=pause_icon,
+        icon_size=16,
+    )
 
     # Sound button (🔊 / 🔇)
     sound_rect = pygame.Rect(pause_btn_rect.left - 44, header_rect.centery - 18, 38, 36)
     sound_on = is_sound_enabled()
-    sound_icon = 'sound' if sound_on else 'sound_mute'
-    draw_modern_button(screen, sound_rect, "", mouse_pos, fonts.small,
-                       variant='secondary', radius=10, icon_name=sound_icon, icon_size=18)
+    sound_icon = "sound" if sound_on else "sound_mute"
+    draw_modern_button(
+        screen,
+        sound_rect,
+        "",
+        mouse_pos,
+        fonts.small,
+        variant="secondary",
+        radius=10,
+        icon_name=sound_icon,
+        icon_size=18,
+    )
 
     # Theme switcher button (🎨)
     theme_rect = pygame.Rect(sound_rect.left - 44, header_rect.centery - 18, 38, 36)
-    draw_modern_button(screen, theme_rect, "", mouse_pos, fonts.small,
-                       variant='secondary', radius=10, icon_name='palette', icon_size=18)
+    draw_modern_button(
+        screen,
+        theme_rect,
+        "",
+        mouse_pos,
+        fonts.small,
+        variant="secondary",
+        radius=10,
+        icon_name="palette",
+        icon_size=18,
+    )
 
     # Help button (❓)
     help_rect = pygame.Rect(theme_rect.left - 44, header_rect.centery - 18, 38, 36)
-    draw_modern_button(screen, help_rect, "", mouse_pos, fonts.small,
-                       variant='secondary', radius=10, icon_name='help', icon_size=18)
+    draw_modern_button(
+        screen,
+        help_rect,
+        "",
+        mouse_pos,
+        fonts.small,
+        variant="secondary",
+        radius=10,
+        icon_name="help",
+        icon_size=18,
+    )
 
     # 4. Timer Box
     elapsed = state.get_elapsed_time()
@@ -166,11 +257,15 @@ def draw_header(screen: pygame.Surface, fonts, state, mouse_pos, translate) -> d
     pygame.draw.rect(screen, Colors.BTN_SECONDARY, timer_bg_rect, border_radius=10)
     pygame.draw.rect(screen, Colors.CARD_BORDER, timer_bg_rect, width=1, border_radius=10)
 
-    clock_surf = SmoothIcons.get('clock', 18, Colors.TIMER_TEXT)
-    screen.blit(clock_surf, clock_surf.get_rect(midleft=(timer_bg_rect.left + 10, header_rect.centery)))
+    clock_surf = SmoothIcons.get("clock", 18, Colors.TIMER_TEXT)
+    screen.blit(
+        clock_surf, clock_surf.get_rect(midleft=(timer_bg_rect.left + 10, header_rect.centery))
+    )
 
     timer_surf = fonts.medium.render(time_str, True, Colors.TIMER_TEXT)
-    screen.blit(timer_surf, (timer_bg_rect.left + 36, header_rect.centery - timer_surf.get_height() // 2))
+    screen.blit(
+        timer_surf, (timer_bg_rect.left + 36, header_rect.centery - timer_surf.get_height() // 2)
+    )
 
     return {
         "pause": pause_btn_rect,
@@ -183,6 +278,7 @@ def draw_header(screen: pygame.Surface, fonts, state, mouse_pos, translate) -> d
 
 def draw_footer_helper(screen: pygame.Surface, fonts, translate) -> None:
     from ui.geometry import BOARD_X, SCREEN_HEIGHT, SCREEN_WIDTH
+
     helper_rect = pygame.Rect(BOARD_X, SCREEN_HEIGHT - 44, SCREEN_WIDTH - BOARD_X * 2, 32)
     pygame.draw.rect(screen, Colors.BG_CARD, helper_rect, border_radius=8)
     pygame.draw.rect(screen, Colors.CARD_BORDER, helper_rect, width=1, border_radius=8)
@@ -196,14 +292,16 @@ def draw_help_modal(screen: pygame.Surface, fonts, mouse_pos, translate) -> dict
     """Draw keyboard shortcut help overlay (F1). Returns overlay rects for click handling."""
     from ui.geometry import SCREEN_HEIGHT, SCREEN_WIDTH
 
-    overlay_rects = {"help_close": None}
+    overlay_rects: dict[str, pygame.Rect | None] = {"help_close": None}
 
     overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
     overlay.fill((15, 23, 42, 180))
     screen.blit(overlay, (0, 0))
 
     card_w, card_h = 520, 480
-    modal_rect = pygame.Rect((SCREEN_WIDTH - card_w) // 2, (SCREEN_HEIGHT - card_h) // 2, card_w, card_h)
+    modal_rect = pygame.Rect(
+        (SCREEN_WIDTH - card_w) // 2, (SCREEN_HEIGHT - card_h) // 2, card_w, card_h
+    )
     draw_rounded_card(screen, modal_rect, Colors.BG_CARD, Colors.CARD_BORDER, radius=16)
 
     # Title
@@ -246,8 +344,150 @@ def draw_help_modal(screen: pygame.Surface, fonts, mouse_pos, translate) -> dict
     btn_w, btn_h = 120, 44
     btn_y = modal_rect.bottom - 60
     help_close = pygame.Rect(modal_rect.centerx - btn_w // 2, btn_y, btn_w, btn_h)
-    draw_modern_button(screen, help_close, translate('close'), mouse_pos, fonts.small,
-                       variant='primary', icon_name='check', icon_size=16)
+    draw_modern_button(
+        screen,
+        help_close,
+        translate("close"),
+        mouse_pos,
+        fonts.small,
+        variant="primary",
+        icon_name="check",
+        icon_size=16,
+    )
 
     overlay_rects["help_close"] = help_close
+    return overlay_rects
+
+
+def draw_leaderboard_modal(
+    screen: pygame.Surface, fonts, mouse_pos, translate, active_diff="medium"
+) -> dict:
+    """Draw high scores leaderboard modal. Returns interactive rects."""
+    from persistence import get_leaderboard
+
+    leaderboard = get_leaderboard()
+
+    overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+    overlay.fill((15, 23, 42, 190))
+    screen.blit(overlay, (0, 0))
+
+    card_w, card_h = 560, 520
+    modal_rect = pygame.Rect(
+        (SCREEN_WIDTH - card_w) // 2, (SCREEN_HEIGHT - card_h) // 2, card_w, card_h
+    )
+    draw_rounded_card(screen, modal_rect, Colors.BG_CARD, Colors.CARD_BORDER, radius=16)
+
+    # Crown icon & title
+    cr_icon = SmoothIcons.get("crown", 32, Colors.GOLD)
+    screen.blit(cr_icon, cr_icon.get_rect(center=(modal_rect.centerx, modal_rect.top + 36)))
+
+    title_surf = fonts.large.render(translate("leaderboard"), True, Colors.FIXED_TEXT)
+    screen.blit(title_surf, title_surf.get_rect(center=(modal_rect.centerx, modal_rect.top + 72)))
+
+    # Difficulty tabs
+    diff_tabs = [
+        ("easy", translate("de")),
+        ("medium", translate("trung_binh")),
+        ("hard", translate("kho")),
+        ("daily", translate("daily_challenge")),
+    ]
+    tab_w = 114
+    tab_h = 32
+    tab_start_x = modal_rect.centerx - (len(diff_tabs) * tab_w + (len(diff_tabs) - 1) * 8) // 2
+    tab_y = modal_rect.top + 104
+
+    overlay_rects: dict[str, pygame.Rect | None] = {"leaderboard_close": None}
+    for idx, (d_key, d_name) in enumerate(diff_tabs):
+        t_rect = pygame.Rect(tab_start_x + idx * (tab_w + 8), tab_y, tab_w, tab_h)
+        is_sel = d_key == active_diff
+        draw_modern_button(
+            screen,
+            t_rect,
+            d_name,
+            mouse_pos,
+            fonts.badge,
+            variant="secondary",
+            is_active=is_sel,
+            radius=6,
+        )
+        overlay_rects[f"tab_{d_key}"] = t_rect
+
+    # Table Header
+    th_y = tab_y + 44
+    th_bg = pygame.Rect(modal_rect.left + 30, th_y, card_w - 60, 28)
+    pygame.draw.rect(screen, Colors.SELECTED_BG, th_bg, border_radius=6)
+
+    screen.blit(
+        fonts.badge.render(translate("rank"), True, Colors.STATUS_TEXT), (th_bg.left + 16, th_y + 6)
+    )
+    screen.blit(
+        fonts.badge.render(translate("name"), True, Colors.STATUS_TEXT), (th_bg.left + 80, th_y + 6)
+    )
+    screen.blit(
+        fonts.badge.render(translate("time"), True, Colors.STATUS_TEXT),
+        (th_bg.right - 180, th_y + 6),
+    )
+    screen.blit(
+        fonts.badge.render(translate("date"), True, Colors.STATUS_TEXT),
+        (th_bg.right - 90, th_y + 6),
+    )
+
+    # Entries list
+    entries = cast(Any, leaderboard).get(active_diff, [])[:8]
+    row_y = th_y + 34
+    row_h = 28
+    if not entries:
+        no_data = fonts.small.render("Chưa có kỷ lục nào", True, Colors.STATUS_TEXT)
+        screen.blit(no_data, no_data.get_rect(center=(modal_rect.centerx, row_y + 50)))
+    else:
+        for i, entry in enumerate(entries):
+            cur_y = row_y + i * row_h
+            # Rank with medal color for top 3
+            rank_color = (
+                Colors.GOLD
+                if i == 0
+                else (
+                    (200, 200, 210)
+                    if i == 1
+                    else ((205, 127, 50) if i == 2 else Colors.STATUS_TEXT)
+                )
+            )
+            rank_surf = fonts.badge.render(f"#{i + 1}", True, rank_color)
+            screen.blit(rank_surf, (th_bg.left + 18, cur_y + 4))
+
+            # Name
+            name_surf = fonts.badge.render(
+                entry.get("name", "Player")[:14], True, Colors.FIXED_TEXT
+            )
+            screen.blit(name_surf, (th_bg.left + 80, cur_y + 4))
+
+            # Time
+            t_sec = entry.get("time", 0)
+            mins, secs = divmod(max(0, t_sec), 60)
+            time_surf = fonts.badge.render(
+                f"{mins:02}:{secs:02}", True, Colors.GOLD if i == 0 else Colors.FIXED_TEXT
+            )
+            screen.blit(time_surf, (th_bg.right - 180, cur_y + 4))
+
+            # Date
+            d_str = entry.get("date", "")[:10]
+            date_surf = fonts.tiny.render(d_str, True, Colors.STATUS_TEXT)
+            screen.blit(date_surf, (th_bg.right - 90, cur_y + 5))
+
+    # Close button
+    btn_w, btn_h = 120, 42
+    btn_y = modal_rect.bottom - 54
+    lb_close = pygame.Rect(modal_rect.centerx - btn_w // 2, btn_y, btn_w, btn_h)
+    draw_modern_button(
+        screen,
+        lb_close,
+        translate("close"),
+        mouse_pos,
+        fonts.small,
+        variant="primary",
+        icon_name="check",
+        icon_size=16,
+    )
+
+    overlay_rects["leaderboard_close"] = lb_close
     return overlay_rects

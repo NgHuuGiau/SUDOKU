@@ -1,4 +1,5 @@
 """Main game view renderer - combines all UI components."""
+
 import pygame
 
 from ui.board import draw_board
@@ -11,12 +12,15 @@ from ui.screen import create_game_screen
 from ui.sidebar import draw_sidebar
 
 
-def draw_game_view(screen: pygame.Surface, fonts: GameFonts, state, mouse_pos, particles=None, translate=None) -> dict:
+def draw_game_view(
+    screen: pygame.Surface, fonts: GameFonts, state, mouse_pos, particles=None, translate=None
+) -> dict:
     if translate is None:
         from config import game_text
+
         translate = game_text
 
-    overlay_rects = {
+    overlay_rects: dict[str, pygame.Rect | None] = {
         "pause_resume": None,
         "pause_quit": None,
         "win_restart": None,

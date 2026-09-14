@@ -1,4 +1,5 @@
 """Smooth supersampled icons for Sudoku UI."""
+
 import math
 import random
 
@@ -20,23 +21,31 @@ class SmoothIcons:
         cx, cy = canvas_size / 2, canvas_size / 2
         s = canvas_size
 
-        if name == 'undo':
+        if name == "undo":
             r = s * 0.28
             rect = pygame.Rect(cx - r, cy - r + s * 0.04, r * 2, r * 2)
             pygame.draw.arc(surf, color, rect, 0.4, 3.2, int(s * 0.08))
             tip_x, tip_y = cx - r + s * 0.02, cy + s * 0.04
-            pts = [(tip_x - s * 0.02, tip_y - s * 0.15), (tip_x - s * 0.15, tip_y + s * 0.03), (tip_x + s * 0.07, tip_y + s * 0.03)]
+            pts = [
+                (tip_x - s * 0.02, tip_y - s * 0.15),
+                (tip_x - s * 0.15, tip_y + s * 0.03),
+                (tip_x + s * 0.07, tip_y + s * 0.03),
+            ]
             pygame.draw.polygon(surf, color, pts)
 
-        elif name == 'redo':
+        elif name == "redo":
             r = s * 0.28
             rect = pygame.Rect(cx - r, cy - r + s * 0.04, r * 2, r * 2)
             pygame.draw.arc(surf, color, rect, -0.05, 2.75, int(s * 0.08))
             tip_x, tip_y = cx + r - s * 0.02, cy + s * 0.04
-            pts = [(tip_x + s * 0.02, tip_y - s * 0.15), (tip_x + s * 0.15, tip_y + s * 0.03), (tip_x - s * 0.07, tip_y + s * 0.03)]
+            pts = [
+                (tip_x + s * 0.02, tip_y - s * 0.15),
+                (tip_x + s * 0.15, tip_y + s * 0.03),
+                (tip_x - s * 0.07, tip_y + s * 0.03),
+            ]
             pygame.draw.polygon(surf, color, pts)
 
-        elif name == 'pencil':
+        elif name == "pencil":
             p_body = [
                 (cx - s * 0.20, cy + s * 0.16),
                 (cx + s * 0.16, cy - s * 0.20),
@@ -51,38 +60,62 @@ class SmoothIcons:
             ]
             pygame.draw.polygon(surf, color, p_tip)
 
-        elif name == 'hint':
+        elif name == "hint":
             r = s * 0.20
             bulb_cy = cy - s * 0.06
             pygame.draw.circle(surf, color, (int(cx), int(bulb_cy)), int(r), width=int(s * 0.07))
             base_w = s * 0.20
-            pygame.draw.line(surf, color, (cx - base_w / 2, cy + r - s * 0.04), (cx + base_w / 2, cy + r - s * 0.04), int(s * 0.07))
-            pygame.draw.line(surf, color, (cx - base_w * 0.3, cy + r + s * 0.03), (cx + base_w * 0.3, cy + r + s * 0.03), int(s * 0.07))
+            pygame.draw.line(
+                surf,
+                color,
+                (cx - base_w / 2, cy + r - s * 0.04),
+                (cx + base_w / 2, cy + r - s * 0.04),
+                int(s * 0.07),
+            )
+            pygame.draw.line(
+                surf,
+                color,
+                (cx - base_w * 0.3, cy + r + s * 0.03),
+                (cx + base_w * 0.3, cy + r + s * 0.03),
+                int(s * 0.07),
+            )
 
-        elif name == 'erase':
+        elif name == "erase":
             half = s * 0.20
-            pygame.draw.line(surf, color, (cx - half, cy - half), (cx + half, cy + half), int(s * 0.08))
-            pygame.draw.line(surf, color, (cx + half, cy - half), (cx - half, cy + half), int(s * 0.08))
+            pygame.draw.line(
+                surf, color, (cx - half, cy - half), (cx + half, cy + half), int(s * 0.08)
+            )
+            pygame.draw.line(
+                surf, color, (cx + half, cy - half), (cx - half, cy + half), int(s * 0.08)
+            )
 
-        elif name == 'sparkles':
-            for offset_x, offset_y, star_r in [(0, -s * 0.08, s * 0.22), (s * 0.20, s * 0.14, s * 0.11), (-s * 0.20, s * 0.14, s * 0.11)]:
+        elif name == "sparkles":
+            for offset_x, offset_y, star_r in [
+                (0, -s * 0.08, s * 0.22),
+                (s * 0.20, s * 0.14, s * 0.11),
+                (-s * 0.20, s * 0.14, s * 0.11),
+            ]:
                 scx, scy = cx + offset_x, cy + offset_y
                 pts = [
-                    (scx, scy - star_r), (scx + star_r * 0.25, scy - star_r * 0.25),
-                    (scx + star_r, scy), (scx + star_r * 0.25, scy + star_r * 0.25),
-                    (scx, scy + star_r), (scx - star_r * 0.25, scy + star_r * 0.25),
-                    (scx - star_r, scy), (scx - star_r * 0.25, scy - star_r * 0.25),
+                    (scx, scy - star_r),
+                    (scx + star_r * 0.25, scy - star_r * 0.25),
+                    (scx + star_r, scy),
+                    (scx + star_r * 0.25, scy + star_r * 0.25),
+                    (scx, scy + star_r),
+                    (scx - star_r * 0.25, scy + star_r * 0.25),
+                    (scx - star_r, scy),
+                    (scx - star_r * 0.25, scy - star_r * 0.25),
                 ]
                 pygame.draw.polygon(surf, color, pts)
 
-        elif name == 'clock':
+        elif name == "clock":
             r = s * 0.32
             pygame.draw.circle(surf, color, (int(cx), int(cy)), int(r), width=int(s * 0.08))
             pygame.draw.line(surf, color, (cx, cy), (cx, cy - r * 0.65), int(s * 0.08))
             pygame.draw.line(surf, color, (cx, cy), (cx + r * 0.6, cy), int(s * 0.08))
             pygame.draw.circle(surf, color, (int(cx), int(cy)), int(s * 0.06))
 
-        elif name == 'pause':
+        elif name == "pause":
             bar_w = s * 0.10
             bar_h = s * 0.44
             gap = s * 0.12
@@ -91,50 +124,118 @@ class SmoothIcons:
             pygame.draw.rect(surf, color, r1, border_radius=int(s * 0.04))
             pygame.draw.rect(surf, color, r2, border_radius=int(s * 0.04))
 
-        elif name == 'play':
+        elif name == "play":
             half = s * 0.24
-            pts = [(cx - half * 0.7, cy - half), (cx + half * 0.9, cy), (cx - half * 0.7, cy + half)]
+            pts = [
+                (cx - half * 0.7, cy - half),
+                (cx + half * 0.9, cy),
+                (cx - half * 0.7, cy + half),
+            ]
             pygame.draw.polygon(surf, color, pts)
 
-        elif name == 'restart':
+        elif name == "restart":
             r = s * 0.28
             arc_rect = pygame.Rect(cx - r, cy - r, r * 2, r * 2)
             pygame.draw.arc(surf, color, arc_rect, 0.6, 5.8, int(s * 0.08))
             tip_x, tip_y = cx + r - s * 0.02, cy - s * 0.02
-            pts = [(tip_x + s * 0.09, tip_y - s * 0.09), (tip_x - s * 0.09, tip_y - s * 0.09), (tip_x, tip_y + s * 0.08)]
+            pts = [
+                (tip_x + s * 0.09, tip_y - s * 0.09),
+                (tip_x - s * 0.09, tip_y - s * 0.09),
+                (tip_x, tip_y + s * 0.08),
+            ]
             pygame.draw.polygon(surf, color, pts)
 
-        elif name == 'home':
+        elif name == "home":
             half = s * 0.26
-            roof = [(cx, cy - half), (cx + half + s * 0.02, cy - s * 0.02), (cx - half - s * 0.02, cy - s * 0.02)]
+            roof = [
+                (cx, cy - half),
+                (cx + half + s * 0.02, cy - s * 0.02),
+                (cx - half - s * 0.02, cy - s * 0.02),
+            ]
             pygame.draw.polygon(surf, color, roof)
-            body = pygame.Rect(cx - half + s * 0.06, cy - s * 0.02, (half - s * 0.06) * 2, half * 0.9)
+            body = pygame.Rect(
+                cx - half + s * 0.06, cy - s * 0.02, (half - s * 0.06) * 2, half * 0.9
+            )
             pygame.draw.rect(surf, color, body, width=int(s * 0.07), border_radius=int(s * 0.02))
 
-        elif name == 'check':
-            pts = [(cx - s * 0.24, cy), (cx - s * 0.06, cy + s * 0.20), (cx + s * 0.24, cy - s * 0.18)]
+        elif name == "check":
+            pts = [
+                (cx - s * 0.24, cy),
+                (cx - s * 0.06, cy + s * 0.20),
+                (cx + s * 0.24, cy - s * 0.18),
+            ]
             pygame.draw.lines(surf, color, False, pts, width=int(s * 0.08))
 
-        elif name == 'trophy':
+        elif name == "trophy":
             w, h = s * 0.5, s * 0.5
             cup_rect = pygame.Rect(cx - w * 0.35, cy - h * 0.45, w * 0.7, h * 0.5)
             pygame.draw.arc(surf, color, cup_rect, 3.14, 6.28, int(s * 0.07))
-            pygame.draw.line(surf, color, (cup_rect.left, cup_rect.centery), (cup_rect.right, cup_rect.centery), int(s * 0.07))
+            pygame.draw.line(
+                surf,
+                color,
+                (cup_rect.left, cup_rect.centery),
+                (cup_rect.right, cup_rect.centery),
+                int(s * 0.07),
+            )
             pygame.draw.line(surf, color, (cx, cy + h * 0.05), (cx, cy + h * 0.35), int(s * 0.07))
-            pygame.draw.line(surf, color, (cx - w * 0.3, cy + h * 0.35), (cx + w * 0.3, cy + h * 0.35), int(s * 0.07))
-            pygame.draw.arc(surf, color, pygame.Rect(cx - w * 0.5, cy - h * 0.45, w * 0.3, h * 0.3), 1.5, 4.5, int(s * 0.06))
-            pygame.draw.arc(surf, color, pygame.Rect(cx + w * 0.2, cy - h * 0.45, w * 0.3, h * 0.3), -1.5, 1.5, int(s * 0.06))
+            pygame.draw.line(
+                surf,
+                color,
+                (cx - w * 0.3, cy + h * 0.35),
+                (cx + w * 0.3, cy + h * 0.35),
+                int(s * 0.07),
+            )
+            pygame.draw.arc(
+                surf,
+                color,
+                pygame.Rect(cx - w * 0.5, cy - h * 0.45, w * 0.3, h * 0.3),
+                1.5,
+                4.5,
+                int(s * 0.06),
+            )
+            pygame.draw.arc(
+                surf,
+                color,
+                pygame.Rect(cx + w * 0.2, cy - h * 0.45, w * 0.3, h * 0.3),
+                -1.5,
+                1.5,
+                int(s * 0.06),
+            )
 
-        elif name == 'grid_logo':
+        elif name == "grid_logo":
             rect = pygame.Rect(cx - s * 0.36, cy - s * 0.36, s * 0.72, s * 0.72)
             pygame.draw.rect(surf, color, rect, width=int(s * 0.06), border_radius=int(s * 0.08))
             step = rect.width / 3
-            pygame.draw.line(surf, color, (rect.left + step, rect.top), (rect.left + step, rect.bottom), int(s * 0.05))
-            pygame.draw.line(surf, color, (rect.left + step * 2, rect.top), (rect.left + step * 2, rect.bottom), int(s * 0.05))
-            pygame.draw.line(surf, color, (rect.left, rect.top + step), (rect.right, rect.top + step), int(s * 0.05))
-            pygame.draw.line(surf, color, (rect.left, rect.top + step * 2), (rect.right, rect.top + step * 2), int(s * 0.05))
+            pygame.draw.line(
+                surf,
+                color,
+                (rect.left + step, rect.top),
+                (rect.left + step, rect.bottom),
+                int(s * 0.05),
+            )
+            pygame.draw.line(
+                surf,
+                color,
+                (rect.left + step * 2, rect.top),
+                (rect.left + step * 2, rect.bottom),
+                int(s * 0.05),
+            )
+            pygame.draw.line(
+                surf,
+                color,
+                (rect.left, rect.top + step),
+                (rect.right, rect.top + step),
+                int(s * 0.05),
+            )
+            pygame.draw.line(
+                surf,
+                color,
+                (rect.left, rect.top + step * 2),
+                (rect.right, rect.top + step * 2),
+                int(s * 0.05),
+            )
 
-        elif name == 'star':
+        elif name == "star":
             pts = []
             radius = s * 0.36
             for i in range(10):
@@ -143,29 +244,79 @@ class SmoothIcons:
                 pts.append((cx + r * math.cos(angle), cy + r * math.sin(angle)))
             pygame.draw.polygon(surf, color, pts)
 
-        elif name == 'save':
-            # Floppy disk / save icon
-            rect = pygame.Rect(cx - s * 0.32, cy - s * 0.32, s * 0.64, s * 0.72)
-            pygame.draw.rect(surf, color, rect, border_radius=int(s * 0.06))
-            # Top metal part
-            top_rect = pygame.Rect(cx - s * 0.24, cy - s * 0.32, s * 0.48, s * 0.12)
-            pygame.draw.rect(surf, color, top_rect)
-            # Write protect notch
-            notch = pygame.Rect(cx - s * 0.08, cy - s * 0.28, s * 0.16, s * 0.06)
-            pygame.draw.rect(surf, (0, 0, 0, 0), notch)
+        elif name == "save":
+            # Clear floppy-disk outline that remains recognizable at 16px.
+            rect = pygame.Rect(cx - s * 0.32, cy - s * 0.32, s * 0.64, s * 0.64)
+            pygame.draw.rect(surf, color, rect, width=max(1, int(s * 0.07)), border_radius=int(s * 0.06))
+            pygame.draw.line(
+                surf,
+                color,
+                (cx - s * 0.20, cy - s * 0.30),
+                (cx + s * 0.20, cy - s * 0.30),
+                max(1, int(s * 0.07)),
+            )
+            pygame.draw.rect(
+                surf,
+                color,
+                pygame.Rect(cx - s * 0.18, cy + s * 0.06, s * 0.36, s * 0.18),
+                width=max(1, int(s * 0.06)),
+            )
 
-        elif name == 'palette':
+        elif name in ("upload", "download"):
+            # File transfer icon: tray plus an unambiguous arrow direction.
+            tray = pygame.Rect(cx - s * 0.30, cy + s * 0.10, s * 0.60, s * 0.22)
+            pygame.draw.line(
+                surf, color, tray.topleft, tray.topright, max(1, int(s * 0.07))
+            )
+            pygame.draw.line(
+                surf, color, tray.topright, tray.bottomright, max(1, int(s * 0.07))
+            )
+            pygame.draw.line(
+                surf, color, tray.bottomleft, tray.bottomright, max(1, int(s * 0.07))
+            )
+            arrow_y = cy + s * 0.02 if name == "download" else cy - s * 0.08
+            arrow_tip_y = cy + s * 0.08 if name == "download" else cy - s * 0.18
+            pygame.draw.line(
+                surf,
+                color,
+                (cx, arrow_tip_y),
+                (cx, arrow_y),
+                max(1, int(s * 0.08)),
+            )
+            direction = 1 if name == "download" else -1
+            pygame.draw.line(
+                surf,
+                color,
+                (cx, arrow_y),
+                (cx - s * 0.14, arrow_y - direction * s * 0.14),
+                max(1, int(s * 0.08)),
+            )
+            pygame.draw.line(
+                surf,
+                color,
+                (cx, arrow_y),
+                (cx + s * 0.14, arrow_y - direction * s * 0.14),
+                max(1, int(s * 0.08)),
+            )
+
+        elif name == "palette":
             # Artist palette
             r = s * 0.32
             pygame.draw.circle(surf, color, (int(cx), int(cy)), int(r), width=int(s * 0.07))
             # Thumb hole
-            pygame.draw.circle(surf, color, (int(cx + r * 0.35), int(cy + r * 0.35)), int(s * 0.07), width=int(s * 0.04))
+            pygame.draw.circle(
+                surf,
+                color,
+                (int(cx + r * 0.35), int(cy + r * 0.35)),
+                int(s * 0.07),
+                width=int(s * 0.04),
+            )
             # 3 paint dots
             pygame.draw.circle(surf, color, (int(cx - r * 0.4), int(cy - r * 0.2)), int(s * 0.05))
             pygame.draw.circle(surf, color, (int(cx), int(cy - r * 0.5)), int(s * 0.05))
             pygame.draw.circle(surf, color, (int(cx + r * 0.4), int(cy - r * 0.2)), int(s * 0.05))
 
-        elif name == 'sound':
+        elif name == "sound":
             # Speaker box
             pts = [
                 (cx - s * 0.28, cy - s * 0.12),
@@ -182,7 +333,7 @@ class SmoothIcons:
             arc_r2 = pygame.Rect(cx - s * 0.06, cy - s * 0.28, s * 0.48, s * 0.56)
             pygame.draw.arc(surf, color, arc_r2, -1.0, 1.0, int(s * 0.06))
 
-        elif name == 'sound_mute':
+        elif name == "sound_mute":
             # Speaker box
             pts = [
                 (cx - s * 0.30, cy - s * 0.12),
@@ -196,18 +347,184 @@ class SmoothIcons:
             # X mark
             x_cx = cx + s * 0.24
             half = s * 0.12
-            pygame.draw.line(surf, color, (x_cx - half, cy - half), (x_cx + half, cy + half), int(s * 0.06))
-            pygame.draw.line(surf, color, (x_cx + half, cy - half), (x_cx - half, cy + half), int(s * 0.06))
+            pygame.draw.line(
+                surf, color, (x_cx - half, cy - half), (x_cx + half, cy + half), int(s * 0.06)
+            )
+            pygame.draw.line(
+                surf, color, (x_cx + half, cy - half), (x_cx - half, cy + half), int(s * 0.06)
+            )
 
-        elif name == 'help':
+        elif name == "help":
             # Question mark
             pygame.draw.circle(surf, color, (int(cx), int(cy)), int(s * 0.36), width=int(s * 0.06))
             # Arc for question mark
             top_arc = pygame.Rect(cx - s * 0.14, cy - s * 0.24, s * 0.28, s * 0.24)
             pygame.draw.arc(surf, color, top_arc, 0.0, 3.14, int(s * 0.06))
-            pygame.draw.line(surf, color, (cx + s * 0.14, cy - s * 0.12), (cx, cy + s * 0.04), int(s * 0.06))
+            pygame.draw.line(
+                surf, color, (cx + s * 0.14, cy - s * 0.12), (cx, cy + s * 0.04), int(s * 0.06)
+            )
             pygame.draw.line(surf, color, (cx, cy + s * 0.04), (cx, cy + s * 0.10), int(s * 0.06))
             pygame.draw.circle(surf, color, (int(cx), int(cy + s * 0.20)), int(s * 0.04))
+
+        elif name in ("close", "cross"):
+            half = s * 0.22
+            pygame.draw.line(
+                surf, color, (cx - half, cy - half), (cx + half, cy + half), int(s * 0.08)
+            )
+            pygame.draw.line(
+                surf, color, (cx + half, cy - half), (cx - half, cy + half), int(s * 0.08)
+            )
+
+        elif name == "arrow_right":
+            # Crisp modern chevron
+            half = s * 0.20
+            pts = [
+                (cx - half * 0.6, cy - half),
+                (cx + half * 0.6, cy),
+                (cx - half * 0.6, cy + half),
+            ]
+            pygame.draw.lines(surf, color, False, pts, width=int(s * 0.09))
+
+        elif name == "flame":
+            # Stylish flame silhouette
+            flame_pts = [
+                (cx, cy - s * 0.38),
+                (cx + s * 0.14, cy - s * 0.18),
+                (cx + s * 0.28, cy - s * 0.04),
+                (cx + s * 0.26, cy + s * 0.20),
+                (cx + s * 0.12, cy + s * 0.34),
+                (cx - s * 0.12, cy + s * 0.34),
+                (cx - s * 0.26, cy + s * 0.20),
+                (cx - s * 0.28, cy - s * 0.04),
+                (cx - s * 0.14, cy - s * 0.16),
+                (cx - s * 0.06, cy + s * 0.02),
+            ]
+            pygame.draw.polygon(surf, color, flame_pts)
+
+        elif name == "crown":
+            # Royal crown
+            pts = [
+                (cx - s * 0.30, cy + s * 0.22),
+                (cx - s * 0.34, cy - s * 0.12),
+                (cx - s * 0.14, cy + s * 0.04),
+                (cx, cy - s * 0.26),
+                (cx + s * 0.14, cy + s * 0.04),
+                (cx + s * 0.34, cy - s * 0.12),
+                (cx + s * 0.30, cy + s * 0.22),
+            ]
+            pygame.draw.polygon(surf, color, pts)
+            pygame.draw.rect(
+                surf,
+                color,
+                pygame.Rect(cx - s * 0.30, cy + s * 0.20, s * 0.60, s * 0.07),
+                border_radius=int(s * 0.02),
+            )
+            # Jewels
+            pygame.draw.circle(surf, color, (int(cx - s * 0.34), int(cy - s * 0.14)), int(s * 0.04))
+            pygame.draw.circle(surf, color, (int(cx), int(cy - s * 0.28)), int(s * 0.045))
+            pygame.draw.circle(surf, color, (int(cx + s * 0.34), int(cy - s * 0.14)), int(s * 0.04))
+
+        elif name == "calendar":
+            # Calendar
+            cal_w, cal_h = s * 0.60, s * 0.54
+            top = cy - cal_h / 2 + s * 0.04
+            pygame.draw.rect(
+                surf,
+                color,
+                pygame.Rect(cx - cal_w / 2, top, cal_w, cal_h),
+                width=int(s * 0.06),
+                border_radius=int(s * 0.06),
+            )
+            # Header line
+            pygame.draw.line(
+                surf,
+                color,
+                (cx - cal_w / 2, top + s * 0.16),
+                (cx + cal_w / 2, top + s * 0.16),
+                int(s * 0.05),
+            )
+            # Binder rings
+            pygame.draw.line(
+                surf,
+                color,
+                (cx - s * 0.16, top - s * 0.08),
+                (cx - s * 0.16, top + s * 0.04),
+                int(s * 0.06),
+            )
+            pygame.draw.line(
+                surf,
+                color,
+                (cx + s * 0.16, top - s * 0.08),
+                (cx + s * 0.16, top + s * 0.04),
+                int(s * 0.06),
+            )
+            # Dots for dates
+            for r_i in (0.26, 0.38):
+                for c_i in (-0.16, 0.0, 0.16):
+                    pygame.draw.circle(
+                        surf, color, (int(cx + s * c_i), int(top + s * r_i)), int(s * 0.035)
+                    )
+
+        elif name == "slider":
+            # Track
+            pygame.draw.line(surf, color, (cx - s * 0.30, cy), (cx + s * 0.30, cy), int(s * 0.07))
+            # Knob / handle
+            pygame.draw.circle(surf, color, (int(cx + s * 0.05), int(cy)), int(s * 0.12))
+
+        elif name == "shield":
+            pts = [
+                (cx - s * 0.28, cy - s * 0.28),
+                (cx + s * 0.28, cy - s * 0.28),
+                (cx + s * 0.28, cy + s * 0.04),
+                (cx, cy + s * 0.36),
+                (cx - s * 0.28, cy + s * 0.04),
+            ]
+            pygame.draw.polygon(surf, color, pts, width=int(s * 0.06))
+            chk = [
+                (cx - s * 0.14, cy),
+                (cx - s * 0.02, cy + s * 0.12),
+                (cx + s * 0.14, cy - s * 0.08),
+            ]
+            pygame.draw.lines(surf, color, False, chk, width=int(s * 0.06))
+
+        elif name == "stats":
+            # Bar chart
+            w = s * 0.12
+            pygame.draw.rect(
+                surf,
+                color,
+                pygame.Rect(cx - s * 0.26, cy + s * 0.02, w, s * 0.26),
+                border_radius=int(s * 0.02),
+            )
+            pygame.draw.rect(
+                surf,
+                color,
+                pygame.Rect(cx - w / 2, cy - s * 0.24, w, s * 0.52),
+                border_radius=int(s * 0.02),
+            )
+            pygame.draw.rect(
+                surf,
+                color,
+                pygame.Rect(cx + s * 0.14, cy - s * 0.10, w, s * 0.38),
+                border_radius=int(s * 0.02),
+            )
+
+        elif name == "globe":
+            r = s * 0.32
+            pygame.draw.circle(surf, color, (int(cx), int(cy)), int(r), width=int(s * 0.06))
+            pygame.draw.line(surf, color, (cx - r, cy), (cx + r, cy), int(s * 0.05))
+            pygame.draw.ellipse(
+                surf, color, pygame.Rect(cx - r * 0.5, cy - r, r, r * 2), width=int(s * 0.05)
+            )
+
+        elif name == "plus":
+            half = s * 0.22
+            pygame.draw.line(surf, color, (cx - half, cy), (cx + half, cy), int(s * 0.07))
+            pygame.draw.line(surf, color, (cx, cy - half), (cx, cy + half), int(s * 0.07))
+
+        elif name == "minus":
+            half = s * 0.22
+            pygame.draw.line(surf, color, (cx - half, cy), (cx + half, cy), int(s * 0.07))
 
         smooth_result = pygame.transform.smoothscale(surf, (size, size))
         cls._cache[key] = smooth_result

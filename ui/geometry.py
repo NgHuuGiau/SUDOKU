@@ -1,15 +1,16 @@
 """Geometry constants and layout calculations for Sudoku UI."""
+
 import pygame
 
 # Screen dimensions
-SCREEN_WIDTH = 960
-SCREEN_HEIGHT = 740
+SCREEN_WIDTH = 1120
+SCREEN_HEIGHT = 800
 
-BOARD_SIZE = 558
-CELL_SIZE = BOARD_SIZE // 9  # 62px
+BOARD_SIZE = 600
+CELL_SIZE = BOARD_SIZE // 9  # 66px
 
-BOARD_X = 36
-BOARD_Y = 100
+BOARD_X = 40
+BOARD_Y = 104
 
 SIDEBAR_X = BOARD_X + BOARD_SIZE + 28  # 622
 SIDEBAR_Y = BOARD_Y
@@ -33,25 +34,28 @@ def get_sidebar_layout() -> dict:
     w = SIDEBAR_WIDTH
     y = SIDEBAR_Y
 
-    # 1. Quick Actions (5 buttons)
-    quick_btn_w = (w - 24) // 5
-    quick_btn_h = 58
+    # 1. Quick Actions (3 + 2 buttons, so labels stay readable)
+    quick_btn_w = (w - 12) // 3
+    quick_btn_h = 52
     quick_buttons = []
     for i in range(5):
-        bx = x + i * (quick_btn_w + 6)
-        quick_buttons.append(pygame.Rect(bx, y, quick_btn_w, quick_btn_h))
+        col = i % 3
+        row = i // 3
+        bx = x + col * (quick_btn_w + 6)
+        by = y + row * (quick_btn_h + 8)
+        quick_buttons.append(pygame.Rect(bx, by, quick_btn_w, quick_btn_h))
 
-    y += quick_btn_h + 12
+    y += 2 * quick_btn_h + 8 + 12
 
-    # 2. Tools (Clear, Auto Notes, Export, Import)
-    tool_btn_w = (w - 22) // 4
-    tool_btn_h = 42
+    # 2. Tools (2 x 2 grid, so translated labels do not get clipped)
+    tool_btn_w = (w - 6) // 2
+    tool_btn_h = 38
     clear_rect = pygame.Rect(x, y, tool_btn_w, tool_btn_h)
     auto_notes_rect = pygame.Rect(x + tool_btn_w + 6, y, tool_btn_w, tool_btn_h)
-    export_rect = pygame.Rect(x + 2 * (tool_btn_w + 6), y, tool_btn_w, tool_btn_h)
-    import_rect = pygame.Rect(x + 3 * (tool_btn_w + 6), y, tool_btn_w, tool_btn_h)
+    export_rect = pygame.Rect(x, y + tool_btn_h + 6, tool_btn_w, tool_btn_h)
+    import_rect = pygame.Rect(x + tool_btn_w + 6, y + tool_btn_h + 6, tool_btn_w, tool_btn_h)
 
-    y += tool_btn_h + 18
+    y += 2 * tool_btn_h + 6 + 18
 
     # 3. Number pad (3x3 grid)
     num_grid_y = y + 18
@@ -61,12 +65,14 @@ def get_sidebar_layout() -> dict:
     for i in range(9):
         col = i % 3
         row = i // 3
-        number_buttons.append(pygame.Rect(
-            x + col * (num_btn_w + 8),
-            num_grid_y + row * (num_btn_h + 8),
-            num_btn_w,
-            num_btn_h,
-        ))
+        number_buttons.append(
+            pygame.Rect(
+                x + col * (num_btn_w + 8),
+                num_grid_y + row * (num_btn_h + 8),
+                num_btn_w,
+                num_btn_h,
+            )
+        )
 
     y = num_grid_y + 3 * (num_btn_h + 8) + 14
 

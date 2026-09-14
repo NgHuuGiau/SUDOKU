@@ -1,4 +1,5 @@
 """Board rendering for Sudoku UI."""
+
 import time
 
 import pygame
@@ -41,25 +42,31 @@ def trigger_number_placement_animation(r: int, c: int) -> None:
 
 def trigger_completion_animation(comp_type: str, index: int) -> None:
     """Trigger a celebration ripple animation for row, col, or box."""
-    _completion_animations.append({
-        "type": comp_type,
-        "index": index,
-        "start_time": time.monotonic(),
-        "duration": 0.6,
-    })
+    _completion_animations.append(
+        {
+            "type": comp_type,
+            "index": index,
+            "start_time": time.monotonic(),
+            "duration": 0.6,
+        }
+    )
 
 
 def draw_board(screen: pygame.Surface, fonts, state, selected_cell=None):
     board_rect = pygame.Rect(BOARD_X, BOARD_Y, BOARD_SIZE, BOARD_SIZE)
-    draw_rounded_card(screen, board_rect, Colors.BG_BOARD, Colors.GRID_OUTER, border_width=2, radius=12)
+    draw_rounded_card(
+        screen, board_rect, Colors.BG_BOARD, Colors.GRID_OUTER, border_width=2, radius=12
+    )
 
-    r_sel, c_sel = (selected_cell if selected_cell else state.selected)
+    r_sel, c_sel = selected_cell if selected_cell else state.selected
     highlight_num = state.board[r_sel][c_sel] if state.selected else 0
 
     # 1. Background highlights
     for r in range(9):
         for c in range(9):
-            cell_rect = pygame.Rect(BOARD_X + c * CELL_SIZE, BOARD_Y + r * CELL_SIZE, CELL_SIZE, CELL_SIZE)
+            cell_rect = pygame.Rect(
+                BOARD_X + c * CELL_SIZE, BOARD_Y + r * CELL_SIZE, CELL_SIZE, CELL_SIZE
+            )
 
             # Crosshair
             if state.selected and not state.paused:
@@ -74,7 +81,9 @@ def draw_board(screen: pygame.Surface, fonts, state, selected_cell=None):
             # Error highlight
             if state.board[r][c] != 0 and state.original[r][c] == 0:
                 is_err = False
-                if is_valid_placement is not None and not is_valid_placement(state.board, r, c, state.board[r][c]):
+                if is_valid_placement is not None and not is_valid_placement(
+                    state.board, r, c, state.board[r][c]
+                ):
                     is_err = True
                 elif state.show_errors and state.board[r][c] != state.solution[r][c]:
                     is_err = True
@@ -89,7 +98,7 @@ def draw_board(screen: pygame.Surface, fonts, state, selected_cell=None):
 
     # 2. Grid lines
     for i in range(10):
-        is_thick = (i % 3 == 0)
+        is_thick = i % 3 == 0
         line_color = Colors.GRID_THICK if is_thick else Colors.GRID_THIN
         line_width = 3 if is_thick else 1
 
@@ -100,10 +109,12 @@ def draw_board(screen: pygame.Surface, fonts, state, selected_cell=None):
 
     # 3. Selected cell modern glow & border
     if state.selected and not state.paused:
-        sel_rect = pygame.Rect(BOARD_X + c_sel * CELL_SIZE, BOARD_Y + r_sel * CELL_SIZE, CELL_SIZE, CELL_SIZE)
+        sel_rect = pygame.Rect(
+            BOARD_X + c_sel * CELL_SIZE, BOARD_Y + r_sel * CELL_SIZE, CELL_SIZE, CELL_SIZE
+        )
         # Outer soft glow
         glow_surf = pygame.Surface((CELL_SIZE, CELL_SIZE), pygame.SRCALPHA)
-        ripple_c = getattr(Colors, 'RIPPLE', (79, 70, 229))
+        ripple_c = getattr(Colors, "RIPPLE", (79, 70, 229))
         pygame.draw.rect(glow_surf, (*ripple_c, 45), glow_surf.get_rect(), border_radius=8)
         screen.blit(glow_surf, sel_rect)
         # Sharp accent border
@@ -119,24 +130,35 @@ def draw_board(screen: pygame.Surface, fonts, state, selected_cell=None):
             progress = elapsed / anim["duration"]
             alpha = int(180 * (1.0 - progress))
             ripple_surf = pygame.Surface((CELL_SIZE, CELL_SIZE), pygame.SRCALPHA)
-            ripple_c = getattr(Colors, 'RIPPLE', (56, 189, 248))
-            pygame.draw.rect(ripple_surf, (*ripple_c, alpha), ripple_surf.get_rect(), border_radius=6)
+            ripple_c = getattr(Colors, "RIPPLE", (56, 189, 248))
+            pygame.draw.rect(
+                ripple_surf, (*ripple_c, alpha), ripple_surf.get_rect(), border_radius=6
+            )
 
             comp_type = anim["type"]
             idx = anim["index"]
             if comp_type == "row":
                 for col in range(9):
-                    crect = pygame.Rect(BOARD_X + col * CELL_SIZE, BOARD_Y + idx * CELL_SIZE, CELL_SIZE, CELL_SIZE)
+                    crect = pygame.Rect(
+                        BOARD_X + col * CELL_SIZE, BOARD_Y + idx * CELL_SIZE, CELL_SIZE, CELL_SIZE
+                    )
                     screen.blit(ripple_surf, crect)
             elif comp_type == "col":
                 for row in range(9):
-                    crect = pygame.Rect(BOARD_X + idx * CELL_SIZE, BOARD_Y + row * CELL_SIZE, CELL_SIZE, CELL_SIZE)
+                    crect = pygame.Rect(
+                        BOARD_X + idx * CELL_SIZE, BOARD_Y + row * CELL_SIZE, CELL_SIZE, CELL_SIZE
+                    )
                     screen.blit(ripple_surf, crect)
             elif comp_type == "box":
                 br, bc = (idx // 3) * 3, (idx % 3) * 3
                 for dr in range(3):
                     for dc in range(3):
-                        crect = pygame.Rect(BOARD_X + (bc + dc) * CELL_SIZE, BOARD_Y + (br + dr) * CELL_SIZE, CELL_SIZE, CELL_SIZE)
+                        crect = pygame.Rect(
+                            BOARD_X + (bc + dc) * CELL_SIZE,
+                            BOARD_Y + (br + dr) * CELL_SIZE,
+                            CELL_SIZE,
+                            CELL_SIZE,
+                        )
                         screen.blit(ripple_surf, crect)
     _completion_animations[:] = active_anims
 
@@ -144,14 +166,18 @@ def draw_board(screen: pygame.Surface, fonts, state, selected_cell=None):
     if not state.paused:
         for r in range(9):
             for c in range(9):
-                cell_rect = pygame.Rect(BOARD_X + c * CELL_SIZE, BOARD_Y + r * CELL_SIZE, CELL_SIZE, CELL_SIZE)
+                cell_rect = pygame.Rect(
+                    BOARD_X + c * CELL_SIZE, BOARD_Y + r * CELL_SIZE, CELL_SIZE, CELL_SIZE
+                )
                 val = state.board[r][c]
 
                 if val != 0:
-                    is_fixed = (state.original[r][c] != 0)
+                    is_fixed = state.original[r][c] != 0
                     if is_fixed:
                         color = Colors.FIXED_TEXT
-                    elif is_valid_placement is not None and not is_valid_placement(state.board, r, c, val):
+                    elif is_valid_placement is not None and not is_valid_placement(
+                        state.board, r, c, val
+                    ):
                         color = Colors.ERROR_TEXT
                     elif state.show_errors and val != state.solution[r][c]:
                         color = Colors.ERROR_TEXT
@@ -170,7 +196,9 @@ def draw_board(screen: pygame.Surface, fonts, state, selected_cell=None):
 
                     if not is_fixed and anim_progress < 1.0:
                         scaled_size = int(CELL_SIZE * scale)
-                        scaled_surf = pygame.transform.smoothscale(num_surf, (scaled_size, scaled_size))
+                        scaled_surf = pygame.transform.smoothscale(
+                            num_surf, (scaled_size, scaled_size)
+                        )
                         scaled_surf.set_alpha(alpha)
                         screen.blit(scaled_surf, scaled_surf.get_rect(center=cell_rect.center))
                     else:
@@ -179,9 +207,13 @@ def draw_board(screen: pygame.Surface, fonts, state, selected_cell=None):
                 elif state.notes[r][c]:
                     # Draw subtle background for cells with notes according to theme
                     note_bg_rect = cell_rect.inflate(-4, -4)
-                    note_bg_surf = pygame.Surface((note_bg_rect.width, note_bg_rect.height), pygame.SRCALPHA)
+                    note_bg_surf = pygame.Surface(
+                        (note_bg_rect.width, note_bg_rect.height), pygame.SRCALPHA
+                    )
                     note_tint = Colors.SELECTED_BG
-                    pygame.draw.rect(note_bg_surf, (*note_tint[:3], 80), note_bg_surf.get_rect(), border_radius=4)
+                    pygame.draw.rect(
+                        note_bg_surf, (*note_tint[:3], 80), note_bg_surf.get_rect(), border_radius=4
+                    )
                     screen.blit(note_bg_surf, note_bg_rect)
 
                     sub_size = CELL_SIZE // 3

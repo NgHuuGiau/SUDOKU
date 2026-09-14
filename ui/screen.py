@@ -1,6 +1,8 @@
 """Screen initialization for Sudoku."""
+
 import ctypes
 import os
+import sys
 
 import pygame
 
@@ -19,7 +21,10 @@ def enable_high_dpi() -> None:
 
 
 def get_sudoku_icon_path() -> str:
-    return os.path.join(os.path.dirname(__file__), "..", "Picture", "SUDOKU.ico")
+    if hasattr(sys, "_MEIPASS"):
+        return os.path.join(sys._MEIPASS, "Picture", "SUDOKU.ico")
+    project_dir = os.path.dirname(os.path.dirname(__file__))
+    return os.path.join(project_dir, "assets", "preview", "SUDOKU.ico")
 
 
 def create_game_screen() -> pygame.Surface:

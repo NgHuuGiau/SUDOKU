@@ -11,7 +11,7 @@ This package provides all UI components for the Sudoku game:
 - modals: Pause/Win modals & header/footer
 - screen: Screen initialization
 - view: Main game view renderer
-- menu: Tkinter-based main menu
+- menu: Pygame-based main menu (draw_menu_view)
 """
 
 from ui.board import draw_board, trigger_completion_animation, trigger_number_placement_animation
@@ -28,7 +28,7 @@ from ui.colors import (
     get_current_menu_colors,
     get_theme_manager,
 )
-from ui.drawing import draw_modern_button, draw_rounded_card
+from ui.drawing import draw_badge, draw_interactive_card, draw_modern_button, draw_rounded_card
 from ui.fonts import GameFonts, load_fonts
 from ui.geometry import (
     BOARD_SIZE,
@@ -46,11 +46,12 @@ from ui.geometry import (
     get_timer_rect,
 )
 from ui.icons import Particle, SmoothIcons
-from ui.menu import MenuSudoku, tao_nut_bat_dau
+from ui.menu import MenuSudoku, draw_menu_view, tao_nut_bat_dau
 from ui.modals import (
     draw_footer_helper,
     draw_header,
     draw_help_modal,
+    draw_leaderboard_modal,
     draw_pause_modal,
     draw_win_modal,
 )
@@ -93,6 +94,8 @@ __all__ = [
     "get_remaining_counts",
     # Drawing
     "draw_rounded_card",
+    "draw_interactive_card",
+    "draw_badge",
     "draw_modern_button",
     # Components
     "draw_board",
@@ -104,6 +107,7 @@ __all__ = [
     "draw_win_modal",
     "draw_pause_modal",
     "draw_help_modal",
+    "draw_leaderboard_modal",
     # Screen
     "create_game_screen",
     "enable_high_dpi",
@@ -111,6 +115,7 @@ __all__ = [
     # View
     "draw_game_view",
     # Menu
+    "draw_menu_view",
     "MenuSudoku",
     "tao_nut_bat_dau",
 ]
