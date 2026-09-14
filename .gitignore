@@ -19,6 +19,8 @@ htmlcov/
 
 build/
 dist/
+.build-check/
+.dist-check/
 *.egg-info/
 
 *.log

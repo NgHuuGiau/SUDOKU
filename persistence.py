@@ -3,7 +3,10 @@
 import json
 import logging
 import os
+import shutil
+import sys
 from datetime import date
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, TypedDict, cast
 
 logger = logging.getLogger(__name__)
@@ -11,11 +14,35 @@ logger = logging.getLogger(__name__)
 if TYPE_CHECKING:
     from game import GameState
 
-SAVE_FILE = os.path.join(os.path.dirname(__file__), "save_game.json")
-BEST_TIMES_FILE = os.path.join(os.path.dirname(__file__), "best_times.json")
-DAILY_STATS_FILE = os.path.join(os.path.dirname(__file__), "daily_stats.json")
-STATS_FILE = os.path.join(os.path.dirname(__file__), "stats.json")
-LEADERBOARD_FILE = os.path.join(os.path.dirname(__file__), "leaderboard.json")
+LEGACY_DATA_DIR = Path(__file__).resolve().parent
+
+
+def get_data_dir() -> Path:
+    """Return the per-user data directory, overridable for tests."""
+    override = os.environ.get("SUDOKU_DATA_DIR")
+    if override:
+        data_dir = Path(override)
+    elif os.name == "nt":
+        data_dir = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local")) / "SudokuMaster"
+    elif sys.platform == "darwin":
+        data_dir = Path.home() / "Library" / "Application Support" / "SudokuMaster"
+    else:
+        data_dir = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local" / "share")) / "SudokuMaster"
+    data_dir.mkdir(parents=True, exist_ok=True)
+    return data_dir
+
+
+def _runtime_file(filename: str) -> str:
+    """Return a runtime file path and migrate an old project-local file once."""
+    target = get_data_dir() / filename
+    legacy = LEGACY_DATA_DIR / filename
+    if not target.exists() and legacy.exists() and target != legacy:
+        try:
+            shutil.copy2(legacy, target)
+            logger.info("Migrated runtime data from %s to %s", legacy, target)
+        except OSError as exc:
+            logger.warning("Could not migrate %s: %s", legacy, exc)
+    return str(target)
 
 
 # Type definitions
@@ -104,21 +131,23 @@ def _save_json(filepath: str, data: dict[str, Any]) -> None:
 
 
 def load_best_times() -> dict[Difficulty, int | None]:
-    if os.path.exists(BEST_TIMES_FILE):
+    filepath = _runtime_file("best_times.json")
+    if os.path.exists(filepath):
         try:
-            with open(BEST_TIMES_FILE, encoding="utf-8") as f:
+            with open(filepath, encoding="utf-8") as f:
                 return cast(dict[Difficulty, int | None], json.load(f))
         except (OSError, json.JSONDecodeError) as exc:
-            logger.warning("Could not load %s: %s", BEST_TIMES_FILE, exc)
+            logger.warning("Could not load %s: %s", filepath, exc)
     return {"easy": None, "medium": None, "hard": None}
 
 
 def save_best_times(times: dict[Difficulty, int | None]) -> None:
+    filepath = _runtime_file("best_times.json")
     try:
-        with open(BEST_TIMES_FILE, "w", encoding="utf-8") as f:
+        with open(filepath, "w", encoding="utf-8") as f:
             json.dump(times, f, ensure_ascii=False, indent=2)
     except OSError as exc:
-        logger.warning("Could not save %s: %s", BEST_TIMES_FILE, exc)
+        logger.warning("Could not save %s: %s", filepath, exc)
 
 
 def update_best_time(difficulty: Difficulty, elapsed: int) -> bool:
@@ -136,6 +165,7 @@ def get_best_time(difficulty: Difficulty) -> int | None:
 
 
 def save_game_state(state: "GameState") -> None:
+    filepath = _runtime_file("save_game.json")
     data = {
         "difficulty": state.difficulty,
         "board": state.board,
@@ -168,14 +198,15 @@ def save_game_state(state: "GameState") -> None:
             for board, notes in state.redo_stack
         ],
     }
-    _save_json(SAVE_FILE, data)
+    _save_json(filepath, data)
 
 
 def load_game_state() -> "GameState | None":
-    if not os.path.exists(SAVE_FILE):
+    filepath = _runtime_file("save_game.json")
+    if not os.path.exists(filepath):
         return None
     try:
-        with open(SAVE_FILE, encoding="utf-8") as f:
+        with open(filepath, encoding="utf-8") as f:
             data = json.load(f)
     except (OSError, json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
         logger.warning("Could not load saved game: %s", exc)
@@ -213,8 +244,9 @@ def load_game_state() -> "GameState | None":
 
 
 def clear_save_file() -> None:
+    filepath = _runtime_file("save_game.json")
     try:
-        os.remove(SAVE_FILE)
+        os.remove(filepath)
     except FileNotFoundError:
         return
     except OSError as exc:
@@ -222,7 +254,7 @@ def clear_save_file() -> None:
 
 
 def has_save_file() -> bool:
-    return os.path.exists(SAVE_FILE)
+    return os.path.exists(_runtime_file("save_game.json"))
 
 
 # =============================================================================
@@ -231,8 +263,9 @@ def has_save_file() -> bool:
 
 
 def load_daily_stats() -> DailyStats:
+    filepath = _runtime_file("daily_stats.json")
     return cast(DailyStats, _load_json(
-        DAILY_STATS_FILE,
+        filepath,
         {
             "last_completed_date": None,
             "streak": 0,
@@ -243,7 +276,7 @@ def load_daily_stats() -> DailyStats:
 
 
 def save_daily_stats(stats: DailyStats) -> None:
-    _save_json(DAILY_STATS_FILE, cast(dict[str, Any], stats))
+    _save_json(_runtime_file("daily_stats.json"), cast(dict[str, Any], stats))
 
 
 def mark_daily_challenge_completed(elapsed: int, difficulty: Difficulty) -> DailyStats:
@@ -286,8 +319,9 @@ def get_daily_stats() -> DailyStats:
 
 
 def load_stats() -> GameStats:
+    filepath = _runtime_file("stats.json")
     return cast(GameStats, _load_json(
-        STATS_FILE,
+        filepath,
         {
             "games_played": 0,
             "games_won": 0,
@@ -307,7 +341,7 @@ def load_stats() -> GameStats:
 
 
 def save_stats(stats: GameStats) -> None:
-    _save_json(STATS_FILE, cast(dict[str, Any], stats))
+    _save_json(_runtime_file("stats.json"), cast(dict[str, Any], stats))
 
 
 def record_game_start(difficulty: Difficulty) -> None:
@@ -372,8 +406,9 @@ LEADERBOARD_MAX_ENTRIES = 10
 
 
 def load_leaderboard() -> LeaderboardData:
+    filepath = _runtime_file("leaderboard.json")
     return cast(LeaderboardData, _load_json(
-        LEADERBOARD_FILE,
+        filepath,
         {
             "easy": [],
             "medium": [],
@@ -385,7 +420,7 @@ def load_leaderboard() -> LeaderboardData:
 
 
 def save_leaderboard(leaderboard: LeaderboardData) -> None:
-    _save_json(LEADERBOARD_FILE, cast(dict[str, Any], leaderboard))
+    _save_json(_runtime_file("leaderboard.json"), cast(dict[str, Any], leaderboard))
 
 
 def add_leaderboard_entry(
