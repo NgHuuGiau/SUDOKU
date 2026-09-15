@@ -8,6 +8,9 @@ import pygame
 
 
 def enable_high_dpi() -> None:
+    if sys.platform != "win32":
+        return
+
     try:
         ctypes.windll.user32.SetProcessDpiAwarenessContext(ctypes.c_void_p(-4))
     except Exception:
