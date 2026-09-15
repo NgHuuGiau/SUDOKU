@@ -1,5 +1,8 @@
 """Unit tests for Sudoku game."""
 
+import os
+from pathlib import Path
+
 import pytest
 
 from game import GameState
@@ -17,6 +20,7 @@ from logic import (
 from persistence import (
     clear_save_file,
     get_best_time,
+    get_data_dir,
     has_save_file,
     load_best_times,
     load_game_state,
@@ -136,6 +140,9 @@ class TestPersistence:
 
     def teardown_method(self):
         clear_save_file()
+
+    def test_runtime_data_uses_isolated_directory(self):
+        assert get_data_dir() == Path(os.environ["SUDOKU_DATA_DIR"])
 
     def test_save_load_game_state(self):
         state = GameState("easy")

@@ -4,7 +4,7 @@
 [![Pygame](https://img.shields.io/badge/Pygame-2.0%2B-1F6FEB)](https://www.pygame.org/)
 [![License](https://img.shields.io/badge/Gi%E1%BA%A5y%20ph%C3%A9p-MIT-22C55E)](LICENSE)
 
-Đây là dự án game Sudoku được xây dựng bằng Python và `pygame`, tập trung vào trải nghiệm chơi trực quan, bố cục rõ ràng và các tính năng hỗ trợ đủ tốt để người chơi có thể giải đố thoải mái ngay trên giao diện desktop.
+Đây là dự án game Sudoku desktop được xây dựng bằng Python và `pygame`, tập trung vào trải nghiệm chơi trực quan, bố cục rõ ràng và thao tác ổn định bằng cả chuột lẫn bàn phím.
 
 Thay vì chỉ là một bảng Sudoku đơn giản, dự án được tổ chức như một ứng dụng hoàn chỉnh với menu mở đầu, nhiều mức độ khó, đồng hồ thời gian, ghi chú, gợi ý, hoàn tác, làm lại, tạm dừng và màn hình chiến thắng riêng.
 
@@ -16,7 +16,7 @@ Dự án này phù hợp cho 3 mục đích:
 - học cách tổ chức một project Python có giao diện bằng `pygame`
 - dùng làm đồ án, project cá nhân hoặc dự án trưng bày trên GitHub
 
-Mã nguồn được tách thành các phần riêng cho logic sinh bảng, kiểm tra hợp lệ, vòng lặp game, giao diện hiển thị và cấu hình ngôn ngữ. Nhờ vậy, dự án dễ đọc, dễ mở rộng và dễ chỉnh sửa hơn.
+Mã nguồn được tách thành các phần riêng cho logic sinh bảng, kiểm tra hợp lệ, vòng lặp game, giao diện hiển thị, lưu dữ liệu và cấu hình ngôn ngữ. Nhờ vậy, dự án dễ đọc, dễ mở rộng và dễ chỉnh sửa hơn.
 
 ## Xem trước giao diện
 
@@ -67,7 +67,7 @@ Màn hình chiến thắng dùng modal nổi bật với thời gian hoàn thàn
 
 ### Lối chơi
 
-- Tạo bảng Sudoku ngẫu nhiên theo 3 mức độ khó: `easy`, `medium`, `hard`
+- Tạo bảng Sudoku ngẫu nhiên theo các chế độ: `easy`, `medium`, `hard`, `daily`, `custom`
 - Kiểm tra tính hợp lệ của số được nhập
 - Gợi ý số đúng cho ô đang chọn
 - Tự động điền ghi chú khả dĩ
@@ -92,6 +92,8 @@ Màn hình chiến thắng dùng modal nổi bật với thời gian hoàn thàn
 - `logic.py`: xử lý sinh bảng Sudoku và kiểm tra logic
 - `ui/`: các thành phần giao diện Pygame, bố cục và tương tác
 - `config.py`: quản lý text hiển thị và ngôn ngữ
+- `persistence.py`: lưu ván chơi, thống kê, kỷ lục và thử thách hằng ngày
+- `sounds.py`: tạo và phát hiệu ứng âm thanh nhẹ bằng Pygame
 
 ## Cấu trúc thư mục
 
@@ -102,7 +104,14 @@ SUDOKU/
 |-- logic.py
 |-- ui/
 |   |-- board.py
+|   |-- colors.py
+|   |-- drawing.py
+|   |-- fonts.py
+|   |-- geometry.py
+|   |-- icons.py
 |   |-- menu.py
+|   |-- modals.py
+|   |-- screen.py
 |   |-- sidebar.py
 |   `-- view.py
 |-- config.py
@@ -137,6 +146,12 @@ SUDOKU/
 pip install -r requirements.txt
 ```
 
+Lệnh trên chỉ cài dependency chạy game. Để chạy test, lint, type-check và đóng gói:
+
+```bash
+pip install -e ".[dev]"
+```
+
 Khi phát triển hoặc đóng gói, cài thêm nhóm công cụ tương ứng từ `pyproject.toml`:
 
 ```bash
@@ -145,10 +160,15 @@ pip install -e ".[dev]"
 
 ### Dữ liệu người dùng
 
-Ván chơi, thống kê và bảng xếp hạng được lưu trong thư mục dữ liệu riêng của người dùng,
-không ghi vào thư mục mã nguồn. Trên Windows, vị trí mặc định là
-`%LOCALAPPDATA%\SudokuMaster`. Dữ liệu cũ trong thư mục dự án sẽ được di chuyển tự động
-khi game chạy lần đầu.
+Ván chơi, thống kê, kỷ lục và bảng xếp hạng được lưu trong thư mục dữ liệu riêng của người dùng,
+không ghi vào thư mục mã nguồn:
+
+- Windows: `%LOCALAPPDATA%\SudokuMaster`
+- macOS: `~/Library/Application Support/SudokuMaster`
+- Linux: `$XDG_DATA_HOME/SudokuMaster` hoặc `~/.local/share/SudokuMaster`
+
+Dữ liệu cũ trong thư mục dự án sẽ được sao chép tự động sang vị trí mới khi game chạy lần đầu.
+Biến môi trường `SUDOKU_DATA_DIR` có thể dùng để chỉ định thư mục riêng khi test hoặc debug.
 
 ### Chạy game
 
@@ -156,12 +176,31 @@ khi game chạy lần đầu.
 python main.py
 ```
 
+### Kiểm tra chất lượng
+
+```bash
+python -m pytest -q
+python -m ruff check .
+python -m mypy . --ignore-missing-imports
+python -m compileall -q .
+```
+
+### Đóng gói
+
+```bash
+pip install -e ".[build]"
+pyinstaller build.spec --clean
+```
+
+Trên Windows, có thể chạy nhanh bằng `build.bat`. File thực thi được tạo trong `dist/` và
+không nên commit vào repository.
+
 ## Vì sao repo này phù hợp để đưa lên GitHub
 
 - Có giao diện thật và ảnh minh họa rõ ràng
 - Có phân tách module tương đối sạch
 - Có thể dùng làm project học tập, đồ án hoặc sản phẩm portfolio
-- Có sẵn nền tảng để phát triển thêm như lưu ván chơi, xếp hạng thời gian hoặc đóng gói thành file chạy độc lập
+- Có test logic, test render UI và pipeline CI kiểm tra tự động
 
 ## Hướng phát triển tiếp
 
