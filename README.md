@@ -1,5 +1,7 @@
 # Sudoku
 
+> Phiên bản hiện tại: **2.0.0** — giao diện Pygame hiện đại, kiểm thử tự động và lưu dữ liệu theo người dùng.
+
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![Pygame](https://img.shields.io/badge/Pygame-2.0%2B-1F6FEB)](https://www.pygame.org/)
 [![License](https://img.shields.io/badge/Gi%E1%BA%A5y%20ph%C3%A9p-MIT-22C55E)](LICENSE)
@@ -17,6 +19,8 @@ Dự án này phù hợp cho 3 mục đích:
 - dùng làm đồ án, project cá nhân hoặc dự án trưng bày trên GitHub
 
 Mã nguồn được tách thành các phần riêng cho logic sinh bảng, kiểm tra hợp lệ, vòng lặp game, giao diện hiển thị, lưu dữ liệu và cấu hình ngôn ngữ. Nhờ vậy, dự án dễ đọc, dễ mở rộng và dễ chỉnh sửa hơn.
+
+Xem chi tiết các thay đổi trong [CHANGELOG.md](CHANGELOG.md).
 
 ## Xem trước giao diện
 
