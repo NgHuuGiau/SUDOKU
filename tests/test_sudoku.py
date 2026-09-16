@@ -2,6 +2,7 @@
 
 import json
 import os
+from datetime import date
 from pathlib import Path
 
 import pytest
@@ -13,6 +14,7 @@ from logic import (
     count_solutions,
     count_solutions_dlx,
     export_puzzle,
+    generate_daily_challenge,
     generate_sudoku,
     import_puzzle,
     is_valid_placement,
@@ -20,6 +22,7 @@ from logic import (
     solve_board_dlx,
 )
 from persistence import (
+    _runtime_file,
     clear_save_file,
     get_best_time,
     get_data_dir,
@@ -42,6 +45,12 @@ class TestLogic:
 
     def test_game_translations_have_matching_keys(self):
         assert GAME_DICT["en"].keys() == GAME_DICT["vi"].keys()
+
+    def test_daily_challenge_is_deterministic_for_a_utc_date(self):
+        challenge_date = date(2026, 9, 17)
+        first = generate_daily_challenge(challenge_date=challenge_date)
+        second = generate_daily_challenge(challenge_date=challenge_date)
+        assert first == second
 
     def test_generate_sudoku_easy(self):
         board, solution = generate_sudoku("easy")
@@ -156,6 +165,13 @@ class TestLogic:
         with pytest.raises(ValueError, match="exactly one solution"):
             import_puzzle("0" * 81)
 
+    def test_import_rejects_ambiguous_json_puzzle(self):
+        _, solution = generate_sudoku("easy", seed=42)
+        empty_board = [[0] * 9 for _ in range(9)]
+
+        with pytest.raises(ValueError, match="exactly one solution"):
+            import_puzzle(export_puzzle(empty_board, solution))
+
 
 class TestPersistence:
     """Tests for persistence module."""
@@ -168,6 +184,35 @@ class TestPersistence:
 
     def test_runtime_data_uses_isolated_directory(self):
         assert get_data_dir() == Path(os.environ["SUDOKU_DATA_DIR"])
+
+    def test_deleted_legacy_save_is_not_migrated_again(self, monkeypatch):
+        test_data_dir = Path(os.environ["SUDOKU_DATA_DIR"])
+        legacy_dir = test_data_dir / "legacy"
+        runtime_dir = test_data_dir / "runtime"
+        legacy_dir.mkdir()
+        runtime_dir.mkdir()
+        (legacy_dir / "save_game.json").write_text("legacy", encoding="utf-8")
+        monkeypatch.setenv("SUDOKU_DATA_DIR", os.fspath(runtime_dir))
+        monkeypatch.setattr("persistence.LEGACY_DATA_DIR", legacy_dir)
+
+        migrated_save = Path(_runtime_file("save_game.json"))
+        assert migrated_save.read_text(encoding="utf-8") == "legacy"
+
+        clear_save_file()
+
+        assert not has_save_file()
+
+    def test_loaded_game_resets_process_local_autosave_timestamp(self):
+        GameState("easy")
+        save_path = get_data_dir() / "save_game.json"
+        saved_data = json.loads(save_path.read_text(encoding="utf-8"))
+        saved_data["_last_auto_save_time"] = 9_999_999_999_999
+        save_path.write_text(json.dumps(saved_data), encoding="utf-8")
+
+        loaded = load_game_state()
+
+        assert loaded is not None
+        assert loaded._last_auto_save_time == 0
 
     def test_save_load_game_state(self):
         state = GameState("easy")
@@ -424,6 +469,41 @@ class TestGameState:
         assert state.paused is False
         assert len(state.undo_stack) == 1
         assert len(state.redo_stack) == 0
+
+    def test_daily_state_uses_daily_generator(self, monkeypatch):
+        solution = [[(r * 3 + r // 3 + c) % 9 + 1 for c in range(9)] for r in range(9)]
+        board = [row[:] for row in solution]
+        board[0][0] = 0
+        calls = []
+
+        def make_daily_puzzle():
+            calls.append(True)
+            return board, solution, 20260917
+
+        monkeypatch.setattr("game.generate_daily_challenge", make_daily_puzzle)
+        state = GameState("daily")
+        state.restart("daily")
+
+        assert state.difficulty == "daily"
+        assert state.board == board
+        assert len(calls) == 2
+
+    def test_custom_difficulty_is_preserved_on_restart_and_load(self, monkeypatch):
+        solution = [[(r * 3 + r // 3 + c) % 9 + 1 for c in range(9)] for r in range(9)]
+        board = [[0] * 9 for _ in range(9)]
+        requested_cells = []
+
+        def make_custom_puzzle(difficulty, seed=None, empty_cells=None):
+            requested_cells.append(empty_cells)
+            return board, solution
+
+        monkeypatch.setattr("game.generate_sudoku", make_custom_puzzle)
+        state = GameState("custom", empty_cells=56)
+        state.restart("custom")
+
+        loaded = load_game_state()
+        assert requested_cells == [56, 56]
+        assert loaded is not None and loaded.custom_empty_cells == 56
 
     def test_place_number(self):
         state = GameState("easy")

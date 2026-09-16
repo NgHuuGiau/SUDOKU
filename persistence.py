@@ -3,11 +3,10 @@
 import copy
 import json
 import logging
-import math
 import os
 import shutil
 import sys
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, TypedDict, cast
 
@@ -35,15 +34,19 @@ def get_data_dir() -> Path:
 
 
 def _runtime_file(filename: str) -> str:
-    """Return a runtime file path and migrate an old project-local file once."""
+    """Return a runtime path and migrate legacy data without resurrecting deleted files."""
     target = get_data_dir() / filename
     legacy = LEGACY_DATA_DIR / filename
-    if not target.exists() and legacy.exists() and target != legacy:
-        try:
+    migrated = target.with_name(f".{filename}.migrated")
+    if migrated.exists():
+        return str(target)
+    try:
+        if not target.exists() and legacy.exists() and target != legacy:
             shutil.copy2(legacy, target)
             logger.info("Migrated runtime data from %s to %s", legacy, target)
-        except OSError as exc:
-            logger.warning("Could not migrate %s: %s", legacy, exc)
+        migrated.touch(exist_ok=True)
+    except OSError as exc:
+        logger.warning("Could not migrate %s: %s", legacy, exc)
     return str(target)
 
 
@@ -90,6 +93,7 @@ class GameStats(TypedDict):
 
 class SaveGameState(TypedDict):
     difficulty: str
+    custom_empty_cells: int
     board: list[list[int]]
     solution: list[list[int]]
     original: list[list[int]]
@@ -211,6 +215,7 @@ def save_game_state(state: "GameState") -> None:
     filepath = _runtime_file("save_game.json")
     data = {
         "difficulty": state.difficulty,
+        "custom_empty_cells": state.custom_empty_cells,
         "board": state.board,
         "solution": state.solution,
         "original": state.original,
@@ -226,7 +231,6 @@ def save_game_state(state: "GameState") -> None:
         "elapsed_time": state.get_elapsed_time(),
         "last_active_time": state.last_active_time,
         "final_time": state.final_time,
-        "_last_auto_save_time": state._last_auto_save_time,
         "undo_stack": [
             {
                 "board": [list(row) for row in board],
@@ -296,13 +300,9 @@ def load_game_state() -> "GameState | None":
         elapsed_time = data.get("elapsed_time", 0)
         if _nonnegative_int(elapsed_time) is None:
             raise ValueError("Invalid saved elapsed time")
-        autosave_time = data.get("_last_auto_save_time", 0.0)
-        if (
-            type(autosave_time) not in (int, float)
-            or not math.isfinite(autosave_time)
-            or autosave_time < 0
-        ):
-            raise ValueError("Invalid saved autosave timer")
+        custom_empty_cells = data.get("custom_empty_cells", 40)
+        if type(custom_empty_cells) is not int or not 20 <= custom_empty_cells <= 60:
+            raise ValueError("Invalid saved custom difficulty")
 
         # Import locally to avoid circular imports and reset process-specific timer ticks.
         import pygame
@@ -311,6 +311,7 @@ def load_game_state() -> "GameState | None":
 
         state = GameState.__new__(GameState)
         state.difficulty = difficulty
+        state.custom_empty_cells = custom_empty_cells
         state.board = board
         state.solution = solution
         state.original = original
@@ -326,7 +327,7 @@ def load_game_state() -> "GameState | None":
         state.elapsed_before_session = elapsed_time
         state.last_active_time = data["last_active_time"]
         state.final_time = data["final_time"]
-        state._last_auto_save_time = data.get("_last_auto_save_time", 0.0)
+        state._last_auto_save_time = 0.0
 
         def restore_history(items: Any) -> list[tuple[list[list[int]], list[list[set[int]]]]]:
             if not isinstance(items, list):
@@ -392,7 +393,8 @@ def save_daily_stats(stats: DailyStats) -> None:
 
 def mark_daily_challenge_completed(elapsed: int, difficulty: Difficulty) -> DailyStats:
     """Mark today's daily challenge as completed. Returns updated stats."""
-    today = date.today().isoformat()
+    today_date = datetime.now(timezone.utc).date()
+    today = today_date.isoformat()
     stats = load_daily_stats()
 
     if stats["last_completed_date"] == today:
@@ -405,7 +407,7 @@ def mark_daily_challenge_completed(elapsed: int, difficulty: Difficulty) -> Dail
         last = date.fromisoformat(last_date)
         # Simple streak logic: if last completed was yesterday, increment
         # For simplicity, we just check if it's a new day
-        if (date.today() - last).days == 1:
+        if (today_date - last).days == 1:
             stats["streak"] += 1
         else:
             stats["streak"] = 1

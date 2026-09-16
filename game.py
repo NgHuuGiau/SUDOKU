@@ -9,7 +9,14 @@ from error_handling import (
     ErrorSeverity,
     log_exception,
 )
-from logic import check_win, export_puzzle, generate_sudoku, import_puzzle, is_valid_placement
+from logic import (
+    check_win,
+    export_puzzle,
+    generate_daily_challenge,
+    generate_sudoku,
+    import_puzzle,
+    is_valid_placement,
+)
 from persistence import (
     clear_save_file,
     load_game_state,
@@ -41,9 +48,10 @@ MAX_HISTORY_STATES = 200
 
 
 class GameState:
-    def __init__(self, difficulty: Difficulty):
+    def __init__(self, difficulty: Difficulty, empty_cells: int = 40):
         self.difficulty = difficulty
-        self.board, self.solution = generate_sudoku(difficulty)
+        self.custom_empty_cells = max(20, min(60, empty_cells))
+        self.board, self.solution = self._generate_puzzle()
         self.original = [row[:] for row in self.board]
         self.selected = [0, 0]
         self.notes: List[List[Set[int]]] = [[set() for _ in range(9)] for _ in range(9)]
@@ -63,6 +71,15 @@ class GameState:
         self.redo_stack: List[Tuple[Board, List[List[Set[int]]]]] = []
         self._last_auto_save_time = 0.0
         save_game_state(self)
+
+    def _generate_puzzle(self) -> tuple[Board, Board]:
+        if self.difficulty == "daily":
+            board, solution, _ = generate_daily_challenge()
+            return board, solution
+        return generate_sudoku(
+            self.difficulty,
+            empty_cells=self.custom_empty_cells if self.difficulty == "custom" else None,
+        )
 
     def save_state(self) -> None:
         current = (copy.deepcopy(self.board), copy.deepcopy(self.notes))
@@ -186,7 +203,7 @@ class GameState:
 
     def restart(self, difficulty: Difficulty) -> None:
         self.difficulty = difficulty
-        self.board, self.solution = generate_sudoku(difficulty)
+        self.board, self.solution = self._generate_puzzle()
         self.original = [row[:] for row in self.board]
         self.selected = [0, 0]
         self.notes = [[set() for _ in range(9)] for _ in range(9)]
@@ -208,6 +225,8 @@ class GameState:
 
     def set_puzzle(self, board: Board, solution: Board) -> None:
         """Replace the active puzzle and reset all state tied to the previous board."""
+        self.difficulty = "custom"
+        self.custom_empty_cells = max(20, min(60, sum(value == 0 for row in board for value in row)))
         self.board = copy.deepcopy(board)
         self.solution = copy.deepcopy(solution)
         self.original = copy.deepcopy(board)
@@ -723,34 +742,11 @@ class AppController:
                     return
 
     def _start_game(self, difficulty: str, loaded_state=None, custom_cells: int = 40) -> None:
-        from logic import generate_sudoku
-
         is_new_game = loaded_state is None
         if difficulty == "custom" and loaded_state is None:
-            board, solution = generate_sudoku("custom", empty_cells=custom_cells)
-            gs = GameState.__new__(GameState)
-            gs.difficulty = "custom"
-            gs.board = board
-            gs.solution = solution
-            gs.original = [row[:] for row in board]
-            gs.selected = [0, 0]
-            gs.notes = [[set() for _ in range(9)] for _ in range(9)]
-            gs.notes_mode = False
-            gs.game_over = False
-            gs.paused = False
-            gs.show_errors = False
-            gs.start_time = pygame.time.get_ticks()
-            gs.paused_time = 0
-            gs.last_pause_start = 0
-            gs.elapsed_before_session = 0
-            gs.last_active_time = 0
-            gs.final_time = 0
-            gs._last_auto_save_time = 0.0
-            import copy
-
-            gs.undo_stack = [(copy.deepcopy(board), copy.deepcopy(gs.notes))]
-            gs.redo_stack = []
-            loaded_state = gs
+            loaded_state = GameState("custom", empty_cells=custom_cells)
+        elif difficulty == "custom" and loaded_state is not None:
+            self.custom_cells = loaded_state.custom_empty_cells
 
         self.game_session = Game(cast(Difficulty, difficulty), loaded_state=loaded_state)
         if is_new_game:
@@ -790,7 +786,7 @@ class AppController:
                 pos
             ):
                 self.state = self.STATE_MENU
-            for d in ("easy", "medium", "hard", "daily"):
+            for d in ("easy", "medium", "hard", "daily", "custom"):
                 if lb_rects.get(f"tab_{d}") and lb_rects[f"tab_{d}"].collidepoint(pos):
                     self.leaderboard_diff = d
 

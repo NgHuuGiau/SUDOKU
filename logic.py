@@ -1,6 +1,6 @@
 import copy
 import random
-from datetime import date
+from datetime import date, datetime, timezone
 from typing import List, Optional, Tuple
 
 Board = List[List[int]]
@@ -72,13 +72,13 @@ def generate_daily_challenge(
 
     Args:
         difficulty: "easy", "medium", or "hard"
-        challenge_date: Date for the challenge (defaults to today)
+        challenge_date: Date for the challenge (defaults to today's UTC date)
 
     Returns:
         Tuple of (board, solution, seed_used)
     """
     if challenge_date is None:
-        challenge_date = date.today()
+        challenge_date = datetime.now(timezone.utc).date()
 
     # Create deterministic seed from date: YYYYMMDD + difficulty hash
     seed = challenge_date.year * 10000 + challenge_date.month * 100 + challenge_date.day
@@ -90,9 +90,9 @@ def generate_daily_challenge(
 
 
 def get_daily_challenge_info(challenge_date: Optional[date] = None) -> dict:
-    """Get info about today's daily challenge."""
+    """Get info about today's UTC daily challenge."""
     if challenge_date is None:
-        challenge_date = date.today()
+        challenge_date = datetime.now(timezone.utc).date()
 
     return {
         "date": challenge_date.isoformat(),
@@ -409,4 +409,6 @@ def import_puzzle(data_str: str) -> tuple[Board, Board]:
         raise ValueError("Solution must be a valid completed board")
     if any(board[r][c] and board[r][c] != solution[r][c] for r in range(9) for c in range(9)):
         raise ValueError("Puzzle clues do not match the solution")
+    if count_solutions_dlx(board, limit=2) != 1:
+        raise ValueError("Puzzle must have exactly one solution")
     return board, solution
