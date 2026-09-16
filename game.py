@@ -37,6 +37,7 @@ NotesBoard = List[List[Set[int]]]
 Difficulty = Literal["easy", "medium", "hard", "daily", "custom"]
 
 AUTO_SAVE_DEBOUNCE_MS = 500
+MAX_HISTORY_STATES = 200
 
 
 class GameState:
@@ -66,6 +67,8 @@ class GameState:
         current = (copy.deepcopy(self.board), copy.deepcopy(self.notes))
         if not self.undo_stack or self.undo_stack[-1] != current:
             self.undo_stack.append(current)
+            if len(self.undo_stack) > MAX_HISTORY_STATES:
+                self.undo_stack.pop(0)
             self.redo_stack.clear()
 
     def undo(self) -> None:
@@ -99,6 +102,7 @@ class GameState:
                 self.notes[r][c].remove(num)
             else:
                 self.notes[r][c].add(num)
+            self.save_state()
         else:
             self.board[r][c] = num
             self.notes[r][c].clear()
@@ -136,7 +140,9 @@ class GameState:
         if self.original[r][c] != 0:
             return
         if self.notes_mode:
-            self.notes[r][c].clear()
+            if self.notes[r][c]:
+                self.notes[r][c].clear()
+                self.save_state()
         else:
             self.board[r][c] = 0
             self.save_state()

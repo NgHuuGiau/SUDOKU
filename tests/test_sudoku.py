@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from game import GameState
+from game import MAX_HISTORY_STATES, GameState
 from logic import (
     check_win,
     count_solutions,
@@ -397,6 +397,10 @@ class TestGameState:
         state.place_number(5)
         assert 5 in state.notes[r][c]
         assert state.board[r][c] == 0
+        state.undo()
+        assert 5 not in state.notes[r][c]
+        state.redo()
+        assert 5 in state.notes[r][c]
 
     def test_clear_cell(self):
         state = GameState("easy")
@@ -415,9 +419,29 @@ class TestGameState:
         state.original[r][c] = 0
         state.notes_mode = True
         state.notes[r][c] = {1, 2, 3}
+        state.save_state()
 
         state.clear_cell()
         assert state.notes[r][c] == set()
+        state.undo()
+        assert state.notes[r][c] == {1, 2, 3}
+        state.redo()
+        assert state.notes[r][c] == set()
+
+    def test_undo_history_is_bounded(self):
+        state = GameState("easy")
+        row, column = next(
+            (r, c) for r in range(9) for c in range(9) if state.original[r][c] == 0
+        )
+        for value in range(250):
+            state.board[row][column] = value % 9 + 1
+            state.save_state()
+
+        assert len(state.undo_stack) == MAX_HISTORY_STATES
+        save_game_state(state)
+        restored = load_game_state()
+        assert restored is not None
+        assert len(restored.undo_stack) == MAX_HISTORY_STATES
 
     def test_undo_redo(self):
         state = GameState("easy")

@@ -298,7 +298,7 @@ def load_game_state() -> "GameState | None":
             raise ValueError("Invalid saved autosave timer")
 
         # Import GameState locally to avoid circular import.
-        from game import GameState
+        from game import MAX_HISTORY_STATES, GameState
 
         state = GameState.__new__(GameState)
         state.difficulty = difficulty
@@ -334,8 +334,8 @@ def load_game_state() -> "GameState | None":
                 )
             return restored
 
-        state.undo_stack = restore_history(data.get("undo_stack", []))
-        state.redo_stack = restore_history(data.get("redo_stack", []))
+        state.undo_stack = restore_history(data.get("undo_stack", []))[-MAX_HISTORY_STATES:]
+        state.redo_stack = restore_history(data.get("redo_stack", []))[-MAX_HISTORY_STATES:]
         if not state.undo_stack:
             state.undo_stack = [(copy.deepcopy(board), copy.deepcopy(state.notes))]
         return state
