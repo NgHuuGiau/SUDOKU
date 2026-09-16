@@ -380,16 +380,33 @@ def export_puzzle(board: Board, solution: Board) -> str:
 
 
 def import_puzzle(data_str: str) -> tuple[Board, Board]:
-    """Import puzzle from JSON string."""
+    """Import a JSON puzzle or a legacy 81-digit puzzle with a unique solution."""
     import json
 
-    data = json.loads(data_str)
-    if not isinstance(data, dict) or "board" not in data or "solution" not in data:
-        raise ValueError("Puzzle data must contain board and solution")
+    data_str = data_str.strip()
+    if len(data_str) == 81 and all(ch in "0123456789" for ch in data_str):
+        board = string_to_board(data_str)
+        if count_solutions_dlx(board, limit=2) != 1:
+            raise ValueError("Puzzle must have exactly one solution")
+        solution = [row[:] for row in board]
+        if not solve_board_dlx(solution):
+            raise ValueError("Puzzle has no valid solution")
+        return board, solution
+
+    try:
+        data = json.loads(data_str)
+    except json.JSONDecodeError as exc:
+        raise ValueError("Puzzle must be exported JSON or an 81-digit puzzle") from exc
+    if not isinstance(data, dict) or not isinstance(data.get("board"), str) or not isinstance(
+        data.get("solution"), str
+    ):
+        raise ValueError("Puzzle data must contain board and solution strings")
     board = string_to_board(data["board"])
     solution = string_to_board(data["solution"])
-    if count_solutions(solution, limit=1) != 1:
-        raise ValueError("Solution is not a valid completed board")
+    if any(value == 0 for row in solution for value in row) or count_solutions_dlx(
+        solution, limit=2
+    ) != 1:
+        raise ValueError("Solution must be a valid completed board")
     if any(board[r][c] and board[r][c] != solution[r][c] for r in range(9) for c in range(9)):
         raise ValueError("Puzzle clues do not match the solution")
     return board, solution

@@ -9,10 +9,12 @@ from error_handling import (
     ErrorSeverity,
     log_exception,
 )
-from logic import check_win, generate_sudoku, is_valid_placement
+from logic import check_win, export_puzzle, generate_sudoku, import_puzzle, is_valid_placement
 from persistence import (
     clear_save_file,
     load_game_state,
+    mark_daily_challenge_completed,
+    record_game_start,
     record_game_win,
     save_game_state,
     update_best_time,
@@ -195,6 +197,29 @@ class GameState:
         self._last_auto_save_time = 0.0
         save_game_state(self)
         play_sound("click")
+
+    def set_puzzle(self, board: Board, solution: Board) -> None:
+        """Replace the active puzzle and reset all state tied to the previous board."""
+        self.board = copy.deepcopy(board)
+        self.solution = copy.deepcopy(solution)
+        self.original = copy.deepcopy(board)
+        self.selected = next(
+            ([r, c] for r in range(9) for c in range(9) if board[r][c] == 0), [0, 0]
+        )
+        self.notes = [[set() for _ in range(9)] for _ in range(9)]
+        self.notes_mode = False
+        self.game_over = False
+        self.paused = False
+        self.show_errors = False
+        self.start_time = pygame.time.get_ticks()
+        self.paused_time = 0
+        self.last_pause_start = 0
+        self.last_active_time = 0
+        self.final_time = 0
+        self.undo_stack = [(copy.deepcopy(self.board), copy.deepcopy(self.notes))]
+        self.redo_stack = []
+        self._last_auto_save_time = 0.0
+        save_game_state(self)
 
     def auto_save(self) -> None:
         if self.game_over:
@@ -401,43 +426,46 @@ class Game:
                 return
 
     def _handle_export(self) -> None:
+        import tkinter as tk
+        from tkinter import messagebox
+
+        root = tk.Tk()
+        root.withdraw()
         try:
-            row_strings = []
-            for row in self.state.board:
-                row_strings.append("".join(str(n) for n in row))
-            puzzle_str = "".join(row_strings)
-            import tkinter as tk
-
-            root = tk.Tk()
-            root.withdraw()
-            from tkinter import messagebox
-
-            messagebox.showinfo("Export Puzzle", f"Copy:\n{puzzle_str}", parent=root)
+            root.clipboard_clear()
+            root.clipboard_append(export_puzzle(self.state.board, self.state.solution))
+            root.update()
+            messagebox.showinfo("Export Puzzle", "Puzzle copied to clipboard.", parent=root)
+        finally:
             root.destroy()
-        except Exception:
-            pass
 
     def _handle_import(self) -> None:
-        try:
-            import tkinter as tk
-            from tkinter import simpledialog
+        import tkinter as tk
+        from tkinter import messagebox, simpledialog
 
-            root = tk.Tk()
-            root.withdraw()
-            s = simpledialog.askstring("Import Puzzle", "Paste 81-char puzzle string:", parent=root)
+        root = tk.Tk()
+        root.withdraw()
+        try:
+            puzzle_text = simpledialog.askstring(
+                "Import Puzzle", "Paste exported puzzle JSON or an 81-digit puzzle:", parent=root
+            )
+            if not puzzle_text:
+                return
+            try:
+                board, solution = import_puzzle(puzzle_text)
+            except ValueError as exc:
+                messagebox.showerror("Import Puzzle", str(exc), parent=root)
+                return
+            self.state.set_puzzle(board, solution)
+            messagebox.showinfo("Import Puzzle", "Puzzle imported.", parent=root)
+        finally:
             root.destroy()
-            if s and len(s.strip()) == 81 and all(c.isdigit() for c in s.strip()):
-                nums = [int(c) for c in s.strip()]
-                self.state.board = [nums[i * 9 : (i + 1) * 9] for i in range(9)]
-                self.state.original = [row[:] for row in self.state.board]
-                self.state.notes = [[set() for _ in range(9)] for _ in range(9)]
-        except Exception:
-            pass
 
     def _restart_game(self) -> None:
         self.particles.clear()
         clear_save_file()
         self.state.restart(self.state.difficulty)
+        record_game_start(self.state.difficulty)
 
     def _spawn_firework_burst(self, x: int, y: int, count: int = 38) -> None:
         colors = [
@@ -532,6 +560,8 @@ class Game:
             self.state.final_time = self.state.get_elapsed_time()
             update_best_time(self.state.difficulty, self.state.final_time)
             record_game_win(self.state.difficulty, self.state.final_time)
+            if self.state.difficulty == "daily":
+                mark_daily_challenge_completed(self.state.final_time, self.state.difficulty)
             from persistence import is_top_10_time
 
             if is_top_10_time(self.state.difficulty, self.state.final_time):
@@ -586,6 +616,7 @@ class AppController:
     STATE_MENU = "menu"
     STATE_PLAYING = "playing"
     STATE_LEADERBOARD = "leaderboard"
+    STATE_HELP = "help"
 
     def __init__(self):
         # create_game_screen handles enable_high_dpi + pygame.init internally
@@ -663,11 +694,25 @@ class AppController:
             elif menu_rects.get("stats") and menu_rects["stats"].collidepoint(pos):
                 self.state = self.STATE_LEADERBOARD
             elif menu_rects.get("help") and menu_rects["help"].collidepoint(pos):
-                self.state = self.STATE_LEADERBOARD
+                self.state = self.STATE_HELP
+
+    def _handle_help_events(self, help_rects: dict) -> None:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+                return
+            if event.type == pygame.KEYDOWN and event.key in (pygame.K_ESCAPE, pygame.K_F1):
+                self.state = self.STATE_MENU
+                return
+            if event.type == pygame.MOUSEBUTTONDOWN and help_rects.get("help_close"):
+                if help_rects["help_close"].collidepoint(event.pos):
+                    self.state = self.STATE_MENU
+                    return
 
     def _start_game(self, difficulty: str, loaded_state=None, custom_cells: int = 40) -> None:
         from logic import generate_sudoku
 
+        is_new_game = loaded_state is None
         if difficulty == "custom" and loaded_state is None:
             board, solution = generate_sudoku("custom", empty_cells=custom_cells)
             gs = GameState.__new__(GameState)
@@ -694,6 +739,8 @@ class AppController:
             loaded_state = gs
 
         self.game_session = Game(cast(Difficulty, difficulty), loaded_state=loaded_state)
+        if is_new_game:
+            record_game_start(cast(Difficulty, difficulty))
         assert self.game_session is not None
         self.game_session.screen = self.screen
         self.game_session._load_fonts()
@@ -737,7 +784,7 @@ class AppController:
         """Main application loop."""
         from config import game_text
         from ui.menu import draw_menu_view
-        from ui.modals import draw_leaderboard_modal
+        from ui.modals import draw_help_modal, draw_leaderboard_modal
 
         while self.running:
             mouse_pos = pygame.mouse.get_pos()
@@ -762,6 +809,11 @@ class AppController:
                 pygame.display.flip()
                 self._handle_leaderboard_events(lb_rects)
 
+            elif self.state == self.STATE_HELP:
+                help_rects = draw_help_modal(self.screen, self.fonts, mouse_pos, game_text)
+                pygame.display.flip()
+                self._handle_help_events(help_rects)
+
             self.clock.tick(60)
 
         pygame.quit()
@@ -769,6 +821,8 @@ class AppController:
 
 def start_game(root=None, difficulty: str = "medium", loaded_state=None) -> bool:
     """Legacy entry point: runs one game session and returns win status."""
+    if loaded_state is None:
+        record_game_start(cast(Difficulty, difficulty))
     game = Game(cast(Difficulty, difficulty), loaded_state=loaded_state)
     result = game.run()
     return result != "quit"

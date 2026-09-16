@@ -1,5 +1,6 @@
 """Unit tests for Sudoku game."""
 
+import json
 import os
 from pathlib import Path
 
@@ -24,6 +25,9 @@ from persistence import (
     has_save_file,
     load_best_times,
     load_game_state,
+    load_stats,
+    record_game_start,
+    record_game_win,
     save_game_state,
     update_best_time,
 )
@@ -131,6 +135,20 @@ class TestLogic:
         with pytest.raises(ValueError):
             import_puzzle(export_puzzle(board, solution))
 
+    def test_import_rejects_incomplete_solution(self):
+        empty_board = [[0] * 9 for _ in range(9)]
+        with pytest.raises(ValueError, match="completed"):
+            import_puzzle(export_puzzle(empty_board, empty_board))
+
+    def test_import_legacy_81_digit_puzzle_derives_solution(self):
+        board, solution = generate_sudoku("easy", seed=42)
+        legacy_text = "".join(str(value) for row in board for value in row)
+        assert import_puzzle(legacy_text) == (board, solution)
+
+    def test_import_rejects_ambiguous_legacy_puzzle(self):
+        with pytest.raises(ValueError, match="exactly one solution"):
+            import_puzzle("0" * 81)
+
 
 class TestPersistence:
     """Tests for persistence module."""
@@ -173,6 +191,19 @@ class TestPersistence:
 
     def test_load_nonexistent_save_returns_none(self):
         clear_save_file()
+        assert load_game_state() is None
+
+    def test_corrupt_or_incomplete_save_returns_none(self):
+        (get_data_dir() / "save_game.json").write_text("{}", encoding="utf-8")
+        assert load_game_state() is None
+
+    def test_save_with_invalid_timer_returns_none(self):
+        GameState("easy")
+        save_path = get_data_dir() / "save_game.json"
+        saved_data = json.loads(save_path.read_text(encoding="utf-8"))
+        saved_data["start_time"] = "invalid"
+        save_path.write_text(json.dumps(saved_data), encoding="utf-8")
+
         assert load_game_state() is None
 
     def test_clear_save_file(self):
@@ -220,6 +251,26 @@ class TestPersistence:
 
         assert len(loaded.undo_stack) == undo_len
         assert len(loaded.redo_stack) == redo_len
+
+    @pytest.mark.parametrize("difficulty", ["daily", "custom"])
+    def test_stats_record_daily_and_custom_wins(self, difficulty):
+        record_game_start(difficulty)
+        stats = record_game_win(difficulty, 90)
+        assert stats["games_played"] == 1
+        assert stats["games_won"] == 1
+        assert stats["by_difficulty"][difficulty] == {"played": 1, "won": 1, "total_time": 90}
+
+    def test_stats_migrate_older_difficulty_data(self):
+        stats_path = get_data_dir() / "stats.json"
+        stats_path.write_text(
+            json.dumps({"games_played": 4, "by_difficulty": {"easy": {"played": 4}}}),
+            encoding="utf-8",
+        )
+        stats = load_stats()
+        assert stats["games_played"] == 4
+        assert stats["by_difficulty"]["easy"]["played"] == 4
+        assert stats["by_difficulty"]["daily"] == {"played": 0, "won": 0, "total_time": 0}
+        assert stats["by_difficulty"]["custom"] == {"played": 0, "won": 0, "total_time": 0}
 
 
 class TestGameState:
@@ -353,6 +404,24 @@ class TestGameState:
         state = GameState("easy")
         # Just verify it returns non-negative
         assert state.get_elapsed_time() >= 0
+
+    def test_set_puzzle_resets_state_and_persists_matching_solution(self):
+        state = GameState("easy")
+        board, solution = generate_sudoku("hard", seed=123)
+        state.notes_mode = True
+        state.paused = True
+        state.redo_stack.append((board, [[set() for _ in range(9)] for _ in range(9)]))
+
+        state.set_puzzle(board, solution)
+
+        assert state.board == board
+        assert state.original == board
+        assert state.solution == solution
+        assert not state.notes_mode and not state.paused
+        assert len(state.undo_stack) == 1
+        assert not state.redo_stack
+        loaded = load_game_state()
+        assert loaded is not None and loaded.solution == solution
 
 
 def test_auto_save_debounce():

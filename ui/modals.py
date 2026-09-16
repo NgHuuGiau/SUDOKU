@@ -5,7 +5,7 @@ from typing import Any, cast
 import pygame
 
 from ui.colors import Colors
-from ui.drawing import draw_modern_button, draw_rounded_card
+from ui.drawing import _fit_surface, draw_modern_button, draw_rounded_card
 from ui.geometry import SCREEN_HEIGHT, SCREEN_WIDTH
 from ui.icons import SmoothIcons
 
@@ -298,7 +298,7 @@ def draw_help_modal(screen: pygame.Surface, fonts, mouse_pos, translate) -> dict
     overlay.fill((15, 23, 42, 180))
     screen.blit(overlay, (0, 0))
 
-    card_w, card_h = 520, 480
+    card_w, card_h = 640, 520
     modal_rect = pygame.Rect(
         (SCREEN_WIDTH - card_w) // 2, (SCREEN_HEIGHT - card_h) // 2, card_w, card_h
     )
@@ -323,21 +323,25 @@ def draw_help_modal(screen: pygame.Surface, fonts, mouse_pos, translate) -> dict
         ("F1", translate("shortcut_help")),
     ]
 
-    y_start = modal_rect.top + 90
-    line_height = 36
-    key_col_x = modal_rect.left + 60
-    desc_col_x = modal_rect.left + 200
+    y_start = modal_rect.top + 80
+    line_height = 30
+    key_col_x = modal_rect.left + 32
+    desc_col_x = modal_rect.centerx + 30
 
     for i, (key, desc) in enumerate(shortcuts):
         y = y_start + i * line_height
         # Key
-        key_surf = fonts.medium.render(key, True, Colors.GOLD)
+        key_surf = _fit_surface(
+            fonts.small.render(key, True, Colors.GOLD), modal_rect.width // 2 - 64, line_height
+        )
         screen.blit(key_surf, key_surf.get_rect(midleft=(key_col_x, y)))
         # Separator
-        sep_surf = fonts.medium.render("→", True, Colors.STATUS_TEXT)
+        sep_surf = fonts.small.render("→", True, Colors.STATUS_TEXT)
         screen.blit(sep_surf, sep_surf.get_rect(center=(modal_rect.centerx, y)))
         # Description
-        desc_surf = fonts.medium.render(desc, True, Colors.FIXED_TEXT)
+        desc_surf = _fit_surface(
+            fonts.small.render(desc, True, Colors.FIXED_TEXT), modal_rect.width // 2 - 64, line_height
+        )
         screen.blit(desc_surf, desc_surf.get_rect(midleft=(desc_col_x, y)))
 
     # Close button

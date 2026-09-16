@@ -1,7 +1,9 @@
 """Persistence module: save/load game state, best times, daily challenge, statistics, leaderboard."""
 
+import copy
 import json
 import logging
+import math
 import os
 import shutil
 import sys
@@ -47,6 +49,7 @@ def _runtime_file(filename: str) -> str:
 
 # Type definitions
 Difficulty = Literal["easy", "medium", "hard", "daily", "custom"]
+DIFFICULTIES: tuple[Difficulty, ...] = ("easy", "medium", "hard", "daily", "custom")
 ThemeMode = Literal["light", "dark", "frost", "cozy"]
 
 
@@ -130,6 +133,36 @@ def _save_json(filepath: str, data: dict[str, Any]) -> None:
             pass
 
 
+def _is_board(value: Any, *, complete: bool = False) -> bool:
+    return (
+        isinstance(value, list)
+        and len(value) == 9
+        and all(
+            isinstance(row, list)
+            and len(row) == 9
+            and all(type(cell) is int and (1 <= cell <= 9 if complete else 0 <= cell <= 9) for cell in row)
+            for row in value
+        )
+    )
+
+
+def _is_notes(value: Any) -> bool:
+    return (
+        isinstance(value, list)
+        and len(value) == 9
+        and all(
+            isinstance(row, list)
+            and len(row) == 9
+            and all(
+                isinstance(cell, list)
+                and all(type(note) is int and 1 <= note <= 9 for note in cell)
+                for cell in row
+            )
+            for row in value
+        )
+    )
+
+
 def load_best_times() -> dict[Difficulty, int | None]:
     filepath = _runtime_file("best_times.json")
     if os.path.exists(filepath):
@@ -208,39 +241,94 @@ def load_game_state() -> "GameState | None":
     try:
         with open(filepath, encoding="utf-8") as f:
             data = json.load(f)
-    except (OSError, json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
+        from logic import count_solutions_dlx
+
+        if not isinstance(data, dict):
+            raise ValueError("Save data must be an object")
+        difficulty = data["difficulty"]
+        board, solution, original = data["board"], data["solution"], data["original"]
+        selected, notes = data["selected"], data["notes"]
+        if difficulty not in ("easy", "medium", "hard", "daily", "custom"):
+            raise ValueError("Unknown difficulty")
+        if not all(_is_board(item) for item in (board, original)) or not _is_board(solution, complete=True):
+            raise ValueError("Invalid saved board")
+        if count_solutions_dlx(solution, limit=1) != 1 or any(
+            original[r][c] and original[r][c] != solution[r][c]
+            for r in range(9)
+            for c in range(9)
+        ):
+            raise ValueError("Invalid saved solution")
+        if any(
+            original[r][c] and board[r][c] != original[r][c]
+            for r in range(9)
+            for c in range(9)
+        ):
+            raise ValueError("Saved board changed an original clue")
+        if not (
+            isinstance(selected, list)
+            and len(selected) == 2
+            and all(type(index) is int and 0 <= index < 9 for index in selected)
+            and _is_notes(notes)
+        ):
+            raise ValueError("Invalid saved selection or notes")
+        if any(type(data.get(key)) is not bool for key in ("notes_mode", "game_over", "paused", "show_errors")):
+            raise ValueError("Invalid saved game flags")
+        timer_fields = ("start_time", "paused_time", "last_pause_start", "last_active_time", "final_time")
+        if any(type(data.get(key)) is not int or data[key] < 0 for key in timer_fields):
+            raise ValueError("Invalid saved game timer")
+        autosave_time = data.get("_last_auto_save_time", 0.0)
+        if (
+            type(autosave_time) not in (int, float)
+            or not math.isfinite(autosave_time)
+            or autosave_time < 0
+        ):
+            raise ValueError("Invalid saved autosave timer")
+
+        # Import GameState locally to avoid circular import.
+        from game import GameState
+
+        state = GameState.__new__(GameState)
+        state.difficulty = difficulty
+        state.board = board
+        state.solution = solution
+        state.original = original
+        state.selected = selected
+        state.notes = [[set(cell) for cell in row] for row in notes]
+        state.notes_mode = data["notes_mode"]
+        state.game_over = data["game_over"]
+        state.paused = data["paused"]
+        state.show_errors = data["show_errors"]
+        state.start_time = data["start_time"]
+        state.paused_time = data["paused_time"]
+        state.last_pause_start = data["last_pause_start"]
+        state.last_active_time = data["last_active_time"]
+        state.final_time = data["final_time"]
+        state._last_auto_save_time = data.get("_last_auto_save_time", 0.0)
+
+        def restore_history(items: Any) -> list[tuple[list[list[int]], list[list[set[int]]]]]:
+            if not isinstance(items, list):
+                raise ValueError("Invalid undo history")
+            restored = []
+            for item in items:
+                if (
+                    not isinstance(item, dict)
+                    or not _is_board(item.get("board"))
+                    or not _is_notes(item.get("notes"))
+                ):
+                    raise ValueError("Invalid undo history entry")
+                restored.append(
+                    (item["board"], [[set(cell) for cell in row] for row in item["notes"]])
+                )
+            return restored
+
+        state.undo_stack = restore_history(data.get("undo_stack", []))
+        state.redo_stack = restore_history(data.get("redo_stack", []))
+        if not state.undo_stack:
+            state.undo_stack = [(copy.deepcopy(board), copy.deepcopy(state.notes))]
+        return state
+    except (OSError, json.JSONDecodeError, KeyError, TypeError, ValueError, IndexError) as exc:
         logger.warning("Could not load saved game: %s", exc)
         return None
-
-    # Import GameState locally to avoid circular import
-    from game import GameState
-
-    state = GameState.__new__(GameState)
-    state.difficulty = data["difficulty"]
-    state.board = data["board"]
-    state.solution = data["solution"]
-    state.original = data["original"]
-    state.selected = data["selected"]
-    state.notes = [[set(s) for s in row] for row in data["notes"]]
-    state.notes_mode = data["notes_mode"]
-    state.game_over = data["game_over"]
-    state.paused = data["paused"]
-    state.show_errors = data["show_errors"]
-    state.start_time = data["start_time"]
-    state.paused_time = data["paused_time"]
-    state.last_pause_start = data["last_pause_start"]
-    state.last_active_time = data["last_active_time"]
-    state.final_time = data["final_time"]
-    state._last_auto_save_time = data.get("_last_auto_save_time", 0.0)
-    state.undo_stack = [
-        (item["board"], [[set(s) for s in row] for row in item["notes"]])
-        for item in data["undo_stack"]
-    ]
-    state.redo_stack = [
-        (item["board"], [[set(s) for s in row] for row in item["notes"]])
-        for item in data["redo_stack"]
-    ]
-    return state
 
 
 def clear_save_file() -> None:
@@ -320,24 +408,41 @@ def get_daily_stats() -> DailyStats:
 
 def load_stats() -> GameStats:
     filepath = _runtime_file("stats.json")
-    return cast(GameStats, _load_json(
-        filepath,
-        {
-            "games_played": 0,
-            "games_won": 0,
-            "total_time": 0,
-            "best_times": {"easy": None, "medium": None, "hard": None},
-            "by_difficulty": {
-                "easy": {"played": 0, "won": 0, "total_time": 0},
-                "medium": {"played": 0, "won": 0, "total_time": 0},
-                "hard": {"played": 0, "won": 0, "total_time": 0},
-            },
-            "current_streak": 0,
-            "best_streak": 0,
-            "last_win_date": None,
-            "theme": "light",
+    defaults: dict[str, Any] = {
+        "games_played": 0,
+        "games_won": 0,
+        "total_time": 0,
+        "best_times": dict.fromkeys(DIFFICULTIES),
+        "by_difficulty": {
+            difficulty: {"played": 0, "won": 0, "total_time": 0}
+            for difficulty in DIFFICULTIES
         },
-    ))
+        "current_streak": 0,
+        "best_streak": 0,
+        "last_win_date": None,
+        "theme": "light",
+    }
+    stored = _load_json(filepath, {})
+    stats = {**defaults, **stored}
+    stored_best = stored.get("best_times")
+    stats["best_times"] = {
+        **defaults["best_times"],
+        **(stored_best if isinstance(stored_best, dict) else {}),
+    }
+    stored_difficulties = stored.get("by_difficulty")
+    stats["by_difficulty"] = {
+        difficulty: {
+            **defaults["by_difficulty"][difficulty],
+            **(
+                stored_difficulties.get(difficulty, {})
+                if isinstance(stored_difficulties, dict)
+                and isinstance(stored_difficulties.get(difficulty), dict)
+                else {}
+            ),
+        }
+        for difficulty in DIFFICULTIES
+    }
+    return cast(GameStats, stats)
 
 
 def save_stats(stats: GameStats) -> None:
