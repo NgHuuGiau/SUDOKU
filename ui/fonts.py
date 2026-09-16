@@ -31,15 +31,15 @@ def load_fonts() -> GameFonts:
         return pygame.font.SysFont("arial", size, bold=is_bold, italic=is_italic)
 
     return GameFonts(
-        cell=get_font(42, is_bold=True),
-        cell_bold=get_font(46, is_bold=True),
-        small=get_font(18, is_bold=True),
-        medium=get_font(22, is_bold=True),
-        large=get_font(36, is_bold=True),
-        title=get_font(28, is_bold=True),
-        note=get_font(14, is_bold=True),
-        tiny=get_font(14),
-        badge=get_font(14, is_bold=True),
-        hero=get_font(32, is_bold=True),
-        hero_large=get_font(40, is_bold=True),
+        cell=get_font(44, is_bold=True),
+        cell_bold=get_font(48, is_bold=True),
+        small=get_font(19, is_bold=True),
+        medium=get_font(24, is_bold=True),
+        large=get_font(38, is_bold=True),
+        title=get_font(30, is_bold=True),
+        note=get_font(15, is_bold=True),
+        tiny=get_font(15),
+        badge=get_font(15, is_bold=True),
+        hero=get_font(34, is_bold=True),
+        hero_large=get_font(42, is_bold=True),
     )

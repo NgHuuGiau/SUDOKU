@@ -206,7 +206,7 @@ def draw_modern_button(
     elif icon_name and text:
         icon_surf = SmoothIcons.get(icon_name, icon_size, text_color)
         t_surf = font_to_use.render(text, True, text_color)
-        t_surf = _fit_surface(t_surf, rect.width - icon_size - 22, rect.height - 8)
+        t_surf = _fit_surface(t_surf, rect.width - icon_size - 12, rect.height - 8)
         total_w = icon_size + 8 + t_surf.get_width()
         start_x = rect.centerx - total_w // 2
         icon_rect = icon_surf.get_rect(midleft=(start_x, rect.centery))
