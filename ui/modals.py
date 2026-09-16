@@ -394,8 +394,9 @@ def draw_leaderboard_modal(
         ("medium", translate("trung_binh")),
         ("hard", translate("kho")),
         ("daily", translate("daily_challenge")),
+        ("custom", translate("custom")),
     ]
-    tab_w = 114
+    tab_w = 96
     tab_h = 32
     tab_start_x = modal_rect.centerx - (len(diff_tabs) * tab_w + (len(diff_tabs) - 1) * 8) // 2
     tab_y = modal_rect.top + 104
@@ -437,11 +438,11 @@ def draw_leaderboard_modal(
     )
 
     # Entries list
-    entries = cast(Any, leaderboard).get(active_diff, [])[:8]
+    entries = cast(Any, leaderboard).get(active_diff, [])[:10]
     row_y = th_y + 34
     row_h = 28
     if not entries:
-        no_data = fonts.small.render("Chưa có kỷ lục nào", True, Colors.STATUS_TEXT)
+        no_data = fonts.small.render(translate("no_records"), True, Colors.STATUS_TEXT)
         screen.blit(no_data, no_data.get_rect(center=(modal_rect.centerx, row_y + 50)))
     else:
         for i, entry in enumerate(entries):

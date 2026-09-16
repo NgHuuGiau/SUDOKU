@@ -1,6 +1,6 @@
 """Modern Pygame-based Menu for Sudoku UI."""
 
-from datetime import date
+from datetime import datetime, timezone
 
 import pygame
 
@@ -240,7 +240,8 @@ def draw_menu_view(
 
     # B. Daily Challenge Card
     daily_rect = pygame.Rect(hero_x, cur_y, card_w, card_h)
-    completed_today = daily_stats.get("last_completed_date") == date.today().isoformat()
+    today_utc = datetime.now(timezone.utc).date().isoformat()
+    completed_today = daily_stats.get("last_completed_date") == today_utc
     if completed_today:
         daily_badge = "✓ XONG" if menu_text("easy") == "Dễ" else "✓ DONE"
         daily_accent = Colors.BTN_SUCCESS
@@ -352,7 +353,7 @@ def draw_menu_view(
 
     val_rect = pygame.Rect(stepper_x + step_btn_w + 4, stepper_y, step_box_w, 28)
     pygame.draw.rect(screen, Colors.SELECTED_BG, val_rect, border_radius=6)
-    val_surf = fonts.badge.render(f"{custom_cells} ô", True, Colors.FIXED_TEXT)
+    val_surf = fonts.badge.render(str(custom_cells), True, Colors.FIXED_TEXT)
     screen.blit(val_surf, val_surf.get_rect(center=val_rect.center))
 
     inc_rect = pygame.Rect(stepper_x + step_btn_w + step_box_w + 8, stepper_y, step_btn_w, 28)

@@ -114,6 +114,23 @@ def test_win_modal_buttons_are_visible_and_do_not_overlap():
     assert not visible_buttons[0].colliderect(visible_buttons[1])
 
 
+def test_leaderboard_custom_tab_is_visible_and_selectable(monkeypatch):
+    controller = AppController.__new__(AppController)
+    controller.running = True
+    controller.state = AppController.STATE_LEADERBOARD
+    controller.leaderboard_diff = "medium"
+    custom_tab = pygame.Rect(20, 20, 40, 30)
+    monkeypatch.setattr(
+        pygame.event,
+        "get",
+        lambda: [pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=custom_tab.center)],
+    )
+
+    controller._handle_leaderboard_events({"tab_custom": custom_tab})
+
+    assert controller.leaderboard_diff == "custom"
+
+
 def test_pause_resume_button_unpauses_game(monkeypatch):
     state = GameState("easy")
     state.paused = True

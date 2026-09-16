@@ -1,5 +1,21 @@
 # Nhật ký thay đổi
 
+## Chưa phát hành
+
+### Lối chơi và dữ liệu
+
+- Đồng bộ Daily Challenge theo ngày UTC và dùng đúng bộ sinh puzzle hằng ngày khi bắt đầu hoặc chơi lại.
+- Từ chối puzzle JSON có nhiều hơn một lời giải; giữ puzzle nhập vào trong nhóm độ khó tùy chỉnh.
+- Lưu mục tiêu ô trống của chế độ tùy chỉnh để chơi lại và tiếp tục ván đúng thiết lập.
+- Đánh dấu hoàn tất di chuyển dữ liệu cũ để không tự khôi phục file lưu sau khi người chơi xóa ván.
+- Khởi tạo lại bộ đếm tự lưu theo phiên hiện tại khi tải game.
+
+### Giao diện
+
+- Sửa số ô trống hiển thị ở độ khó Khó và giải thích giới hạn của chế độ tùy chỉnh.
+- Bổ sung tab tùy chỉnh, hiển thị đủ TOP 10 và bản dịch cho trạng thái bảng xếp hạng trống.
+- Dùng bản dịch hiện hành cho bộ đếm số còn thiếu trên bàn phím.
+
 ## [2.0.0] - 2026-09-16
 
 ### Giao diện

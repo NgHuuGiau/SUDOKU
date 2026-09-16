@@ -187,7 +187,7 @@ def draw_sidebar(screen: pygame.Surface, fonts, mouse_pos, translate, state) -> 
             )
             pygame.draw.rect(screen, Colors.SELECTED_BG, pill_rect, border_radius=8)
             pygame.draw.rect(screen, Colors.CARD_BORDER, pill_rect, width=1, border_radius=8)
-            rem_txt = f"còn {rem}"
+            rem_txt = translate("con_lai_fmt").format(n=rem)
             rem_surf = fonts.tiny.render(rem_txt, True, Colors.BTN_ACTIVE_TEXT)
             screen.blit(rem_surf, rem_surf.get_rect(center=pill_rect.center))
 

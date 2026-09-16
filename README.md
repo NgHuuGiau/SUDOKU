@@ -72,11 +72,15 @@ Màn hình chiến thắng dùng modal nổi bật với thời gian hoàn thàn
 ### Lối chơi
 
 - Tạo bảng Sudoku ngẫu nhiên theo các chế độ: `easy`, `medium`, `hard`, `daily`, `custom`
+- Daily Challenge dùng chung một bảng theo ngày UTC, nên người chơi ở các múi giờ khác nhau nhận cùng thử thách
+- Puzzle nhập từ JSON phải có đúng một lời giải; puzzle nhập vào được xếp ở độ khó tùy chỉnh
+- Độ khó tùy chỉnh được giữ lại khi khởi động lại hoặc tiếp tục ván đã lưu; số ô trống thực tế có thể thấp hơn mục tiêu để bảo đảm lời giải duy nhất
 - Kiểm tra tính hợp lệ của số được nhập
 - Gợi ý số đúng cho ô đang chọn
 - Tự động điền ghi chú khả dĩ
 - Kiểm tra thắng khi bảng hiện tại trùng với lời giải
 - **Lưu/Tải ván chơi tự động** (lưu sau thao tác với giới hạn tần suất ghi đĩa, tiếp tục ván dở khi mở lại game)
+- **Bảng xếp hạng TOP 10** theo từng độ khó, bao gồm cả chế độ tùy chỉnh (lưu cục bộ)
 - **Kỷ lục thời gian tốt nhất** theo từng độ khó (lưu cục bộ, hiển thị khi chiến thắng)
 
 ### Điều khiển
