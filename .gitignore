@@ -12,6 +12,7 @@ ENV/
 .vscode/
 
 .pytest_cache/
+.pytest-runtime-data/
 .mypy_cache/
 .coverage
 .coverage.*

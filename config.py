@@ -75,6 +75,8 @@ GAME_DICT = {
         "close": "Close",
         "khoi_dong_lai": "Restart",
         "luu_va_thoat": "Save & Quit",
+        "xuat_van": "Export Puzzle",
+        "nhap_van": "Import Puzzle",
     },
     "vi": {
         "move": "Di chuyển: WASD / Mũi tên",

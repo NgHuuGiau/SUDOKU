@@ -54,6 +54,7 @@ class GameState:
         self.start_time = pygame.time.get_ticks()
         self.paused_time = 0
         self.last_pause_start = 0
+        self.elapsed_before_session = 0
         self.last_active_time = 0
         self.final_time = 0
         self.undo_stack: List[Tuple[Board, List[List[Set[int]]]]] = [
@@ -196,6 +197,7 @@ class GameState:
         self.start_time = pygame.time.get_ticks()
         self.paused_time = 0
         self.last_pause_start = 0
+        self.elapsed_before_session = 0
         self.last_active_time = 0
         self.final_time = 0
         self.undo_stack = [(copy.deepcopy(self.board), copy.deepcopy(self.notes))]
@@ -220,6 +222,7 @@ class GameState:
         self.start_time = pygame.time.get_ticks()
         self.paused_time = 0
         self.last_pause_start = 0
+        self.elapsed_before_session = 0
         self.last_active_time = 0
         self.final_time = 0
         self.undo_stack = [(copy.deepcopy(self.board), copy.deepcopy(self.notes))]
@@ -245,8 +248,10 @@ class GameState:
         if self.game_over:
             return self.final_time
         if self.paused:
-            return max(0, (self.last_pause_start - self.start_time - self.paused_time) // 1000)
-        return max(0, (pygame.time.get_ticks() - self.start_time - self.paused_time) // 1000)
+            elapsed = self.last_pause_start - self.start_time - self.paused_time
+        else:
+            elapsed = pygame.time.get_ticks() - self.start_time - self.paused_time
+        return self.elapsed_before_session + max(0, elapsed // 1000)
 
 
 class Game:
@@ -257,7 +262,6 @@ class Game:
         self._load_fonts()
         if loaded_state:
             self.state = loaded_state
-            self.state.start_time = pygame.time.get_ticks()
         else:
             self.state = GameState(difficulty)
         self.particles: List[Particle] = []
@@ -738,6 +742,7 @@ class AppController:
             gs.start_time = pygame.time.get_ticks()
             gs.paused_time = 0
             gs.last_pause_start = 0
+            gs.elapsed_before_session = 0
             gs.last_active_time = 0
             gs.final_time = 0
             gs._last_auto_save_time = 0.0

@@ -102,6 +102,7 @@ class SaveGameState(TypedDict):
     start_time: int
     paused_time: int
     last_pause_start: int
+    elapsed_time: int
     last_active_time: int
     final_time: int
     undo_stack: list[dict[str, list]]
@@ -189,11 +190,7 @@ def load_best_times() -> dict[Difficulty, int | None]:
 
 def save_best_times(times: dict[Difficulty, int | None]) -> None:
     filepath = _runtime_file("best_times.json")
-    try:
-        with open(filepath, "w", encoding="utf-8") as f:
-            json.dump(times, f, ensure_ascii=False, indent=2)
-    except OSError as exc:
-        logger.warning("Could not save %s: %s", filepath, exc)
+    _save_json(filepath, cast(dict[str, Any], times))
 
 
 def update_best_time(difficulty: Difficulty, elapsed: int) -> bool:
@@ -226,6 +223,7 @@ def save_game_state(state: "GameState") -> None:
         "start_time": state.start_time,
         "paused_time": state.paused_time,
         "last_pause_start": state.last_pause_start,
+        "elapsed_time": state.get_elapsed_time(),
         "last_active_time": state.last_active_time,
         "final_time": state.final_time,
         "_last_auto_save_time": state._last_auto_save_time,
@@ -286,9 +284,18 @@ def load_game_state() -> "GameState | None":
             raise ValueError("Invalid saved selection or notes")
         if any(type(data.get(key)) is not bool for key in ("notes_mode", "game_over", "paused", "show_errors")):
             raise ValueError("Invalid saved game flags")
-        timer_fields = ("start_time", "paused_time", "last_pause_start", "last_active_time", "final_time")
+        timer_fields = (
+            "start_time",
+            "paused_time",
+            "last_pause_start",
+            "last_active_time",
+            "final_time",
+        )
         if any(type(data.get(key)) is not int or data[key] < 0 for key in timer_fields):
             raise ValueError("Invalid saved game timer")
+        elapsed_time = data.get("elapsed_time", 0)
+        if _nonnegative_int(elapsed_time) is None:
+            raise ValueError("Invalid saved elapsed time")
         autosave_time = data.get("_last_auto_save_time", 0.0)
         if (
             type(autosave_time) not in (int, float)
@@ -297,7 +304,9 @@ def load_game_state() -> "GameState | None":
         ):
             raise ValueError("Invalid saved autosave timer")
 
-        # Import GameState locally to avoid circular import.
+        # Import locally to avoid circular imports and reset process-specific timer ticks.
+        import pygame
+
         from game import MAX_HISTORY_STATES, GameState
 
         state = GameState.__new__(GameState)
@@ -311,9 +320,10 @@ def load_game_state() -> "GameState | None":
         state.game_over = data["game_over"]
         state.paused = data["paused"]
         state.show_errors = data["show_errors"]
-        state.start_time = data["start_time"]
-        state.paused_time = data["paused_time"]
-        state.last_pause_start = data["last_pause_start"]
+        state.start_time = pygame.time.get_ticks()
+        state.paused_time = 0
+        state.last_pause_start = state.start_time if state.paused else 0
+        state.elapsed_before_session = elapsed_time
         state.last_active_time = data["last_active_time"]
         state.final_time = data["final_time"]
         state._last_auto_save_time = data.get("_last_auto_save_time", 0.0)

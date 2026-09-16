@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from config import GAME_DICT
 from game import MAX_HISTORY_STATES, GameState
 from logic import (
     check_win,
@@ -30,6 +31,7 @@ from persistence import (
     load_stats,
     record_game_start,
     record_game_win,
+    save_best_times,
     save_game_state,
     update_best_time,
 )
@@ -37,6 +39,9 @@ from persistence import (
 
 class TestLogic:
     """Tests for Sudoku logic module."""
+
+    def test_game_translations_have_matching_keys(self):
+        assert GAME_DICT["en"].keys() == GAME_DICT["vi"].keys()
 
     def test_generate_sudoku_easy(self):
         board, solution = generate_sudoku("easy")
@@ -191,6 +196,50 @@ class TestPersistence:
         assert loaded.notes == original_notes
         assert len(loaded.undo_stack) > 1
 
+    def test_load_legacy_save_without_elapsed_time(self):
+        GameState("easy")
+        save_path = get_data_dir() / "save_game.json"
+        saved_data = json.loads(save_path.read_text(encoding="utf-8"))
+        saved_data.pop("elapsed_time")
+        save_path.write_text(json.dumps(saved_data), encoding="utf-8")
+
+        loaded = load_game_state()
+
+        assert loaded is not None
+        assert loaded.elapsed_before_session == 0
+
+    def test_save_with_invalid_elapsed_time_returns_none(self):
+        GameState("easy")
+        save_path = get_data_dir() / "save_game.json"
+        saved_data = json.loads(save_path.read_text(encoding="utf-8"))
+        saved_data["elapsed_time"] = -1
+        save_path.write_text(json.dumps(saved_data), encoding="utf-8")
+
+        assert load_game_state() is None
+
+    @pytest.mark.parametrize("paused", [False, True])
+    def test_elapsed_time_survives_save_and_restart(self, monkeypatch, paused):
+        ticks = [10_000]
+        monkeypatch.setattr("pygame.time.get_ticks", lambda: ticks[0])
+        state = GameState("easy")
+        ticks[0] = 72_500
+        if paused:
+            state.toggle_pause()
+        save_game_state(state)
+
+        ticks[0] = 5
+        loaded = load_game_state()
+
+        assert loaded is not None
+        assert loaded.get_elapsed_time() == 62
+        if paused:
+            ticks[0] += 10_000
+            assert loaded.get_elapsed_time() == 62
+            loaded.toggle_pause()
+        assert loaded.get_elapsed_time() == 62
+        ticks[0] += 1_000
+        assert loaded.get_elapsed_time() == 63
+
     def test_load_nonexistent_save_returns_none(self):
         clear_save_file()
         assert load_game_state() is None
@@ -224,6 +273,14 @@ class TestPersistence:
             "daily": None,
             "custom": None,
         }
+
+    def test_best_times_are_saved_atomically(self):
+        times = load_best_times()
+        times["easy"] = 42
+        save_best_times(times)
+
+        assert load_best_times() == times
+        assert not (get_data_dir() / "best_times.json.tmp").exists()
 
     def test_best_times_ignore_invalid_values(self):
         (get_data_dir() / "best_times.json").write_text(

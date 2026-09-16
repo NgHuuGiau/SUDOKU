@@ -15,7 +15,7 @@ from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from enum import Enum
 from functools import wraps
-from pathlib import Path
+from logging.handlers import RotatingFileHandler
 from typing import Callable, Optional, ParamSpec, TypeVar, cast
 
 # Type variables for decorators
@@ -111,8 +111,10 @@ class GameLogger:
         self.logger.setLevel(logging.DEBUG)
         self.logger.propagate = False
 
-        # Clear existing handlers
-        self.logger.handlers.clear()
+        # Close existing handlers before replacing them (e.g. during reconfiguration).
+        for handler in self.logger.handlers[:]:
+            self.logger.removeHandler(handler)
+            handler.close()
 
         # Console handler
         console_handler = logging.StreamHandler(sys.stdout)
@@ -123,28 +125,36 @@ class GameLogger:
         console_handler.setFormatter(console_format)
         self.logger.addHandler(console_handler)
 
-        # File handler (rotating)
-        log_dir = Path(os.path.dirname(__file__)) / "logs"
-        log_dir.mkdir(exist_ok=True)
+        try:
+            from persistence import get_data_dir
 
-        file_handler = logging.FileHandler(log_dir / "sudoku.log", encoding="utf-8")
-        file_handler.setLevel(logging.DEBUG)
-        file_format = logging.Formatter(
-            "%(asctime)s | %(levelname)-8s | %(name)s | %(funcName)s:%(lineno)d | %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S",
-        )
-        file_handler.setFormatter(file_format)
-        self.logger.addHandler(file_handler)
-
-        # Error file handler (errors only)
-        error_handler = logging.FileHandler(log_dir / "sudoku_errors.log", encoding="utf-8")
-        error_handler.setLevel(logging.ERROR)
-        error_format = logging.Formatter(
-            "%(asctime)s | %(levelname)-8s | %(name)s | %(funcName)s:%(lineno)d | %(message)s\n%(exc_info)s",
-            datefmt="%Y-%m-%d %H:%M:%S",
-        )
-        error_handler.setFormatter(error_format)
-        self.logger.addHandler(error_handler)
+            log_dir = get_data_dir() / "logs"
+            log_dir.mkdir(parents=True, exist_ok=True)
+            file_format = logging.Formatter(
+                "%(asctime)s | %(levelname)-8s | %(name)s | %(funcName)s:%(lineno)d | %(message)s",
+                datefmt="%Y-%m-%d %H:%M:%S",
+            )
+            error_format = logging.Formatter(
+                "%(asctime)s | %(levelname)-8s | %(name)s | %(funcName)s:%(lineno)d | %(message)s\n%(exc_info)s",
+                datefmt="%Y-%m-%d %H:%M:%S",
+            )
+            file_handler = RotatingFileHandler(
+                log_dir / "sudoku.log", maxBytes=2_000_000, backupCount=3, encoding="utf-8"
+            )
+            error_handler = RotatingFileHandler(
+                log_dir / "sudoku_errors.log",
+                maxBytes=2_000_000,
+                backupCount=3,
+                encoding="utf-8",
+            )
+            file_handler.setLevel(logging.DEBUG)
+            file_handler.setFormatter(file_format)
+            error_handler.setLevel(logging.ERROR)
+            error_handler.setFormatter(error_format)
+            self.logger.addHandler(file_handler)
+            self.logger.addHandler(error_handler)
+        except OSError as exc:
+            self.logger.warning("File logging is unavailable: %s", exc)
 
     def debug(self, message: str, **kwargs):
         self.logger.debug(message, **kwargs)
