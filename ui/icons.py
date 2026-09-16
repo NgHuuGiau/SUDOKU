@@ -20,6 +20,15 @@ class SmoothIcons:
         surf = pygame.Surface((canvas_size, canvas_size), pygame.SRCALPHA)
         cx, cy = canvas_size / 2, canvas_size / 2
         s = canvas_size
+        stroke_width = max(2, int(s * 0.065))
+
+        def stroke(points: list[tuple[float, float]], width: int = stroke_width) -> None:
+            """Draw a rounded vector stroke for clean small-size icons."""
+            int_points = [(int(x), int(y)) for x, y in points]
+            pygame.draw.lines(surf, color, False, int_points, width)
+            radius = max(1, width // 2)
+            for point in (int_points[0], int_points[-1]):
+                pygame.draw.circle(surf, color, point, radius)
 
         if name == "undo":
             r = s * 0.28
@@ -46,19 +55,15 @@ class SmoothIcons:
             pygame.draw.polygon(surf, color, pts)
 
         elif name == "pencil":
-            p_body = [
-                (cx - s * 0.20, cy + s * 0.16),
-                (cx + s * 0.16, cy - s * 0.20),
-                (cx + s * 0.23, cy - s * 0.13),
-                (cx - s * 0.13, cy + s * 0.23),
-            ]
-            pygame.draw.polygon(surf, color, p_body)
-            p_tip = [
-                (cx - s * 0.20, cy + s * 0.16),
-                (cx - s * 0.13, cy + s * 0.23),
-                (cx - s * 0.28, cy + s * 0.28),
-            ]
-            pygame.draw.polygon(surf, color, p_tip)
+            stroke([(cx - s * 0.23, cy + s * 0.22), (cx + s * 0.20, cy - s * 0.21)])
+            stroke([(cx - s * 0.28, cy + s * 0.28), (cx - s * 0.23, cy + s * 0.22)])
+            pygame.draw.line(
+                surf,
+                color,
+                (cx + s * 0.12, cy - s * 0.28),
+                (cx + s * 0.28, cy - s * 0.12),
+                stroke_width,
+            )
 
         elif name == "hint":
             r = s * 0.20
@@ -81,13 +86,9 @@ class SmoothIcons:
             )
 
         elif name == "erase":
-            half = s * 0.20
-            pygame.draw.line(
-                surf, color, (cx - half, cy - half), (cx + half, cy + half), int(s * 0.08)
-            )
-            pygame.draw.line(
-                surf, color, (cx + half, cy - half), (cx - half, cy + half), int(s * 0.08)
-            )
+            stroke([(cx - s * 0.23, cy + s * 0.18), (cx - s * 0.06, cy + s * 0.30)])
+            stroke([(cx - s * 0.06, cy + s * 0.30), (cx + s * 0.25, cy - s * 0.12)])
+            stroke([(cx - s * 0.18, cy + s * 0.04), (cx + s * 0.13, cy + s * 0.16)])
 
         elif name == "sparkles":
             for offset_x, offset_y, star_r in [
@@ -125,13 +126,15 @@ class SmoothIcons:
             pygame.draw.rect(surf, color, r2, border_radius=int(s * 0.04))
 
         elif name == "play":
-            half = s * 0.24
-            pts = [
-                (cx - half * 0.7, cy - half),
-                (cx + half * 0.9, cy),
-                (cx - half * 0.7, cy + half),
-            ]
-            pygame.draw.polygon(surf, color, pts)
+            half = s * 0.25
+            stroke(
+                [
+                    (cx - half * 0.65, cy - half),
+                    (cx + half * 0.85, cy),
+                    (cx - half * 0.65, cy + half),
+                    (cx - half * 0.65, cy - half),
+                ]
+            )
 
         elif name == "restart":
             r = s * 0.28
@@ -159,12 +162,14 @@ class SmoothIcons:
             pygame.draw.rect(surf, color, body, width=int(s * 0.07), border_radius=int(s * 0.02))
 
         elif name == "check":
-            pts = [
-                (cx - s * 0.24, cy),
-                (cx - s * 0.06, cy + s * 0.20),
-                (cx + s * 0.24, cy - s * 0.18),
-            ]
-            pygame.draw.lines(surf, color, False, pts, width=int(s * 0.08))
+            stroke(
+                [
+                    (cx - s * 0.25, cy),
+                    (cx - s * 0.06, cy + s * 0.18),
+                    (cx + s * 0.26, cy - s * 0.20),
+                ],
+                max(2, int(s * 0.075)),
+            )
 
         elif name == "trophy":
             w, h = s * 0.5, s * 0.5
@@ -386,43 +391,33 @@ class SmoothIcons:
             pygame.draw.lines(surf, color, False, pts, width=int(s * 0.09))
 
         elif name == "flame":
-            # Stylish flame silhouette
             flame_pts = [
-                (cx, cy - s * 0.38),
-                (cx + s * 0.14, cy - s * 0.18),
-                (cx + s * 0.28, cy - s * 0.04),
-                (cx + s * 0.26, cy + s * 0.20),
-                (cx + s * 0.12, cy + s * 0.34),
-                (cx - s * 0.12, cy + s * 0.34),
-                (cx - s * 0.26, cy + s * 0.20),
-                (cx - s * 0.28, cy - s * 0.04),
-                (cx - s * 0.14, cy - s * 0.16),
-                (cx - s * 0.06, cy + s * 0.02),
+                (cx, cy - s * 0.34),
+                (cx + s * 0.08, cy - s * 0.10),
+                (cx + s * 0.22, cy - s * 0.01),
+                (cx + s * 0.20, cy + s * 0.20),
+                (cx, cy + s * 0.32),
+                (cx - s * 0.20, cy + s * 0.20),
+                (cx - s * 0.22, cy - s * 0.01),
+                (cx - s * 0.08, cy - s * 0.10),
+                (cx, cy - s * 0.34),
             ]
-            pygame.draw.polygon(surf, color, flame_pts)
+            stroke(flame_pts)
+            stroke([(cx, cy + s * 0.20), (cx - s * 0.07, cy + s * 0.08), (cx, cy - s * 0.05)])
 
         elif name == "crown":
-            # Royal crown
             pts = [
-                (cx - s * 0.30, cy + s * 0.22),
-                (cx - s * 0.34, cy - s * 0.12),
-                (cx - s * 0.14, cy + s * 0.04),
-                (cx, cy - s * 0.26),
-                (cx + s * 0.14, cy + s * 0.04),
-                (cx + s * 0.34, cy - s * 0.12),
-                (cx + s * 0.30, cy + s * 0.22),
+                (cx - s * 0.30, cy + s * 0.20),
+                (cx - s * 0.34, cy - s * 0.16),
+                (cx - s * 0.12, cy + s * 0.02),
+                (cx, cy - s * 0.24),
+                (cx + s * 0.12, cy + s * 0.02),
+                (cx + s * 0.34, cy - s * 0.16),
+                (cx + s * 0.30, cy + s * 0.20),
+                (cx - s * 0.30, cy + s * 0.20),
             ]
-            pygame.draw.polygon(surf, color, pts)
-            pygame.draw.rect(
-                surf,
-                color,
-                pygame.Rect(cx - s * 0.30, cy + s * 0.20, s * 0.60, s * 0.07),
-                border_radius=int(s * 0.02),
-            )
-            # Jewels
-            pygame.draw.circle(surf, color, (int(cx - s * 0.34), int(cy - s * 0.14)), int(s * 0.04))
-            pygame.draw.circle(surf, color, (int(cx), int(cy - s * 0.28)), int(s * 0.045))
-            pygame.draw.circle(surf, color, (int(cx + s * 0.34), int(cy - s * 0.14)), int(s * 0.04))
+            stroke(pts)
+            stroke([(cx - s * 0.30, cy + s * 0.20), (cx + s * 0.30, cy + s * 0.20)])
 
         elif name == "calendar":
             # Calendar
@@ -466,9 +461,7 @@ class SmoothIcons:
                     )
 
         elif name == "slider":
-            # Track
-            pygame.draw.line(surf, color, (cx - s * 0.30, cy), (cx + s * 0.30, cy), int(s * 0.07))
-            # Knob / handle
+            stroke([(cx - s * 0.30, cy), (cx + s * 0.30, cy)])
             pygame.draw.circle(surf, color, (int(cx + s * 0.05), int(cy)), int(s * 0.12))
 
         elif name == "shield":
