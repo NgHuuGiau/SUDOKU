@@ -430,9 +430,7 @@ class TestGameState:
 
     def test_undo_history_is_bounded(self):
         state = GameState("easy")
-        row, column = next(
-            (r, c) for r in range(9) for c in range(9) if state.original[r][c] == 0
-        )
+        row, column = next((r, c) for r in range(9) for c in range(9) if state.original[r][c] == 0)
         for value in range(250):
             state.board[row][column] = value % 9 + 1
             state.save_state()

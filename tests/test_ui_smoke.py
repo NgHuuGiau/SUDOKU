@@ -32,7 +32,9 @@ def test_sidebar_layout_has_no_overlapping_controls():
     layout = get_sidebar_layout()
     aliases = {"undo", "redo"}
     controls = [
-        value for key, value in layout.items() if key not in {"numbers", *aliases} and value is not None
+        value
+        for key, value in layout.items()
+        if key not in {"numbers", *aliases} and value is not None
     ]
     controls.extend(layout["numbers"])
 
@@ -75,6 +77,58 @@ def test_help_modal_close_button_stays_on_screen():
     close_rect = rects["help_close"]
     assert close_rect is not None
     assert screen.get_rect().contains(close_rect)
+
+
+def test_pause_modal_buttons_are_visible_and_do_not_overlap():
+    from ui.modals import draw_pause_modal
+
+    pygame.init()
+    screen = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+    rects = draw_pause_modal(screen, load_fonts(), (0, 0), lambda key: key)
+    buttons = [rects[key] for key in ("pause_resume", "pause_restart", "pause_save_quit")]
+    visible_buttons = [rect for rect in buttons if rect is not None]
+
+    assert len(visible_buttons) == len(buttons)
+    assert all(screen.get_rect().contains(rect) for rect in visible_buttons)
+    assert all(
+        not first.colliderect(second)
+        for i, first in enumerate(visible_buttons)
+        for second in visible_buttons[i + 1 :]
+    )
+    assert rects["pause_quit"] == rects["pause_save_quit"]
+
+
+def test_win_modal_buttons_are_visible_and_do_not_overlap():
+    from ui.modals import draw_win_modal
+
+    pygame.init()
+    screen = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+    state = GameState("easy")
+    state.final_time = 125
+    rects = draw_win_modal(screen, load_fonts(), (0, 0), lambda key: key, state, [])
+    buttons = [rects["win_restart"], rects["win_quit"]]
+    visible_buttons = [rect for rect in buttons if rect is not None]
+
+    assert len(visible_buttons) == len(buttons)
+    assert all(screen.get_rect().contains(rect) for rect in visible_buttons)
+    assert not visible_buttons[0].colliderect(visible_buttons[1])
+
+
+def test_pause_resume_button_unpauses_game(monkeypatch):
+    state = GameState("easy")
+    state.paused = True
+    session = Game.__new__(Game)
+    session.state = state
+    resume_rect = pygame.Rect(10, 10, 40, 40)
+    session.pause_resume_rect = resume_rect
+    session.pause_restart_rect = None
+    session.pause_save_quit_rect = None
+    session.pause_quit_rect = None
+    monkeypatch.setattr(game, "play_sound", lambda _sound: None)
+
+    session._handle_pause_click(resume_rect.center)
+
+    assert not state.paused
 
 
 def test_modern_icon_renderer_returns_visible_icon_at_requested_size():
@@ -145,9 +199,7 @@ def test_keyboard_places_solution_value_in_selected_empty_cell(monkeypatch):
     session = Game.__new__(Game)
     session.state = state
     session.show_help = False
-    row, column = next(
-        (r, c) for r in range(9) for c in range(9) if state.original[r][c] == 0
-    )
+    row, column = next((r, c) for r in range(9) for c in range(9) if state.original[r][c] == 0)
     state.selected = [row, column]
     value = state.solution[row][column]
     event = pygame.event.Event(
@@ -177,16 +229,12 @@ def test_escape_pauses_and_resumes_game(monkeypatch):
 
 def test_window_close_saves_latest_game_state(monkeypatch):
     state = GameState("easy")
-    row, column = next(
-        (r, c) for r in range(9) for c in range(9) if state.original[r][c] == 0
-    )
+    row, column = next((r, c) for r in range(9) for c in range(9) if state.original[r][c] == 0)
     state.board[row][column] = state.solution[row][column]
     session = Game.__new__(Game)
     session.state = state
     session.running = True
-    monkeypatch.setattr(
-        pygame.event, "get", lambda: [pygame.event.Event(pygame.QUIT)]
-    )
+    monkeypatch.setattr(pygame.event, "get", lambda: [pygame.event.Event(pygame.QUIT)])
 
     assert not session.handle_events()
     restored = load_game_state()
@@ -196,9 +244,7 @@ def test_window_close_saves_latest_game_state(monkeypatch):
 
 def test_return_to_menu_saves_latest_game_state():
     state = GameState("easy")
-    row, column = next(
-        (r, c) for r in range(9) for c in range(9) if state.original[r][c] == 0
-    )
+    row, column = next((r, c) for r in range(9) for c in range(9) if state.original[r][c] == 0)
     state.board[row][column] = state.solution[row][column]
     session = Game.__new__(Game)
     session.state = state
