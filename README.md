@@ -182,6 +182,8 @@ python main.py
 
 ### Kiểm tra chất lượng
 
+GitHub Actions chạy test và kiểm tra kiểu mã trên Python `3.10`, `3.11` và `3.12`; build ứng dụng trên Windows/Linux khi push lên `main` hoặc `master`. Release chỉ được tạo khi push tag phiên bản dạng `v*` (ví dụ `v2.1.0`).
+
 ```bash
 python -m pytest -q
 python -m ruff check .

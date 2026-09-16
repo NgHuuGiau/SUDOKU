@@ -3,14 +3,19 @@ name: CI/CD Pipeline
 on:
   push:
     branches: [main, master]
+    tags: ['v*']
   pull_request:
     branches: [main, master]
   workflow_dispatch:
 
 jobs:
   test:
-    name: Run Tests
+    name: Run Tests (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -18,7 +23,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: ${{ matrix.python-version }}
           cache: 'pip'
 
       - name: Install dependencies
@@ -34,13 +39,18 @@ jobs:
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
+        if: matrix.python-version == '3.12'
         with:
           files: ./coverage.xml
           fail_ci_if_error: false
 
   lint:
-    name: Lint & Type Check
+    name: Lint & Type Check (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -48,7 +58,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: ${{ matrix.python-version }}
           cache: 'pip'
 
       - name: Install lint tools
@@ -68,7 +78,7 @@ jobs:
     name: Build Windows Executable
     runs-on: windows-latest
     needs: [test, lint]
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v'))
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -99,7 +109,7 @@ jobs:
     name: Build Linux Executable
     runs-on: ubuntu-latest
     needs: [test, lint]
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v'))
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -135,7 +145,7 @@ jobs:
     name: Create Release
     runs-on: ubuntu-latest
     needs: [build-windows, build-linux]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     permissions:
       contents: write
     steps:
@@ -154,14 +164,11 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ github.run_number }}
-          name: Sudoku Master v${{ github.run_number }}
+          tag_name: ${{ github.ref_name }}
+          name: Sudoku Master ${{ github.ref_name }}
           body: |
-            Automated build #${{ github.run_number }}
-            
-            ## Changes
-            ${{ github.event.head_commit.message }}
-            
+            Phát hành Sudoku Master ${{ github.ref_name }}.
+
             ## Downloads
             - Windows: `SudokuMaster.exe`
             - Linux: `SudokuMaster`
