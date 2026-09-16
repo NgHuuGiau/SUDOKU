@@ -138,3 +138,105 @@ def test_winning_daily_game_updates_daily_and_game_stats(monkeypatch):
     assert get_stats()["games_won"] == 1
     assert load_daily_stats()["total_completed"] == 1
     assert load_daily_stats()["streak"] == 1
+
+
+def test_keyboard_places_solution_value_in_selected_empty_cell(monkeypatch):
+    state = GameState("easy")
+    session = Game.__new__(Game)
+    session.state = state
+    session.show_help = False
+    row, column = next(
+        (r, c) for r in range(9) for c in range(9) if state.original[r][c] == 0
+    )
+    state.selected = [row, column]
+    value = state.solution[row][column]
+    event = pygame.event.Event(
+        pygame.KEYDOWN, key=getattr(pygame, f"K_{value}"), unicode=str(value), mod=0
+    )
+    monkeypatch.setattr(pygame.event, "get", lambda: [event])
+
+    assert session.handle_events()
+    assert state.board[row][column] == value
+
+
+def test_escape_pauses_and_resumes_game(monkeypatch):
+    state = GameState("easy")
+    session = Game.__new__(Game)
+    session.state = state
+    session.show_help = False
+    escape = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)
+    events = [escape]
+    monkeypatch.setattr(pygame.event, "get", lambda: events)
+
+    assert session.handle_events()
+    assert state.paused
+
+    assert session.handle_events()
+    assert not state.paused
+
+
+def test_import_puzzle_replaces_game_state_and_closes_dialog(monkeypatch):
+    import tkinter
+    from tkinter import messagebox, simpledialog
+
+    from logic import export_puzzle
+
+    class FakeRoot:
+        destroyed = False
+
+        def withdraw(self):
+            pass
+
+        def destroy(self):
+            self.destroyed = True
+
+    root = FakeRoot()
+    monkeypatch.setattr(tkinter, "Tk", lambda: root)
+    state = GameState("easy")
+    board = [row[:] for row in state.solution]
+    board[0][0] = 0
+    puzzle_text = export_puzzle(board, state.solution)
+    monkeypatch.setattr(simpledialog, "askstring", lambda *_args, **_kwargs: puzzle_text)
+    monkeypatch.setattr(messagebox, "showinfo", lambda *_args, **_kwargs: None)
+    session = Game.__new__(Game)
+    session.state = state
+
+    session._handle_import()
+
+    assert state.board == board
+    assert state.original == board
+    assert state.selected == [0, 0]
+    assert not state.paused
+    assert root.destroyed
+
+
+def test_invalid_puzzle_import_keeps_current_game_and_closes_dialog(monkeypatch):
+    import tkinter
+    from tkinter import messagebox, simpledialog
+
+    class FakeRoot:
+        destroyed = False
+
+        def withdraw(self):
+            pass
+
+        def destroy(self):
+            self.destroyed = True
+
+    root = FakeRoot()
+    monkeypatch.setattr(tkinter, "Tk", lambda: root)
+    state = GameState("easy")
+    initial_board = [row[:] for row in state.board]
+    errors = []
+    monkeypatch.setattr(simpledialog, "askstring", lambda *_args, **_kwargs: "invalid")
+    monkeypatch.setattr(
+        messagebox, "showerror", lambda title, message, **_kwargs: errors.append((title, message))
+    )
+    session = Game.__new__(Game)
+    session.state = state
+
+    session._handle_import()
+
+    assert state.board == initial_board
+    assert errors and errors[0][0] == "Import Puzzle"
+    assert root.destroyed
