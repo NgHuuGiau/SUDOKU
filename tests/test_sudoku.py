@@ -24,7 +24,9 @@ from persistence import (
     get_data_dir,
     has_save_file,
     load_best_times,
+    load_daily_stats,
     load_game_state,
+    load_leaderboard,
     load_stats,
     record_game_start,
     record_game_win,
@@ -215,7 +217,87 @@ class TestPersistence:
 
     def test_best_times_initial(self):
         times = load_best_times()
-        assert times == {"easy": None, "medium": None, "hard": None}
+        assert times == {
+            "easy": None,
+            "medium": None,
+            "hard": None,
+            "daily": None,
+            "custom": None,
+        }
+
+    def test_best_times_ignore_invalid_values(self):
+        (get_data_dir() / "best_times.json").write_text(
+            json.dumps({"easy": "fast", "hard": -3, "daily": 120}), encoding="utf-8"
+        )
+
+        assert load_best_times() == {
+            "easy": None,
+            "medium": None,
+            "hard": None,
+            "daily": 120,
+            "custom": None,
+        }
+
+    def test_daily_stats_recover_from_invalid_fields(self):
+        (get_data_dir() / "daily_stats.json").write_text(
+            json.dumps(
+                {
+                    "last_completed_date": "not-a-date",
+                    "streak": "broken",
+                    "total_completed": -2,
+                    "best_streak": 4,
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        assert load_daily_stats() == {
+            "last_completed_date": None,
+            "streak": 0,
+            "total_completed": 0,
+            "best_streak": 4,
+        }
+
+    def test_stats_and_leaderboard_sanitize_corrupt_data(self):
+        (get_data_dir() / "stats.json").write_text(
+            json.dumps(
+                {
+                    "games_played": "many",
+                    "games_won": -1,
+                    "current_streak": 5,
+                    "best_streak": 2,
+                    "theme": "unknown",
+                    "best_times": {"easy": "fast", "daily": 75},
+                    "by_difficulty": {"easy": {"played": "many", "won": -1, "total_time": 60}},
+                }
+            ),
+            encoding="utf-8",
+        )
+        (get_data_dir() / "leaderboard.json").write_text(
+            json.dumps(
+                {
+                    "easy": [
+                        {"name": "Valid", "time": 42, "date": "2026-09-17"},
+                        {"name": "Broken", "time": "fast", "date": "2026-09-17"},
+                    ],
+                    "daily": "not-a-list",
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        stats = load_stats()
+        leaderboard = load_leaderboard()
+        assert stats["games_played"] == 0
+        assert stats["games_won"] == 0
+        assert stats["current_streak"] == 0
+        assert stats["best_streak"] == 2
+        assert stats["theme"] == "light"
+        assert stats["best_times"]["easy"] is None
+        assert stats["best_times"]["daily"] == 75
+        assert stats["by_difficulty"]["easy"] == {"played": 0, "won": 0, "total_time": 60}
+        assert leaderboard["easy"] == [{"name": "Valid", "time": 42, "date": "2026-09-17"}]
+        assert leaderboard["daily"] == []
 
     def test_update_best_time_first(self):
         assert update_best_time("easy", 120)

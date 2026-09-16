@@ -163,15 +163,28 @@ def _is_notes(value: Any) -> bool:
     )
 
 
+def _nonnegative_int(value: Any) -> int | None:
+    return value if type(value) is int and value >= 0 else None
+
+
+def _valid_date(value: Any) -> str | None:
+    if not isinstance(value, str):
+        return None
+    try:
+        return date.fromisoformat(value).isoformat()
+    except ValueError:
+        return None
+
+
 def load_best_times() -> dict[Difficulty, int | None]:
     filepath = _runtime_file("best_times.json")
-    if os.path.exists(filepath):
-        try:
-            with open(filepath, encoding="utf-8") as f:
-                return cast(dict[Difficulty, int | None], json.load(f))
-        except (OSError, json.JSONDecodeError) as exc:
-            logger.warning("Could not load %s: %s", filepath, exc)
-    return {"easy": None, "medium": None, "hard": None}
+    stored = _load_json(filepath, {})
+    times: dict[Difficulty, int | None] = dict.fromkeys(DIFFICULTIES)
+    for difficulty in DIFFICULTIES:
+        value = stored.get(difficulty)
+        if value is None or _nonnegative_int(value) is not None:
+            times[difficulty] = value
+    return times
 
 
 def save_best_times(times: dict[Difficulty, int | None]) -> None:
@@ -352,15 +365,15 @@ def has_save_file() -> bool:
 
 def load_daily_stats() -> DailyStats:
     filepath = _runtime_file("daily_stats.json")
-    return cast(DailyStats, _load_json(
-        filepath,
-        {
-            "last_completed_date": None,
-            "streak": 0,
-            "total_completed": 0,
-            "best_streak": 0,
-        },
-    ))
+    stored = _load_json(filepath, {})
+    last_completed = _valid_date(stored.get("last_completed_date"))
+    streak = _nonnegative_int(stored.get("streak")) or 0
+    return {
+        "last_completed_date": last_completed,
+        "streak": streak if last_completed else 0,
+        "total_completed": _nonnegative_int(stored.get("total_completed")) or 0,
+        "best_streak": max(_nonnegative_int(stored.get("best_streak")) or 0, streak),
+    }
 
 
 def save_daily_stats(stats: DailyStats) -> None:
@@ -423,25 +436,41 @@ def load_stats() -> GameStats:
         "theme": "light",
     }
     stored = _load_json(filepath, {})
-    stats = {**defaults, **stored}
     stored_best = stored.get("best_times")
+    stats = defaults.copy()
+    for field in ("games_played", "games_won", "total_time", "current_streak", "best_streak"):
+        stats[field] = _nonnegative_int(stored.get(field)) or 0
+    stats["last_win_date"] = _valid_date(stored.get("last_win_date"))
+    if stored.get("theme") in ("light", "dark", "frost", "cozy"):
+        stats["theme"] = stored["theme"]
+    if stats["last_win_date"] is None:
+        stats["current_streak"] = 0
     stats["best_times"] = {
-        **defaults["best_times"],
-        **(stored_best if isinstance(stored_best, dict) else {}),
-    }
-    stored_difficulties = stored.get("by_difficulty")
-    stats["by_difficulty"] = {
-        difficulty: {
-            **defaults["by_difficulty"][difficulty],
-            **(
-                stored_difficulties.get(difficulty, {})
-                if isinstance(stored_difficulties, dict)
-                and isinstance(stored_difficulties.get(difficulty), dict)
-                else {}
-            ),
-        }
+        difficulty: (
+            stored_best.get(difficulty)
+            if isinstance(stored_best, dict)
+            and (
+                stored_best.get(difficulty) is None
+                or _nonnegative_int(stored_best.get(difficulty)) is not None
+            )
+            else None
+        )
         for difficulty in DIFFICULTIES
     }
+    stored_difficulties = stored.get("by_difficulty")
+    stats["by_difficulty"] = {}
+    for difficulty in DIFFICULTIES:
+        entry = (
+            stored_difficulties.get(difficulty, {})
+            if isinstance(stored_difficulties, dict)
+            and isinstance(stored_difficulties.get(difficulty), dict)
+            else {}
+        )
+        stats["by_difficulty"][difficulty] = {
+            field: _nonnegative_int(entry.get(field)) or 0
+            for field in ("played", "won", "total_time")
+        }
+    stats["best_streak"] = max(stats["best_streak"], stats["current_streak"])
     return cast(GameStats, stats)
 
 
@@ -512,16 +541,33 @@ LEADERBOARD_MAX_ENTRIES = 10
 
 def load_leaderboard() -> LeaderboardData:
     filepath = _runtime_file("leaderboard.json")
-    return cast(LeaderboardData, _load_json(
-        filepath,
-        {
-            "easy": [],
-            "medium": [],
-            "hard": [],
-            "daily": [],
-            "custom": [],
-        },
-    ))
+    stored = _load_json(filepath, {})
+    leaderboard: LeaderboardData = {
+        "easy": [],
+        "medium": [],
+        "hard": [],
+        "daily": [],
+        "custom": [],
+    }
+    for difficulty in DIFFICULTIES:
+        entries = stored.get(difficulty)
+        if not isinstance(entries, list):
+            continue
+        valid_entries: list[LeaderboardEntry] = []
+        for entry in entries:
+            if not isinstance(entry, dict):
+                continue
+            elapsed = _nonnegative_int(entry.get("time"))
+            completed = _valid_date(entry.get("date"))
+            name = entry.get("name")
+            if elapsed is not None and completed is not None and isinstance(name, str):
+                valid_entries.append(
+                    {"name": name[:20], "time": elapsed, "date": completed}
+                )
+        leaderboard[difficulty] = sorted(valid_entries, key=lambda entry: entry["time"])[
+            :LEADERBOARD_MAX_ENTRIES
+        ]
+    return leaderboard
 
 
 def save_leaderboard(leaderboard: LeaderboardData) -> None:
