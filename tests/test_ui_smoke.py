@@ -8,7 +8,7 @@ import pygame
 
 import game
 from game import AppController, Game, GameState
-from persistence import get_stats, load_daily_stats, record_game_start
+from persistence import get_stats, load_daily_stats, load_game_state, record_game_start
 from ui import create_game_screen, draw_game_view, load_fonts
 from ui.geometry import SCREEN_HEIGHT, SCREEN_WIDTH, get_sidebar_layout
 from ui.icons import SmoothIcons
@@ -173,6 +173,48 @@ def test_escape_pauses_and_resumes_game(monkeypatch):
 
     assert session.handle_events()
     assert not state.paused
+
+
+def test_window_close_saves_latest_game_state(monkeypatch):
+    state = GameState("easy")
+    row, column = next(
+        (r, c) for r in range(9) for c in range(9) if state.original[r][c] == 0
+    )
+    state.board[row][column] = state.solution[row][column]
+    session = Game.__new__(Game)
+    session.state = state
+    session.running = True
+    monkeypatch.setattr(
+        pygame.event, "get", lambda: [pygame.event.Event(pygame.QUIT)]
+    )
+
+    assert not session.handle_events()
+    restored = load_game_state()
+    assert restored is not None
+    assert restored.board[row][column] == state.solution[row][column]
+
+
+def test_return_to_menu_saves_latest_game_state():
+    state = GameState("easy")
+    row, column = next(
+        (r, c) for r in range(9) for c in range(9) if state.original[r][c] == 0
+    )
+    state.board[row][column] = state.solution[row][column]
+    session = Game.__new__(Game)
+    session.state = state
+    session.running = True
+    session.go_to_menu = False
+    session.header_pause_rect = None
+    session.header_theme_rect = None
+    session.header_sound_rect = None
+    session.header_help_rect = None
+
+    session._handle_mouse(get_sidebar_layout()["menu"].center)
+
+    assert not session.running
+    restored = load_game_state()
+    assert restored is not None
+    assert restored.board[row][column] == state.solution[row][column]
 
 
 def test_import_puzzle_replaces_game_state_and_closes_dialog(monkeypatch):

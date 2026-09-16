@@ -286,6 +286,7 @@ class Game:
     def handle_events(self) -> bool:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                self.state.force_save()
                 self.running = False
                 return False
 
@@ -342,6 +343,7 @@ class Game:
             self.go_to_menu = True
         # Backward compat
         if self.pause_quit_rect and self.pause_quit_rect.collidepoint(x, y):
+            self.state.force_save()
             self.running = False
             self.go_to_menu = True
 
@@ -419,6 +421,7 @@ class Game:
                 self._restart_game()
                 return
             if layout["menu"].collidepoint(x, y):
+                self.state.force_save()
                 self.running = False
                 self.go_to_menu = True
                 return
