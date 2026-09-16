@@ -76,7 +76,7 @@ Màn hình chiến thắng dùng modal nổi bật với thời gian hoàn thàn
 - Gợi ý số đúng cho ô đang chọn
 - Tự động điền ghi chú khả dĩ
 - Kiểm tra thắng khi bảng hiện tại trùng với lời giải
-- **Lưu/Tải ván chơi tự động** (tự động lưu sau mỗi thao tác, tiếp tục được ván dở khi mở lại game)
+- **Lưu/Tải ván chơi tự động** (lưu sau thao tác với giới hạn tần suất ghi đĩa, tiếp tục ván dở khi mở lại game)
 - **Kỷ lục thời gian tốt nhất** theo từng độ khó (lưu cục bộ, hiển thị khi chiến thắng)
 
 ### Điều khiển
@@ -86,7 +86,7 @@ Màn hình chiến thắng dùng modal nổi bật với thời gian hoàn thàn
 - `1` đến `9`: nhập số
 - `Backspace` hoặc `Delete`: xóa ô
 - `Esc`: tạm dừng / tiếp tục
-- `Ctrl+Z`: Hoàn tác, `Ctrl+Shift+Z` / `Ctrl+Y`: Làm lại
+- `Ctrl+Z`: Hoàn tác, `Ctrl+Shift+Z` / `Ctrl+Y`: Làm lại (lưu tối đa 200 trạng thái)
 - `Space` / `N`: Bật/tắt chế độ ghi chú
 
 ### Cấu trúc mã nguồn
@@ -157,12 +157,6 @@ Lệnh trên chỉ cài dependency chạy game. Để chạy test, lint, type-ch
 pip install -e ".[dev]"
 ```
 
-Khi phát triển hoặc đóng gói, cài thêm nhóm công cụ tương ứng từ `pyproject.toml`:
-
-```bash
-pip install -e ".[dev]"
-```
-
 ### Dữ liệu người dùng
 
 Ván chơi, thống kê, kỷ lục và bảng xếp hạng được lưu trong thư mục dữ liệu riêng của người dùng,
@@ -183,7 +177,7 @@ python main.py
 
 ### Kiểm tra chất lượng
 
-GitHub Actions chạy test và kiểm tra kiểu mã trên Python `3.10`, `3.11` và `3.12`; build ứng dụng trên Windows/Linux khi push lên `main` hoặc `master`. Release chỉ được tạo khi push tag phiên bản dạng `v*` (ví dụ `v2.1.0`).
+GitHub Actions chạy test, lint, type-check và quét lỗ hổng dependency trên Python `3.10`, `3.11` và `3.12`; build và smoke-test ứng dụng trên Windows/Linux cho pull request và push lên `main`/`master`. CI có job tổng kết kết quả. Release chỉ được tạo khi push tag phiên bản dạng `v*` (ví dụ `v2.1.0`).
 
 ```bash
 python -m pytest -q
