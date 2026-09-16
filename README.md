@@ -143,6 +143,7 @@ SUDOKU/
 
 - Python `3.10+`
 - `pip`
+- Màn hình tối thiểu `1120 × 800` (cửa sổ game hiện chưa hỗ trợ thay đổi kích thước)
 - Tcl/Tk (cần cho hộp thoại nhập/xuất puzzle; Linux cài thêm gói `python3-tk`)
 
 ### Cài thư viện
@@ -159,7 +160,7 @@ pip install -e ".[dev]"
 
 ### Dữ liệu người dùng
 
-Ván chơi, thống kê, kỷ lục và bảng xếp hạng được lưu trong thư mục dữ liệu riêng của người dùng,
+Ván chơi, thống kê, kỷ lục, bảng xếp hạng và nhật ký được lưu trong thư mục dữ liệu riêng của người dùng,
 không ghi vào thư mục mã nguồn:
 
 - Windows: `%LOCALAPPDATA%\SudokuMaster`
@@ -177,7 +178,7 @@ python main.py
 
 ### Kiểm tra chất lượng
 
-GitHub Actions chạy test, lint, type-check và quét lỗ hổng dependency trên Python `3.10`, `3.11` và `3.12`; build và smoke-test ứng dụng trên Windows/Linux cho pull request và push lên `main`/`master`. CI có job tổng kết kết quả. Release chỉ được tạo khi push tag phiên bản dạng `v*` (ví dụ `v2.1.0`).
+GitHub Actions chạy test, lint, type-check và quét lỗ hổng dependency/secret trên Python `3.10`, `3.11` và `3.12`; build và smoke-test ứng dụng trên Windows/Linux cho pull request và push lên `main`/`master`. CI có job tổng kết kết quả. Release chỉ được tạo khi push tag phiên bản dạng `v*` (ví dụ `v2.1.0`).
 
 ```bash
 python -m pytest -q

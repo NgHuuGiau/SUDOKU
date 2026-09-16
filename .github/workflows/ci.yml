@@ -75,7 +75,7 @@ jobs:
           python -m mypy . --ignore-missing-imports
 
   security:
-    name: Security Scan (pip-audit)
+    name: Security & Secret Scan
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -88,13 +88,16 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install project and pip-audit
+      - name: Install project and security tools
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e . pip-audit
+          python -m pip install -e . pip-audit detect-secrets==1.5.0
 
       - name: Audit dependencies
         run: pip-audit --local
+
+      - name: Scan tracked files for secrets
+        run: detect-secrets-hook --baseline .secrets.baseline $(git ls-files)
 
   build-windows:
     name: Build Windows Executable
@@ -232,7 +235,7 @@ jobs:
             echo '| --- | --- |'
             echo "| Tests | $TEST_RESULT |"
             echo "| Lint & type check | $LINT_RESULT |"
-            echo "| Dependency security scan | $SECURITY_RESULT |"
+            echo "| Security & secret scan | $SECURITY_RESULT |"
             echo "| Windows build & smoke test | $WINDOWS_RESULT |"
             echo "| Linux build & smoke test | $LINUX_RESULT |"
             echo "| Release | $RELEASE_RESULT |"
