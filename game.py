@@ -265,16 +265,16 @@ class Game:
         self.running = True
         self.quit_requested = False
         self.go_to_menu = False
-        self.pause_resume_rect = None
-        self.pause_restart_rect = None
-        self.pause_save_quit_rect = None
-        self.pause_quit_rect = None
-        self.win_restart_rect = None
-        self.win_quit_rect = None
-        self.header_pause_rect = None
-        self.header_theme_rect = None
-        self.header_sound_rect = None
-        self.header_help_rect = None
+        self.pause_resume_rect: pygame.Rect | None = None
+        self.pause_restart_rect: pygame.Rect | None = None
+        self.pause_save_quit_rect: pygame.Rect | None = None
+        self.pause_quit_rect: pygame.Rect | None = None
+        self.win_restart_rect: pygame.Rect | None = None
+        self.win_quit_rect: pygame.Rect | None = None
+        self.header_pause_rect: pygame.Rect | None = None
+        self.header_theme_rect: pygame.Rect | None = None
+        self.header_sound_rect: pygame.Rect | None = None
+        self.header_help_rect: pygame.Rect | None = None
         self.help_rects: dict[str, pygame.Rect] | None = None
         self.show_help = False
 
