@@ -143,6 +143,7 @@ SUDOKU/
 
 - Python `3.10+`
 - `pip`
+- Tcl/Tk (cần cho hộp thoại nhập/xuất puzzle; Linux cài thêm gói `python3-tk`)
 
 ### Cài thư viện
 
@@ -189,6 +190,7 @@ python -m pytest -q
 python -m ruff check .
 python -m mypy . --ignore-missing-imports
 python -m compileall -q .
+python main.py --smoke-test
 ```
 
 ### Đóng gói

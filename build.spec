@@ -29,8 +29,19 @@ hiddenimports = [
     'ctypes',
 ]
 
-if importlib.util.find_spec('tkinter'):
-    hiddenimports.extend(['tkinter', 'tkinter.ttk', 'tkinter.font', 'tkinter.messagebox'])
+if importlib.util.find_spec('tkinter') is None:
+    raise RuntimeError('A working Tcl/Tk installation is required to package puzzle import/export dialogs.')
+
+import tkinter
+
+try:
+    tkinter.Tcl().eval('info patchlevel')
+except Exception as exc:
+    raise RuntimeError(
+        'Tcl/Tk is unavailable or misconfigured; refusing to build an executable without import/export dialogs.'
+    ) from exc
+
+hiddenimports.extend(['tkinter', 'tkinter.ttk', 'tkinter.font', 'tkinter.messagebox'])
 
 # Excludes to reduce binary size
 excludes = [

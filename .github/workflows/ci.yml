@@ -98,6 +98,11 @@ jobs:
         run: |
           pyinstaller build.spec --clean
 
+      - name: Smoke test executable
+        run: .\dist\SudokuMaster.exe --smoke-test
+        env:
+          SDL_VIDEODRIVER: dummy
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
@@ -133,6 +138,11 @@ jobs:
       - name: Build executable
         run: |
           pyinstaller build.spec --clean
+
+      - name: Smoke test executable
+        run: ./dist/SudokuMaster --smoke-test
+        env:
+          SDL_VIDEODRIVER: dummy
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
