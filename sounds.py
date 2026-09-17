@@ -6,40 +6,6 @@ import math
 import pygame
 
 
-def _generate_tone_base(
-    frequency: float,
-    duration: float,
-    volume: float = 0.5,
-    sample_rate: int = 44100,
-    freq_func=None,
-    envelope_func=None,
-) -> pygame.mixer.Sound:
-    """Base tone generator with customizable frequency and envelope functions."""
-    sample_rate = 44100 if sample_rate is None else sample_rate
-    n_samples = int(sample_rate * duration)
-    buf = array.array("h", [0] * n_samples)
-    amplitude = int(32767 * volume)
-
-    for i in range(n_samples):
-        t = i / sample_rate
-        # Default frequency function (constant)
-        freq = frequency if freq_func is None else freq_func(i, t, duration, sample_rate)
-        # Default envelope (fade in/out)
-        envelope = 1.0
-        if envelope_func:
-            envelope = envelope_func(i, t, n_samples, sample_rate, duration)
-        elif i < n_samples * 0.1:
-            envelope = i / (n_samples * 0.1)
-        elif i > n_samples * 0.8:
-            envelope = (n_samples - i) / (n_samples * 0.2)
-
-        freq = frequency if freq_func is None else freq_func(i, t, duration, sample_rate)
-        buf[i] = int(amplitude * envelope * math.sin(2 * math.pi * freq * t))
-
-    sound = pygame.mixer.Sound(buffer=buf)
-    return sound
-
-
 def generate_tone(
     frequency: float,
     duration: float,
@@ -105,11 +71,6 @@ def generate_success(volume: float = 0.5) -> pygame.mixer.Sound:
     return sound
 
 
-def generate_error(volume: float = 0.4) -> pygame.mixer.Sound:
-    """Generate an error buzz (descending tone)."""
-    return generate_tone(200, 0.3, volume)
-
-
 def generate_hint(volume: float = 0.4) -> pygame.mixer.Sound:
     """Generate a hint sound (gentle chime)."""
     sample_rate = 44100
@@ -162,7 +123,6 @@ class SoundManager:
     def __init__(self):
         self.sounds = {}
         self.enabled = True
-        self.volume = 0.5
         self._init_sounds()
 
     def _init_sounds(self):
@@ -172,11 +132,9 @@ class SoundManager:
                 "click": generate_click(),
                 "pop": generate_pop(),
                 "success": generate_success(),
-                "error": generate_error(),
                 "hint": generate_hint(),
                 "undo": generate_undo(),
             }
-            self.set_volume(self.volume)
         except Exception as e:
             print(f"Warning: Could not initialize sounds: {e}")
             self.sounds = {}
@@ -189,15 +147,6 @@ class SoundManager:
             self.sounds[name].play()
         except Exception:
             pass
-
-    def set_volume(self, volume: float):
-        """Set volume for all sounds (0.0 to 1.0)."""
-        self.volume = max(0.0, min(1.0, volume))
-        for sound in self.sounds.values():
-            try:
-                sound.set_volume(self.volume)
-            except Exception:
-                pass
 
     def toggle(self):
         """Toggle sound on/off."""
@@ -221,10 +170,6 @@ def get_sound_manager() -> SoundManager:
 def play_sound(name: str):
     """Convenience function to play a sound."""
     get_sound_manager().play(name)
-
-
-def set_sound_volume(volume: float):
-    get_sound_manager().set_volume(volume)
 
 
 def toggle_sound():

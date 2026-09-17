@@ -95,8 +95,6 @@ def get_sidebar_layout() -> dict:
         "numbers": number_buttons,
         "new_game": new_game_rect,
         "menu": menu_rect,
-        "undo": quick_buttons[0],
-        "redo": quick_buttons[1],
     }
 
 

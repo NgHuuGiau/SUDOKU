@@ -5,6 +5,10 @@
 ### Bảo trì
 
 - Loại bỏ bộ đo hiệu năng và các lớp thực thi an toàn/circuit breaker chưa được game sử dụng.
+- Bỏ API tương thích, bảng màu Tkinter cũ, kiểu dữ liệu và tài nguyên không được ứng dụng dùng.
+- Dùng trực tiếp bộ nạp thống kê hằng ngày và xóa các alias bố cục trùng lặp.
+- Bỏ ghi thống kê ván chưa có màn hình hiển thị; vẫn giữ nguyên dữ liệu cũ khi lưu theme.
+- Chỉ nhúng icon ứng dụng vào bản build, không đóng gói ảnh README.
 
 ### Lối chơi và dữ liệu
 

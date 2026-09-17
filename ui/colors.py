@@ -265,103 +265,6 @@ COZY_THEME = ThemeColors(
 )
 
 
-# Backward compatibility - use light theme as default
-Colors = LIGHT_THEME
-
-
-# Menu colors for tkinter
-MENU_COLORS_LIGHT = {
-    "bg": "#f8fafc",
-    "hero": "#1e293b",
-    "card": "#ffffff",
-    "primary": "#4f46e5",
-    "primary_hover": "#4338ca",
-    "secondary": "#10b981",
-    "secondary_hover": "#059669",
-    "warning": "#f59e0b",
-    "warning_hover": "#d97706",
-    "danger": "#ef4444",
-    "danger_hover": "#dc2626",
-    "text_dark": "#0f172a",
-    "text_muted": "#64748b",
-    "text_light": "#ffffff",
-    "border": "#e2e8f0",
-    "badge_bg": "#eef2ff",
-    "badge_fg": "#4338ca",
-}
-
-MENU_COLORS_DARK = {
-    "bg": "#0b0f19",
-    "hero": "#f8fafc",
-    "card": "#131b2e",
-    "primary": "#38bdf8",
-    "primary_hover": "#0ea5e9",
-    "secondary": "#34d399",
-    "secondary_hover": "#10b981",
-    "warning": "#fbbf24",
-    "warning_hover": "#f59e0b",
-    "danger": "#f87171",
-    "danger_hover": "#ef4444",
-    "text_dark": "#f8fafc",
-    "text_muted": "#94a3b8",
-    "text_light": "#0b0f19",
-    "border": "#1e293b",
-    "badge_bg": "#1e3a5f",
-    "badge_fg": "#38bdf8",
-}
-
-MENU_COLORS_FROST = {
-    "bg": "#0e1726",
-    "hero": "#f0fdfa",
-    "card": "#162238",
-    "primary": "#2dd4bf",
-    "primary_hover": "#14b8a6",
-    "secondary": "#38bdf8",
-    "secondary_hover": "#0284c7",
-    "warning": "#fb923c",
-    "warning_hover": "#f97316",
-    "danger": "#fb7185",
-    "danger_hover": "#f43f5e",
-    "text_dark": "#f0fdfa",
-    "text_muted": "#7dd3fc",
-    "text_light": "#0e1726",
-    "border": "#1f3454",
-    "badge_bg": "#0f766e",
-    "badge_fg": "#ccfbf1",
-}
-
-MENU_COLORS_COZY = {
-    "bg": "#fdfbf7",
-    "hero": "#2b1a0d",
-    "card": "#f7f2e9",
-    "primary": "#ea580c",
-    "primary_hover": "#c2410c",
-    "secondary": "#16a34a",
-    "secondary_hover": "#15803d",
-    "warning": "#d97706",
-    "warning_hover": "#b45309",
-    "danger": "#dc2626",
-    "danger_hover": "#b91c1c",
-    "text_dark": "#2b1a0d",
-    "text_muted": "#8c735d",
-    "text_light": "#ffffff",
-    "border": "#e6ded1",
-    "badge_bg": "#fed7aa",
-    "badge_fg": "#9a3412",
-}
-
-
-def get_menu_colors(theme: ThemeMode = "light") -> dict:
-    """Get menu colors for the given theme."""
-    if theme == "dark":
-        return MENU_COLORS_DARK
-    elif theme == "frost":
-        return MENU_COLORS_FROST
-    elif theme == "cozy":
-        return MENU_COLORS_COZY
-    return MENU_COLORS_LIGHT
-
-
 class ThemeManager:
     """Manages theme state and provides current theme colors."""
 
@@ -404,10 +307,6 @@ class ThemeManager:
             self._theme = value
             self._save_theme()
 
-    def toggle(self):
-        """Cycle to the next theme."""
-        self.cycle_theme()
-
     def cycle_theme(self) -> ThemeMode:
         """Cycle to next theme in order."""
         curr_idx = THEME_ORDER.index(self._theme) if self._theme in THEME_ORDER else 0
@@ -434,19 +333,6 @@ class ThemeManager:
             return COZY_THEME
         return LIGHT_THEME
 
-    @property
-    def menu_colors(self) -> dict:
-        return get_menu_colors(self._theme)
-
-    @property
-    def is_dark(self) -> bool:
-        return self._theme in ("dark", "frost")
-
-
-# Backward compatibility - dynamic properties
-def _get_current_theme_manager() -> ThemeManager:
-    return get_theme_manager()
-
 
 class _ColorsProxy:
     """Backward-compatible proxy for Colors class."""
@@ -455,42 +341,9 @@ class _ColorsProxy:
         return getattr(get_theme_manager().colors, name)
 
 
-class _MenuColorsProxy:
-    """Backward-compatible proxy for MENU_COLORS dict."""
-
-    def __getitem__(self, key):
-        return get_theme_manager().menu_colors[key]
-
-    def get(self, key, default=None):
-        return get_theme_manager().menu_colors.get(key, default)
-
-    def __contains__(self, key):
-        return key in get_theme_manager().menu_colors
-
-    def keys(self):
-        return get_theme_manager().menu_colors.keys()
-
-    def values(self):
-        return get_theme_manager().menu_colors.values()
-
-    def items(self):
-        return get_theme_manager().menu_colors.items()
-
-
-Colors = _ColorsProxy()  # type: ignore[assignment]
-MENU_COLORS = _MenuColorsProxy()
+Colors = _ColorsProxy()
 
 
 def get_theme_manager() -> ThemeManager:
     """Get the global theme manager instance."""
     return ThemeManager()
-
-
-def get_current_colors() -> ThemeColors:
-    """Get current theme colors (for backward compatibility)."""
-    return get_theme_manager().colors
-
-
-def get_current_menu_colors() -> dict:
-    """Get current menu colors (for backward compatibility)."""
-    return get_theme_manager().menu_colors

@@ -20,12 +20,9 @@ from ui.colors import (
     DARK_THEME,
     FROST_THEME,
     LIGHT_THEME,
-    MENU_COLORS,
     Colors,
     ThemeColors,
     ThemeManager,
-    get_current_colors,
-    get_current_menu_colors,
     get_theme_manager,
 )
 from ui.drawing import draw_badge, draw_interactive_card, draw_modern_button, draw_rounded_card
@@ -46,7 +43,7 @@ from ui.geometry import (
     get_timer_rect,
 )
 from ui.icons import Particle, SmoothIcons
-from ui.menu import MenuSudoku, draw_menu_view, tao_nut_bat_dau
+from ui.menu import draw_menu_view, tao_nut_bat_dau
 from ui.modals import (
     draw_footer_helper,
     draw_header,
@@ -62,7 +59,6 @@ from ui.view import draw_game_view
 __all__ = [
     # Colors & Themes
     "Colors",
-    "MENU_COLORS",
     "ThemeColors",
     "LIGHT_THEME",
     "DARK_THEME",
@@ -70,8 +66,6 @@ __all__ = [
     "COZY_THEME",
     "ThemeManager",
     "get_theme_manager",
-    "get_current_colors",
-    "get_current_menu_colors",
     # Fonts
     "load_fonts",
     "GameFonts",
@@ -116,6 +110,5 @@ __all__ = [
     "draw_game_view",
     # Menu
     "draw_menu_view",
-    "MenuSudoku",
     "tao_nut_bat_dau",
 ]

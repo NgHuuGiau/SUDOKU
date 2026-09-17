@@ -19,17 +19,15 @@ from logic import (
 )
 from persistence import (
     clear_save_file,
-    get_daily_stats,
     has_save_file,
     load_best_times,
+    load_daily_stats,
     load_game_state,
     mark_daily_challenge_completed,
-    record_game_start,
-    record_game_win,
     save_game_state,
     update_best_time,
 )
-from sounds import get_sound_manager, play_sound
+from sounds import play_sound
 from ui import (
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
@@ -287,7 +285,6 @@ class Game:
         else:
             self.state = GameState(difficulty)
         self.particles: List[Particle] = []
-        self.sound_manager = get_sound_manager()
         self.running = True
         self.quit_requested = False
         self.go_to_menu = False
@@ -506,7 +503,6 @@ class Game:
         self.particles.clear()
         clear_save_file()
         self.state.restart(self.state.difficulty)
-        record_game_start(self.state.difficulty)
 
     def _spawn_firework_burst(self, x: int, y: int, count: int = 38) -> None:
         colors = [
@@ -600,7 +596,6 @@ class Game:
             self.state.game_over = True
             self.state.final_time = self.state.get_elapsed_time()
             update_best_time(self.state.difficulty, self.state.final_time)
-            record_game_win(self.state.difficulty, self.state.final_time)
             if self.state.difficulty == "daily":
                 mark_daily_challenge_completed(self.state.final_time, self.state.difficulty)
             from persistence import is_top_10_time
@@ -680,7 +675,7 @@ class AppController:
         saved_state = load_game_state() if save_exists else None
         self.menu_data = {
             "best_times": load_best_times(),
-            "daily_stats": get_daily_stats(),
+            "daily_stats": load_daily_stats(),
             "save_exists": save_exists,
             "saved_game": (
                 (saved_state.difficulty, saved_state.get_elapsed_time())
@@ -766,15 +761,12 @@ class AppController:
                     return
 
     def _start_game(self, difficulty: str, loaded_state=None, custom_cells: int = 40) -> None:
-        is_new_game = loaded_state is None
         if difficulty == "custom" and loaded_state is None:
             loaded_state = GameState("custom", empty_cells=custom_cells)
         elif difficulty == "custom" and loaded_state is not None:
             self.custom_cells = loaded_state.custom_empty_cells
 
         self.game_session = Game(cast(Difficulty, difficulty), loaded_state=loaded_state)
-        if is_new_game:
-            record_game_start(cast(Difficulty, difficulty))
         assert self.game_session is not None
         self.game_session.screen = self.screen
         self.game_session._load_fonts()
@@ -856,12 +848,3 @@ class AppController:
             self.clock.tick(60)
 
         pygame.quit()
-
-
-def start_game(root=None, difficulty: str = "medium", loaded_state=None) -> bool:
-    """Legacy entry point: runs one game session and returns win status."""
-    if loaded_state is None:
-        record_game_start(cast(Difficulty, difficulty))
-    game = Game(cast(Difficulty, difficulty), loaded_state=loaded_state)
-    result = game.run()
-    return result != "quit"

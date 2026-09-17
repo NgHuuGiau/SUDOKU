@@ -89,18 +89,6 @@ def generate_daily_challenge(
     return board, solution, seed
 
 
-def get_daily_challenge_info(challenge_date: Optional[date] = None) -> dict:
-    """Get info about today's UTC daily challenge."""
-    if challenge_date is None:
-        challenge_date = datetime.now(timezone.utc).date()
-
-    return {
-        "date": challenge_date.isoformat(),
-        "date_str": challenge_date.strftime("%d/%m/%Y"),
-        "weekday": challenge_date.strftime("%A"),
-    }
-
-
 # =============================================================================
 # DLX (Dancing Links / Algorithm X) - Fast exact cover solver for Sudoku
 # =============================================================================
@@ -313,16 +301,6 @@ def solve_board_dlx(board: Board) -> bool:
         v = (row_id % 9) + 1
         board[r][c] = v
     return True
-
-
-def count_solutions(board: Board, limit: int = 2) -> int:
-    """Legacy backtracking solver (kept for compatibility)."""
-    return count_solutions_dlx(board, limit)
-
-
-def solve_board(board: Board) -> bool:
-    """Legacy solver (kept for compatibility)."""
-    return solve_board_dlx(board)
 
 
 def is_valid_placement(board: Board, row: int, col: int, num: int) -> bool:

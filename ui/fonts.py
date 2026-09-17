@@ -17,7 +17,6 @@ class GameFonts:
     tiny: pygame.font.Font
     badge: pygame.font.Font
     hero: pygame.font.Font
-    hero_large: pygame.font.Font
 
 
 def load_fonts() -> GameFonts:
@@ -41,5 +40,4 @@ def load_fonts() -> GameFonts:
         tiny=get_font(15),
         badge=get_font(15, is_bold=True),
         hero=get_font(34, is_bold=True),
-        hero_large=get_font(42, is_bold=True),
     )

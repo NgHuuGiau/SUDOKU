@@ -4,7 +4,7 @@ from tempfile import TemporaryDirectory
 
 import pytest
 
-# GameLogger is initialized while test modules import; keep its files out of the project.
+# The application logger is configured on import; keep test logs out of the project.
 os.environ["SUDOKU_DATA_DIR"] = os.fspath(Path(__file__).parent / ".pytest-runtime-data")
 
 import persistence

@@ -9,17 +9,16 @@ import pytest
 
 import config
 from config import GAME_DICT, game_text
+from error_handling import ErrorSeverity, log_exception, logger
 from game import MAX_HISTORY_STATES, GameState
 from logic import (
     check_win,
-    count_solutions,
     count_solutions_dlx,
     export_puzzle,
     generate_daily_challenge,
     generate_sudoku,
     import_puzzle,
     is_valid_placement,
-    solve_board,
     solve_board_dlx,
 )
 from persistence import (
@@ -33,8 +32,6 @@ from persistence import (
     load_game_state,
     load_leaderboard,
     load_stats,
-    record_game_start,
-    record_game_win,
     save_best_times,
     save_game_state,
     update_best_time,
@@ -130,25 +127,17 @@ class TestLogic:
 
     def test_count_solutions_unique(self):
         board, _ = generate_sudoku("easy")
-        assert count_solutions(board) == 1
         assert count_solutions_dlx(board) == 1
 
     def test_count_solutions_multiple(self):
         # Empty board has many solutions
         board = [[0] * 9 for _ in range(9)]
-        assert count_solutions(board, limit=2) >= 2
         assert count_solutions_dlx(board, limit=2) >= 2
 
     def test_solve_board_dlx(self):
         board, solution = generate_sudoku("hard")
         empty = [row[:] for row in board]
         assert solve_board_dlx(empty)
-        assert empty == solution
-
-    def test_solve_board_backtracking_compat(self):
-        board, solution = generate_sudoku("medium")
-        empty = [row[:] for row in board]
-        assert solve_board(empty)
         assert empty == solution
 
     def test_seed_is_reproducible_without_global_rng_side_effect(self):
@@ -186,6 +175,20 @@ class TestLogic:
 
         with pytest.raises(ValueError, match="exactly one solution"):
             import_puzzle(export_puzzle(empty_board, solution))
+
+
+def test_log_exception_logs_action_and_reraises(monkeypatch):
+    messages = []
+    monkeypatch.setattr(logger, "exception", lambda message, *args: messages.append(message % args))
+
+    @log_exception(ErrorSeverity.LOW, user_action="test_action")
+    def fail():
+        raise RuntimeError("expected failure")
+
+    with pytest.raises(RuntimeError, match="expected failure"):
+        fail()
+
+    assert messages == ["[LOW] test_action"]
 
 
 class TestPersistence:
@@ -375,17 +378,12 @@ class TestPersistence:
             "best_streak": 4,
         }
 
-    def test_stats_and_leaderboard_sanitize_corrupt_data(self):
+    def test_theme_and_leaderboard_sanitize_corrupt_data(self):
         (get_data_dir() / "stats.json").write_text(
             json.dumps(
                 {
                     "games_played": "many",
-                    "games_won": -1,
-                    "current_streak": 5,
-                    "best_streak": 2,
                     "theme": "unknown",
-                    "best_times": {"easy": "fast", "daily": 75},
-                    "by_difficulty": {"easy": {"played": "many", "won": -1, "total_time": 60}},
                 }
             ),
             encoding="utf-8",
@@ -405,14 +403,8 @@ class TestPersistence:
 
         stats = load_stats()
         leaderboard = load_leaderboard()
-        assert stats["games_played"] == 0
-        assert stats["games_won"] == 0
-        assert stats["current_streak"] == 0
-        assert stats["best_streak"] == 2
+        assert stats["games_played"] == "many"
         assert stats["theme"] == "light"
-        assert stats["best_times"]["easy"] is None
-        assert stats["best_times"]["daily"] == 75
-        assert stats["by_difficulty"]["easy"] == {"played": 0, "won": 0, "total_time": 60}
         assert leaderboard["easy"] == [{"name": "Valid", "time": 42, "date": "2026-09-17"}]
         assert leaderboard["daily"] == []
 
@@ -450,27 +442,6 @@ class TestPersistence:
 
         assert len(loaded.undo_stack) == undo_len
         assert len(loaded.redo_stack) == redo_len
-
-    @pytest.mark.parametrize("difficulty", ["daily", "custom"])
-    def test_stats_record_daily_and_custom_wins(self, difficulty):
-        record_game_start(difficulty)
-        stats = record_game_win(difficulty, 90)
-        assert stats["games_played"] == 1
-        assert stats["games_won"] == 1
-        assert stats["by_difficulty"][difficulty] == {"played": 1, "won": 1, "total_time": 90}
-
-    def test_stats_migrate_older_difficulty_data(self):
-        stats_path = get_data_dir() / "stats.json"
-        stats_path.write_text(
-            json.dumps({"games_played": 4, "by_difficulty": {"easy": {"played": 4}}}),
-            encoding="utf-8",
-        )
-        stats = load_stats()
-        assert stats["games_played"] == 4
-        assert stats["by_difficulty"]["easy"]["played"] == 4
-        assert stats["by_difficulty"]["daily"] == {"played": 0, "won": 0, "total_time": 0}
-        assert stats["by_difficulty"]["custom"] == {"played": 0, "won": 0, "total_time": 0}
-
 
 class TestGameState:
     """Tests for GameState class."""

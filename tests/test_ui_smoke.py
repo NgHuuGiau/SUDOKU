@@ -8,7 +8,7 @@ import pygame
 
 import game
 from game import AppController, Game, GameState
-from persistence import get_stats, load_daily_stats, load_game_state, record_game_start
+from persistence import load_daily_stats, load_game_state
 from ui import create_game_screen, draw_game_view, load_fonts
 from ui.geometry import SCREEN_HEIGHT, SCREEN_WIDTH, get_sidebar_layout
 from ui.icons import SmoothIcons
@@ -34,7 +34,7 @@ def test_menu_snapshot_avoids_reloading_persistence_each_frame(monkeypatch):
     def unexpected_disk_read(*_args, **_kwargs):
         raise AssertionError("menu should use the supplied snapshot")
 
-    for name in ("load_best_times", "get_daily_stats", "has_save_file", "load_game_state"):
+    for name in ("load_best_times", "load_daily_stats", "has_save_file", "load_game_state"):
         monkeypatch.setattr(menu_ui, name, unexpected_disk_read)
 
     screen = create_game_screen()
@@ -50,11 +50,10 @@ def test_menu_snapshot_avoids_reloading_persistence_each_frame(monkeypatch):
 
 def test_sidebar_layout_has_no_overlapping_controls():
     layout = get_sidebar_layout()
-    aliases = {"undo", "redo"}
     controls = [
         value
         for key, value in layout.items()
-        if key not in {"numbers", *aliases} and value is not None
+        if key != "numbers" and value is not None
     ]
     controls.extend(layout["numbers"])
 
@@ -175,7 +174,7 @@ def test_modern_icon_renderer_returns_visible_icon_at_requested_size():
     assert icon.get_bounding_rect() != pygame.Rect(0, 0, 0, 0)
 
 
-def test_new_game_counts_once_and_resume_does_not_count_again(monkeypatch):
+def test_start_new_game_and_resume_saved_game(monkeypatch):
     class StubGame:
         def __init__(self, difficulty, loaded_state=None):
             self.loaded_state = loaded_state
@@ -189,33 +188,33 @@ def test_new_game_counts_once_and_resume_does_not_count_again(monkeypatch):
     controller.state = AppController.STATE_MENU
 
     controller._start_game("easy")
-    assert get_stats()["games_played"] == 1
-    assert get_stats()["by_difficulty"]["easy"]["played"] == 1
+    assert isinstance(controller.game_session, StubGame)
 
     saved_state = GameState("easy")
     controller._start_game("easy", loaded_state=saved_state)
-    assert get_stats()["games_played"] == 1
+    assert controller.game_session.loaded_state is saved_state
 
 
-def test_restart_counts_a_new_game():
+def test_restart_resets_session_flags():
     session = Game.__new__(Game)
     session.particles = []
     session.state = GameState("easy")
+    session.state.game_over = True
+    session.state.paused = True
 
     session._restart_game()
 
-    assert get_stats()["games_played"] == 1
-    assert get_stats()["by_difficulty"]["easy"]["played"] == 1
+    assert not session.state.game_over
+    assert not session.state.paused
 
 
-def test_winning_daily_game_updates_daily_and_game_stats(monkeypatch):
+def test_winning_daily_game_updates_daily_stats(monkeypatch):
     class StubGame(Game):
         def _spawn_win_fireworks(self):
             pass
 
     state = GameState("daily")
     state.board = [row[:] for row in state.solution]
-    record_game_start("daily")
 
     session = StubGame.__new__(StubGame)
     session.state = state
@@ -226,7 +225,6 @@ def test_winning_daily_game_updates_daily_and_game_stats(monkeypatch):
     session.update()
 
     assert state.game_over
-    assert get_stats()["games_won"] == 1
     assert load_daily_stats()["total_completed"] == 1
     assert load_daily_stats()["streak"] == 1
 

@@ -11,11 +11,10 @@ block_cipher = None
 # Platform-specific settings
 IS_WINDOWS = sys.platform == 'win32'
 IS_MACOS = sys.platform == 'darwin'
-IS_LINUX = sys.platform.startswith('linux')
 
 # Data files to include
 datas = [
-    ('assets/preview', 'Picture'),
+    ('assets/preview/SUDOKU.ico', 'Picture'),
 ]
 
 # Hidden imports

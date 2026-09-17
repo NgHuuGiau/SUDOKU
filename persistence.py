@@ -77,42 +77,6 @@ class DailyStats(TypedDict):
     best_streak: int
 
 
-class GameStats(TypedDict):
-    games_played: int
-    games_won: int
-    total_time: int
-    best_times: dict[Difficulty, int | None]
-    by_difficulty: dict[Difficulty, dict[str, int]]
-    current_streak: int
-    best_streak: int
-    last_win_date: str | None
-    theme: ThemeMode
-    win_rate: float
-    avg_time: float
-
-
-class SaveGameState(TypedDict):
-    difficulty: str
-    custom_empty_cells: int
-    board: list[list[int]]
-    solution: list[list[int]]
-    original: list[list[int]]
-    selected: list[int]
-    notes: list[list[list[int]]]
-    notes_mode: bool
-    game_over: bool
-    paused: bool
-    show_errors: bool
-    start_time: int
-    paused_time: int
-    last_pause_start: int
-    elapsed_time: int
-    last_active_time: int
-    final_time: int
-    undo_stack: list[dict[str, list]]
-    redo_stack: list[dict[str, list]]
-
-
 def _load_json(filepath: str, default: dict[str, Any]) -> dict[str, Any]:
     if os.path.exists(filepath):
         try:
@@ -422,126 +386,20 @@ def mark_daily_challenge_completed(elapsed: int, difficulty: Difficulty) -> Dail
     return stats
 
 
-def get_daily_stats() -> DailyStats:
-    return load_daily_stats()
-
-
 # =============================================================================
 # General Statistics
 # =============================================================================
 
 
-def load_stats() -> GameStats:
-    filepath = _runtime_file("stats.json")
-    defaults: dict[str, Any] = {
-        "games_played": 0,
-        "games_won": 0,
-        "total_time": 0,
-        "best_times": dict.fromkeys(DIFFICULTIES),
-        "by_difficulty": {
-            difficulty: {"played": 0, "won": 0, "total_time": 0}
-            for difficulty in DIFFICULTIES
-        },
-        "current_streak": 0,
-        "best_streak": 0,
-        "last_win_date": None,
-        "theme": "light",
-    }
-    stored = _load_json(filepath, {})
-    stored_best = stored.get("best_times")
-    stats = defaults.copy()
-    for field in ("games_played", "games_won", "total_time", "current_streak", "best_streak"):
-        stats[field] = _nonnegative_int(stored.get(field)) or 0
-    stats["last_win_date"] = _valid_date(stored.get("last_win_date"))
-    if stored.get("theme") in ("light", "dark", "frost", "cozy"):
-        stats["theme"] = stored["theme"]
-    if stats["last_win_date"] is None:
-        stats["current_streak"] = 0
-    stats["best_times"] = {
-        difficulty: (
-            stored_best.get(difficulty)
-            if isinstance(stored_best, dict)
-            and (
-                stored_best.get(difficulty) is None
-                or _nonnegative_int(stored_best.get(difficulty)) is not None
-            )
-            else None
-        )
-        for difficulty in DIFFICULTIES
-    }
-    stored_difficulties = stored.get("by_difficulty")
-    stats["by_difficulty"] = {}
-    for difficulty in DIFFICULTIES:
-        entry = (
-            stored_difficulties.get(difficulty, {})
-            if isinstance(stored_difficulties, dict)
-            and isinstance(stored_difficulties.get(difficulty), dict)
-            else {}
-        )
-        stats["by_difficulty"][difficulty] = {
-            field: _nonnegative_int(entry.get(field)) or 0
-            for field in ("played", "won", "total_time")
-        }
-    stats["best_streak"] = max(stats["best_streak"], stats["current_streak"])
-    return cast(GameStats, stats)
-
-
-def save_stats(stats: GameStats) -> None:
-    _save_json(_runtime_file("stats.json"), cast(dict[str, Any], stats))
-
-
-def record_game_start(difficulty: Difficulty) -> None:
-    stats = load_stats()
-    stats["games_played"] += 1
-    stats["by_difficulty"][difficulty]["played"] += 1
-    save_stats(stats)
-
-
-def record_game_win(difficulty: Difficulty, elapsed: int) -> GameStats:
-    stats = load_stats()
-    stats["games_won"] += 1
-    stats["total_time"] += elapsed
-    stats["by_difficulty"][difficulty]["won"] += 1
-    stats["by_difficulty"][difficulty]["total_time"] += elapsed
-
-    # Update best time
-    current_best = stats["best_times"].get(difficulty)
-    if current_best is None or elapsed < current_best:
-        stats["best_times"][difficulty] = elapsed
-
-    # Update streak
-    today = date.today().isoformat()
-    if stats["last_win_date"] == today:
-        pass  # Already counted today
-    else:
-        last_win = stats["last_win_date"]
-        if last_win:
-            last = date.fromisoformat(last_win)
-            if (date.today() - last).days == 1:
-                stats["current_streak"] += 1
-            else:
-                stats["current_streak"] = 1
-        else:
-            stats["current_streak"] = 1
-        stats["last_win_date"] = today
-        stats["best_streak"] = max(stats["best_streak"], stats["current_streak"])
-
-    save_stats(stats)
+def load_stats() -> dict[str, Any]:
+    stats = _load_json(_runtime_file("stats.json"), {"theme": "light"})
+    if stats.get("theme") not in ("light", "dark", "frost", "cozy"):
+        stats["theme"] = "light"
     return stats
 
 
-def get_stats() -> GameStats:
-    stats = load_stats()
-    # Compute derived stats
-    if stats["games_played"] > 0:
-        stats["win_rate"] = stats["games_won"] / stats["games_played"] * 100
-    else:
-        stats["win_rate"] = 0
-    if stats["games_won"] > 0:
-        stats["avg_time"] = stats["total_time"] / stats["games_won"]
-    else:
-        stats["avg_time"] = 0
-    return stats
+def save_stats(stats: dict[str, Any]) -> None:
+    _save_json(_runtime_file("stats.json"), stats)
 
 
 # =============================================================================

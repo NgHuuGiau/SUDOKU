@@ -8,9 +8,9 @@ from config import (
     menu_text,
 )
 from persistence import (
-    get_daily_stats,
     has_save_file,
     load_best_times,
+    load_daily_stats,
     load_game_state,
 )
 from sounds import is_sound_enabled
@@ -18,7 +18,6 @@ from ui.colors import Colors, get_theme_manager
 from ui.drawing import draw_badge, draw_interactive_card, draw_modern_button, draw_rounded_card
 from ui.geometry import SCREEN_HEIGHT, SCREEN_WIDTH
 from ui.icons import SmoothIcons
-from ui.screen import enable_high_dpi
 
 
 def _format_time(seconds: int) -> str:
@@ -40,7 +39,7 @@ def draw_menu_view(
     theme_mgr = get_theme_manager()
     if menu_data is None:
         best_times = load_best_times()
-        daily_stats = get_daily_stats()
+        daily_stats = load_daily_stats()
         save_exists = has_save_file()
         saved_state = load_game_state() if save_exists else None
         saved_game = (
@@ -389,27 +388,8 @@ def draw_menu_view(
     return menu_rects
 
 
-class MenuSudoku:
-    """Controller for running the Pygame Sudoku application."""
-
-    def __init__(self, start_game_func=None):
-        self.start_game_func = start_game_func
-
-    def chay(self):
-        if self.start_game_func:
-            self.start_game_func()
-        else:
-            from game import AppController
-
-            AppController().run()
-
-
-def tao_nut_bat_dau(start_game_func=None):
+def tao_nut_bat_dau():
     """Entry point: launches the full Pygame Menu ↔ Game application."""
-    enable_high_dpi()
-    if start_game_func is None:
-        from game import AppController
+    from game import AppController
 
-        AppController().run()
-    else:
-        start_game_func()
+    AppController().run()

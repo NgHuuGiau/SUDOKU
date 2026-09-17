@@ -98,6 +98,7 @@ Màn hình chiến thắng dùng modal nổi bật với thời gian hoàn thàn
 - `main.py`: điểm khởi đầu để chạy ứng dụng
 - `game.py`: quản lý vòng lặp game, trạng thái và sự kiện
 - `logic.py`: xử lý sinh bảng Sudoku và kiểm tra logic
+- `error_handling.py`: ghi log ứng dụng và báo lỗi thao tác
 - `ui/`: các thành phần giao diện Pygame, bố cục và tương tác
 - `config.py`: quản lý text hiển thị và ngôn ngữ
 - `persistence.py`: lưu ván chơi, thống kê, kỷ lục và thử thách hằng ngày
@@ -107,10 +108,20 @@ Màn hình chiến thắng dùng modal nổi bật với thời gian hoàn thàn
 
 ```text
 SUDOKU/
-|-- main.py
-|-- game.py
-|-- logic.py
+|-- .github/
+|   `-- workflows/ci.yml
+|-- assets/preview/
+|   |-- game.png
+|   |-- menu.png
+|   |-- stop.png
+|   |-- win.png
+|   `-- SUDOKU.ico
+|-- tests/
+|   |-- conftest.py
+|   |-- test_sudoku.py
+|   `-- test_ui_smoke.py
 |-- ui/
+|   |-- __init__.py
 |   |-- board.py
 |   |-- colors.py
 |   |-- drawing.py
@@ -122,22 +133,22 @@ SUDOKU/
 |   |-- screen.py
 |   |-- sidebar.py
 |   `-- view.py
+|-- main.py
+|-- game.py
+|-- logic.py
 |-- config.py
-|-- menu.py
+|-- error_handling.py
+|-- persistence.py
+|-- sounds.py
 |-- requirements.txt
-|-- tests/
-|   |-- conftest.py
-|   |-- test_sudoku.py
-|   `-- test_ui_smoke.py
-|-- assets/
-|   `-- preview/
-|       |-- menu.png
-|       |-- game.png
-|       |-- stop.png
-|       |-- win.png
-|       `-- SUDOKU.ico
 |-- build.spec
 |-- build.bat
+|-- pyproject.toml
+|-- .gitignore
+|-- .pre-commit-config.yaml
+|-- .secrets.baseline
+|-- CHANGELOG.md
+|-- LICENSE
 `-- README.md
 ```
 
