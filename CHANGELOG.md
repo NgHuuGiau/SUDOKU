@@ -2,6 +2,10 @@
 
 ## Chưa phát hành
 
+### Bảo trì
+
+- Loại bỏ bộ đo hiệu năng và các lớp thực thi an toàn/circuit breaker chưa được game sử dụng.
+
 ### Lối chơi và dữ liệu
 
 - Đồng bộ Daily Challenge theo ngày UTC và dùng đúng bộ sinh puzzle hằng ngày khi bắt đầu hoặc chơi lại.
