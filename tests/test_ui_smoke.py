@@ -50,11 +50,7 @@ def test_menu_snapshot_avoids_reloading_persistence_each_frame(monkeypatch):
 
 def test_sidebar_layout_has_no_overlapping_controls():
     layout = get_sidebar_layout()
-    controls = [
-        value
-        for key, value in layout.items()
-        if key != "numbers" and value is not None
-    ]
+    controls = [value for key, value in layout.items() if key != "numbers" and value is not None]
     controls.extend(layout["numbers"])
 
     assert all(0 <= rect.left and rect.right <= SCREEN_WIDTH for rect in controls)

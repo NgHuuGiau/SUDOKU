@@ -10,7 +10,9 @@ from ui.geometry import SCREEN_HEIGHT, SCREEN_WIDTH
 from ui.icons import SmoothIcons
 
 
-def draw_win_modal(screen: pygame.Surface, fonts, mouse_pos, translate, state, particles) -> dict[str, pygame.Rect | None]:
+def draw_win_modal(
+    screen: pygame.Surface, fonts, mouse_pos, translate, state, particles
+) -> dict[str, pygame.Rect | None]:
     overlay_rects: dict[str, pygame.Rect | None] = {"win_restart": None, "win_quit": None}
 
     overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
@@ -74,7 +76,9 @@ def draw_win_modal(screen: pygame.Surface, fonts, mouse_pos, translate, state, p
     return overlay_rects
 
 
-def draw_pause_modal(screen: pygame.Surface, fonts, mouse_pos, translate) -> dict[str, pygame.Rect | None]:
+def draw_pause_modal(
+    screen: pygame.Surface, fonts, mouse_pos, translate
+) -> dict[str, pygame.Rect | None]:
     overlay_rects: dict[str, pygame.Rect | None] = {
         "pause_resume": None,
         "pause_quit": None,
@@ -340,7 +344,9 @@ def draw_help_modal(screen: pygame.Surface, fonts, mouse_pos, translate) -> dict
         screen.blit(sep_surf, sep_surf.get_rect(center=(modal_rect.centerx, y)))
         # Description
         desc_surf = _fit_surface(
-            fonts.small.render(desc, True, Colors.FIXED_TEXT), modal_rect.width // 2 - 64, line_height
+            fonts.small.render(desc, True, Colors.FIXED_TEXT),
+            modal_rect.width // 2 - 64,
+            line_height,
         )
         screen.blit(desc_surf, desc_surf.get_rect(midleft=(desc_col_x, y)))
 

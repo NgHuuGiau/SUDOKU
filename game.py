@@ -227,7 +227,9 @@ class GameState:
     def set_puzzle(self, board: Board, solution: Board) -> None:
         """Replace the active puzzle and reset all state tied to the previous board."""
         self.difficulty = "custom"
-        self.custom_empty_cells = max(20, min(60, sum(value == 0 for row in board for value in row)))
+        self.custom_empty_cells = max(
+            20, min(60, sum(value == 0 for row in board for value in row))
+        )
         self.board = copy.deepcopy(board)
         self.solution = copy.deepcopy(solution)
         self.original = copy.deepcopy(board)
@@ -597,7 +599,7 @@ class Game:
             self.state.final_time = self.state.get_elapsed_time()
             update_best_time(self.state.difficulty, self.state.final_time)
             if self.state.difficulty == "daily":
-                mark_daily_challenge_completed(self.state.final_time, self.state.difficulty)
+                mark_daily_challenge_completed()
             from persistence import is_top_10_time
 
             if is_top_10_time(self.state.difficulty, self.state.final_time):
@@ -678,9 +680,7 @@ class AppController:
             "daily_stats": load_daily_stats(),
             "save_exists": save_exists,
             "saved_game": (
-                (saved_state.difficulty, saved_state.get_elapsed_time())
-                if saved_state
-                else None
+                (saved_state.difficulty, saved_state.get_elapsed_time()) if saved_state else None
             ),
         }
 

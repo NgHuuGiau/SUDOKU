@@ -5,7 +5,9 @@ import pygame
 from ui.colors import Colors
 
 
-def _fit_surface(surface: pygame.Surface, max_width: int, max_height: int | None = None) -> pygame.Surface:
+def _fit_surface(
+    surface: pygame.Surface, max_width: int, max_height: int | None = None
+) -> pygame.Surface:
     """Keep a rendered label inside its button without changing its font globally."""
     width, height = surface.get_size()
     scale = min(1.0, max_width / max(1, width))
@@ -13,7 +15,9 @@ def _fit_surface(surface: pygame.Surface, max_width: int, max_height: int | None
         scale = min(scale, max_height / max(1, height))
     if scale >= 1.0:
         return surface
-    return pygame.transform.smoothscale(surface, (max(1, int(width * scale)), max(1, int(height * scale))))
+    return pygame.transform.smoothscale(
+        surface, (max(1, int(width * scale)), max(1, int(height * scale)))
+    )
 
 
 def draw_rounded_card(

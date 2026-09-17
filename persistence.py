@@ -24,11 +24,15 @@ def get_data_dir() -> Path:
     if override:
         data_dir = Path(override)
     elif os.name == "nt":
-        data_dir = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local")) / "SudokuMaster"
+        data_dir = (
+            Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local")) / "SudokuMaster"
+        )
     elif sys.platform == "darwin":
         data_dir = Path.home() / "Library" / "Application Support" / "SudokuMaster"
     else:
-        data_dir = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local" / "share")) / "SudokuMaster"
+        data_dir = (
+            Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local" / "share")) / "SudokuMaster"
+        )
     data_dir.mkdir(parents=True, exist_ok=True)
     return data_dir
 
@@ -109,7 +113,10 @@ def _is_board(value: Any, *, complete: bool = False) -> bool:
         and all(
             isinstance(row, list)
             and len(row) == 9
-            and all(type(cell) is int and (1 <= cell <= 9 if complete else 0 <= cell <= 9) for cell in row)
+            and all(
+                type(cell) is int and (1 <= cell <= 9 if complete else 0 <= cell <= 9)
+                for cell in row
+            )
             for row in value
         )
     )
@@ -229,18 +236,16 @@ def load_game_state() -> "GameState | None":
         selected, notes = data["selected"], data["notes"]
         if difficulty not in ("easy", "medium", "hard", "daily", "custom"):
             raise ValueError("Unknown difficulty")
-        if not all(_is_board(item) for item in (board, original)) or not _is_board(solution, complete=True):
+        if not all(_is_board(item) for item in (board, original)) or not _is_board(
+            solution, complete=True
+        ):
             raise ValueError("Invalid saved board")
         if count_solutions_dlx(solution, limit=1) != 1 or any(
-            original[r][c] and original[r][c] != solution[r][c]
-            for r in range(9)
-            for c in range(9)
+            original[r][c] and original[r][c] != solution[r][c] for r in range(9) for c in range(9)
         ):
             raise ValueError("Invalid saved solution")
         if any(
-            original[r][c] and board[r][c] != original[r][c]
-            for r in range(9)
-            for c in range(9)
+            original[r][c] and board[r][c] != original[r][c] for r in range(9) for c in range(9)
         ):
             raise ValueError("Saved board changed an original clue")
         if not (
@@ -250,7 +255,10 @@ def load_game_state() -> "GameState | None":
             and _is_notes(notes)
         ):
             raise ValueError("Invalid saved selection or notes")
-        if any(type(data.get(key)) is not bool for key in ("notes_mode", "game_over", "paused", "show_errors")):
+        if any(
+            type(data.get(key)) is not bool
+            for key in ("notes_mode", "game_over", "paused", "show_errors")
+        ):
             raise ValueError("Invalid saved game flags")
         timer_fields = (
             "start_time",
@@ -355,7 +363,7 @@ def save_daily_stats(stats: DailyStats) -> None:
     _save_json(_runtime_file("daily_stats.json"), cast(dict[str, Any], stats))
 
 
-def mark_daily_challenge_completed(elapsed: int, difficulty: Difficulty) -> DailyStats:
+def mark_daily_challenge_completed() -> DailyStats:
     """Mark today's daily challenge as completed. Returns updated stats."""
     today_date = datetime.now(timezone.utc).date()
     today = today_date.isoformat()
@@ -431,9 +439,7 @@ def load_leaderboard() -> LeaderboardData:
             completed = _valid_date(entry.get("date"))
             name = entry.get("name")
             if elapsed is not None and completed is not None and isinstance(name, str):
-                valid_entries.append(
-                    {"name": name[:20], "time": elapsed, "date": completed}
-                )
+                valid_entries.append({"name": name[:20], "time": elapsed, "date": completed})
         leaderboard[difficulty] = sorted(valid_entries, key=lambda entry: entry["time"])[
             :LEADERBOARD_MAX_ENTRIES
         ]

@@ -54,9 +54,10 @@ class TestLogic:
     def test_game_difficulty_names_are_translated(self, monkeypatch, language, expected):
         monkeypatch.setattr(config, "ngon_ngu_hien_tai", language)
 
-        assert tuple(
-            game_text(key) for key in ("easy", "medium", "hard", "daily", "custom")
-        ) == expected
+        assert (
+            tuple(game_text(key) for key in ("easy", "medium", "hard", "daily", "custom"))
+            == expected
+        )
 
     def test_daily_challenge_is_deterministic_for_a_utc_date(self):
         challenge_date = date(2026, 9, 17)
@@ -442,6 +443,7 @@ class TestPersistence:
 
         assert len(loaded.undo_stack) == undo_len
         assert len(loaded.redo_stack) == redo_len
+
 
 class TestGameState:
     """Tests for GameState class."""

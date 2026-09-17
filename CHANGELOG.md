@@ -4,6 +4,7 @@
 
 ### Bảo trì
 
+- Chuẩn hóa định dạng toàn bộ mã Python bằng Ruff và bỏ tham số không sử dụng khi ghi nhận Daily Challenge.
 - Loại bỏ bộ đo hiệu năng và các lớp thực thi an toàn/circuit breaker chưa được game sử dụng.
 - Bỏ API tương thích, bảng màu Tkinter cũ, kiểu dữ liệu và tài nguyên không được ứng dụng dùng.
 - Dùng trực tiếp bộ nạp thống kê hằng ngày và xóa các alias bố cục trùng lặp.

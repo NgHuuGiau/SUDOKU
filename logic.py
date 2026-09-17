@@ -375,15 +375,18 @@ def import_puzzle(data_str: str) -> tuple[Board, Board]:
         data = json.loads(data_str)
     except json.JSONDecodeError as exc:
         raise ValueError("Puzzle must be exported JSON or an 81-digit puzzle") from exc
-    if not isinstance(data, dict) or not isinstance(data.get("board"), str) or not isinstance(
-        data.get("solution"), str
+    if (
+        not isinstance(data, dict)
+        or not isinstance(data.get("board"), str)
+        or not isinstance(data.get("solution"), str)
     ):
         raise ValueError("Puzzle data must contain board and solution strings")
     board = string_to_board(data["board"])
     solution = string_to_board(data["solution"])
-    if any(value == 0 for row in solution for value in row) or count_solutions_dlx(
-        solution, limit=2
-    ) != 1:
+    if (
+        any(value == 0 for row in solution for value in row)
+        or count_solutions_dlx(solution, limit=2) != 1
+    ):
         raise ValueError("Solution must be a valid completed board")
     if any(board[r][c] and board[r][c] != solution[r][c] for r in range(9) for c in range(9)):
         raise ValueError("Puzzle clues do not match the solution")
