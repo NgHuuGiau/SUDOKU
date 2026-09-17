@@ -24,7 +24,6 @@ from logic import (
 from persistence import (
     _runtime_file,
     clear_save_file,
-    get_best_time,
     get_data_dir,
     has_save_file,
     load_best_times,
@@ -411,17 +410,17 @@ class TestPersistence:
 
     def test_update_best_time_first(self):
         assert update_best_time("easy", 120)
-        assert get_best_time("easy") == 120
+        assert load_best_times()["easy"] == 120
 
     def test_update_best_time_better(self):
         update_best_time("easy", 120)
         assert update_best_time("easy", 90)
-        assert get_best_time("easy") == 90
+        assert load_best_times()["easy"] == 90
 
     def test_update_best_time_worse(self):
         update_best_time("easy", 90)
         assert not update_best_time("easy", 120)
-        assert get_best_time("easy") == 90
+        assert load_best_times()["easy"] == 90
 
     def test_best_times_persist(self):
         update_best_time("hard", 300)

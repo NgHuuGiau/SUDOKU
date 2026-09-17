@@ -178,10 +178,6 @@ def update_best_time(difficulty: Difficulty, elapsed: int) -> bool:
     return False
 
 
-def get_best_time(difficulty: Difficulty) -> int | None:
-    return load_best_times().get(difficulty)
-
-
 def save_game_state(state: "GameState") -> None:
     filepath = _runtime_file("save_game.json")
     data = {

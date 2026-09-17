@@ -18,7 +18,6 @@ class ErrorSeverity(Enum):
     LOW = "low"  # Minor issues, recoverable
     MEDIUM = "medium"  # Significant issues, may affect functionality
     HIGH = "high"  # Major issues, core functionality affected
-    CRITICAL = "critical"  # System-threatening, immediate attention needed
 
 
 logger = logging.getLogger("sudoku")
