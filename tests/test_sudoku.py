@@ -7,7 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from config import GAME_DICT
+import config
+from config import GAME_DICT, game_text
 from game import MAX_HISTORY_STATES, GameState
 from logic import (
     check_win,
@@ -45,6 +46,20 @@ class TestLogic:
 
     def test_game_translations_have_matching_keys(self):
         assert GAME_DICT["en"].keys() == GAME_DICT["vi"].keys()
+
+    @pytest.mark.parametrize(
+        ("language", "expected"),
+        [
+            ("vi", ("Dễ", "Trung bình", "Khó", "Thử thách hàng ngày", "Tùy chỉnh")),
+            ("en", ("Easy", "Medium", "Hard", "Daily Challenge", "Custom")),
+        ],
+    )
+    def test_game_difficulty_names_are_translated(self, monkeypatch, language, expected):
+        monkeypatch.setattr(config, "ngon_ngu_hien_tai", language)
+
+        assert tuple(
+            game_text(key) for key in ("easy", "medium", "hard", "daily", "custom")
+        ) == expected
 
     def test_daily_challenge_is_deterministic_for_a_utc_date(self):
         challenge_date = date(2026, 9, 17)

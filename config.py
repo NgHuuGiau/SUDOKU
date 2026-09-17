@@ -79,6 +79,10 @@ GAME_DICT = {
         "nhap_van": "Import Puzzle",
         "custom": "Custom",
         "no_records": "No records yet",
+        "export_copied": "Puzzle copied to clipboard.",
+        "import_prompt": "Paste exported puzzle JSON or an 81-digit puzzle:",
+        "import_invalid": "The puzzle is invalid or does not have exactly one solution.",
+        "import_success": "Puzzle imported.",
     },
     "vi": {
         "move": "Di chuyển: WASD / Mũi tên",
@@ -149,7 +153,18 @@ GAME_DICT = {
         "nhap_van": "Nhập ván",
         "custom": "Tùy chỉnh",
         "no_records": "Chưa có kỷ lục nào",
+        "export_copied": "Đã sao chép bảng Sudoku vào bộ nhớ tạm.",
+        "import_prompt": "Dán JSON đã xuất hoặc chuỗi Sudoku gồm 81 chữ số:",
+        "import_invalid": "Bảng Sudoku không hợp lệ hoặc không có đúng một lời giải.",
+        "import_success": "Đã nhập bảng Sudoku.",
     },
+}
+
+GAME_TRANSLATION_ALIASES = {
+    "easy": "de",
+    "medium": "trung_binh",
+    "hard": "kho",
+    "daily": "daily_challenge",
 }
 
 MENU_DICT = {
@@ -218,7 +233,8 @@ def chuyen_ngon_ngu():
 
 
 def game_text(key: str) -> str:
-    return GAME_DICT[ngon_ngu_hien_tai].get(key, key)
+    translation_key = GAME_TRANSLATION_ALIASES.get(key, key)
+    return GAME_DICT[ngon_ngu_hien_tai].get(translation_key, key)
 
 
 def menu_text(key: str) -> str:

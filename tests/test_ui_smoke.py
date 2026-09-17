@@ -343,5 +343,8 @@ def test_invalid_puzzle_import_keeps_current_game_and_closes_dialog(monkeypatch)
     session._handle_import()
 
     assert state.board == initial_board
-    assert errors and errors[0][0] == "Import Puzzle"
+    assert errors and errors[0] == (
+        "Nhập ván",
+        "Bảng Sudoku không hợp lệ hoặc không có đúng một lời giải.",
+    )
     assert root.destroyed

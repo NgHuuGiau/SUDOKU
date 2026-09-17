@@ -461,13 +461,15 @@ class Game:
         import tkinter as tk
         from tkinter import messagebox
 
+        from config import game_text
+
         root = tk.Tk()
         root.withdraw()
         try:
             root.clipboard_clear()
             root.clipboard_append(export_puzzle(self.state.board, self.state.solution))
             root.update()
-            messagebox.showinfo("Export Puzzle", "Puzzle copied to clipboard.", parent=root)
+            messagebox.showinfo(game_text("xuat_van"), game_text("export_copied"), parent=root)
         finally:
             root.destroy()
 
@@ -475,21 +477,25 @@ class Game:
         import tkinter as tk
         from tkinter import messagebox, simpledialog
 
+        from config import game_text
+
         root = tk.Tk()
         root.withdraw()
         try:
             puzzle_text = simpledialog.askstring(
-                "Import Puzzle", "Paste exported puzzle JSON or an 81-digit puzzle:", parent=root
+                game_text("nhap_van"), game_text("import_prompt"), parent=root
             )
             if not puzzle_text:
                 return
             try:
                 board, solution = import_puzzle(puzzle_text)
-            except ValueError as exc:
-                messagebox.showerror("Import Puzzle", str(exc), parent=root)
+            except ValueError:
+                messagebox.showerror(
+                    game_text("nhap_van"), game_text("import_invalid"), parent=root
+                )
                 return
             self.state.set_puzzle(board, solution)
-            messagebox.showinfo("Import Puzzle", "Puzzle imported.", parent=root)
+            messagebox.showinfo(game_text("nhap_van"), game_text("import_success"), parent=root)
         finally:
             root.destroy()
 
