@@ -15,6 +15,9 @@
 - Sửa số ô trống hiển thị ở độ khó Khó và giải thích giới hạn của chế độ tùy chỉnh.
 - Bổ sung tab tùy chỉnh, hiển thị đủ TOP 10 và bản dịch cho trạng thái bảng xếp hạng trống.
 - Dùng bản dịch hiện hành cho bộ đếm số còn thiếu trên bàn phím.
+- Dịch đúng tên độ khó trong header và các hộp thoại nhập/xuất puzzle.
+- Cập nhật ảnh preview theo giao diện và số ô trống hiện tại.
+- Đánh dấu màn hình thống kê tổng quan là tính năng chưa triển khai trong README.
 
 ## [2.0.0] - 2026-09-16
 

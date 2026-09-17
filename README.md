@@ -218,7 +218,7 @@ không nên commit vào repository.
 - [ ] Bổ sung ảnh GIF hoặc video demo thực tế
 - [x] Có hiệu ứng âm thanh khi nhập số, thắng và dùng gợi ý
 - [x] Có chế độ Daily Challenge (bảng mới mỗi ngày)
-- [x] Có thống kê cơ bản, tỷ lệ thắng và thời gian trung bình
+- [ ] Bổ sung màn hình thống kê tổng quan (tỷ lệ thắng, thời gian trung bình)
 
 ## Giấy phép
 
