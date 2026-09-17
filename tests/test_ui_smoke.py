@@ -7,6 +7,7 @@ os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
 import pygame
 
 import game
+import ui.board as board_ui
 from game import AppController, Game, GameState
 from persistence import load_daily_stats, load_game_state
 from ui import create_game_screen, draw_game_view, load_fonts
@@ -19,6 +20,27 @@ def test_game_view_renders_headless():
     screen = create_game_screen()
     state = GameState("easy")
     draw_game_view(screen, load_fonts(), state, (0, 0))
+    pygame.quit()
+
+
+def test_board_validates_each_player_entry_once_per_frame(monkeypatch):
+    screen = create_game_screen()
+    state = GameState("easy")
+    row, col = next((r, c) for r in range(9) for c in range(9) if state.board[r][c] == 0)
+    state.board[row][col] = state.solution[row][col]
+
+    calls = 0
+    validate = board_ui.is_valid_placement
+
+    def count_validations(board, r, c, value):
+        nonlocal calls
+        calls += 1
+        return validate(board, r, c, value)
+
+    monkeypatch.setattr(board_ui, "is_valid_placement", count_validations)
+    board_ui.draw_board(screen, load_fonts(), state)
+
+    assert calls == 1
     pygame.quit()
 
 

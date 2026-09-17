@@ -1,17 +1,42 @@
 """Board rendering for Sudoku UI."""
 
 import time
+from functools import lru_cache
 
 import pygame
 
+from logic import is_valid_placement
 from ui.colors import Colors
 from ui.drawing import draw_rounded_card
 from ui.geometry import BOARD_SIZE, BOARD_X, BOARD_Y, CELL_SIZE
 
-try:
-    from logic import is_valid_placement
-except ImportError:
-    is_valid_placement = None  # type: ignore[assignment]
+_CELL_RECTS = tuple(
+    tuple(
+        pygame.Rect(BOARD_X + c * CELL_SIZE, BOARD_Y + r * CELL_SIZE, CELL_SIZE, CELL_SIZE)
+        for c in range(9)
+    )
+    for r in range(9)
+)
+
+
+@lru_cache(maxsize=512)
+def _render_cell_text(font: pygame.font.Font, text: str, color: tuple[int, int, int]):
+    return font.render(text, True, color)
+
+
+@lru_cache(maxsize=4)
+def _selection_glow(color: tuple[int, int, int]) -> pygame.Surface:
+    surface = pygame.Surface((CELL_SIZE, CELL_SIZE), pygame.SRCALPHA)
+    pygame.draw.rect(surface, (*color, 45), surface.get_rect(), border_radius=8)
+    return surface
+
+
+@lru_cache(maxsize=4)
+def _note_background(color: tuple[int, int, int]) -> pygame.Surface:
+    size = CELL_SIZE - 4
+    surface = pygame.Surface((size, size), pygame.SRCALPHA)
+    pygame.draw.rect(surface, (*color, 80), surface.get_rect(), border_radius=4)
+    return surface
 
 
 # Animation state for cell pop-in effects
@@ -60,13 +85,19 @@ def draw_board(screen: pygame.Surface, fonts, state, selected_cell=None):
 
     r_sel, c_sel = selected_cell if selected_cell else state.selected
     highlight_num = state.board[r_sel][c_sel] if state.selected else 0
+    invalid_cells = {
+        (r, c)
+        for r in range(9)
+        for c in range(9)
+        if state.board[r][c]
+        and state.original[r][c] == 0
+        and not is_valid_placement(state.board, r, c, state.board[r][c])
+    }
 
     # 1. Background highlights
     for r in range(9):
         for c in range(9):
-            cell_rect = pygame.Rect(
-                BOARD_X + c * CELL_SIZE, BOARD_Y + r * CELL_SIZE, CELL_SIZE, CELL_SIZE
-            )
+            cell_rect = _CELL_RECTS[r][c]
 
             # Crosshair
             if state.selected and not state.paused:
@@ -80,14 +111,9 @@ def draw_board(screen: pygame.Surface, fonts, state, selected_cell=None):
 
             # Error highlight
             if state.board[r][c] != 0 and state.original[r][c] == 0:
-                is_err = False
-                if is_valid_placement is not None and not is_valid_placement(
-                    state.board, r, c, state.board[r][c]
+                if (r, c) in invalid_cells or (
+                    state.show_errors and state.board[r][c] != state.solution[r][c]
                 ):
-                    is_err = True
-                elif state.show_errors and state.board[r][c] != state.solution[r][c]:
-                    is_err = True
-                if is_err:
                     inner_pad = cell_rect.inflate(-4, -4)
                     pygame.draw.rect(screen, Colors.ERROR_BG, inner_pad, border_radius=6)
 
@@ -109,14 +135,9 @@ def draw_board(screen: pygame.Surface, fonts, state, selected_cell=None):
 
     # 3. Selected cell modern glow & border
     if state.selected and not state.paused:
-        sel_rect = pygame.Rect(
-            BOARD_X + c_sel * CELL_SIZE, BOARD_Y + r_sel * CELL_SIZE, CELL_SIZE, CELL_SIZE
-        )
-        # Outer soft glow
-        glow_surf = pygame.Surface((CELL_SIZE, CELL_SIZE), pygame.SRCALPHA)
+        sel_rect = _CELL_RECTS[r_sel][c_sel]
         ripple_c = getattr(Colors, "RIPPLE", (79, 70, 229))
-        pygame.draw.rect(glow_surf, (*ripple_c, 45), glow_surf.get_rect(), border_radius=8)
-        screen.blit(glow_surf, sel_rect)
+        screen.blit(_selection_glow(ripple_c), sel_rect)
         # Sharp accent border
         pygame.draw.rect(screen, Colors.SELECTED_BORDER, sel_rect, width=2, border_radius=6)
 
@@ -139,45 +160,29 @@ def draw_board(screen: pygame.Surface, fonts, state, selected_cell=None):
             idx = anim["index"]
             if comp_type == "row":
                 for col in range(9):
-                    crect = pygame.Rect(
-                        BOARD_X + col * CELL_SIZE, BOARD_Y + idx * CELL_SIZE, CELL_SIZE, CELL_SIZE
-                    )
-                    screen.blit(ripple_surf, crect)
+                    screen.blit(ripple_surf, _CELL_RECTS[idx][col])
             elif comp_type == "col":
                 for row in range(9):
-                    crect = pygame.Rect(
-                        BOARD_X + idx * CELL_SIZE, BOARD_Y + row * CELL_SIZE, CELL_SIZE, CELL_SIZE
-                    )
-                    screen.blit(ripple_surf, crect)
+                    screen.blit(ripple_surf, _CELL_RECTS[row][idx])
             elif comp_type == "box":
                 br, bc = (idx // 3) * 3, (idx % 3) * 3
                 for dr in range(3):
                     for dc in range(3):
-                        crect = pygame.Rect(
-                            BOARD_X + (bc + dc) * CELL_SIZE,
-                            BOARD_Y + (br + dr) * CELL_SIZE,
-                            CELL_SIZE,
-                            CELL_SIZE,
-                        )
-                        screen.blit(ripple_surf, crect)
+                        screen.blit(ripple_surf, _CELL_RECTS[br + dr][bc + dc])
     _completion_animations[:] = active_anims
 
     # 5. Numbers and notes
     if not state.paused:
         for r in range(9):
             for c in range(9):
-                cell_rect = pygame.Rect(
-                    BOARD_X + c * CELL_SIZE, BOARD_Y + r * CELL_SIZE, CELL_SIZE, CELL_SIZE
-                )
+                cell_rect = _CELL_RECTS[r][c]
                 val = state.board[r][c]
 
                 if val != 0:
                     is_fixed = state.original[r][c] != 0
                     if is_fixed:
                         color = Colors.FIXED_TEXT
-                    elif is_valid_placement is not None and not is_valid_placement(
-                        state.board, r, c, val
-                    ):
+                    elif (r, c) in invalid_cells:
                         color = Colors.ERROR_TEXT
                     elif state.show_errors and val != state.solution[r][c]:
                         color = Colors.ERROR_TEXT
@@ -192,7 +197,7 @@ def draw_board(screen: pygame.Surface, fonts, state, selected_cell=None):
                         alpha = int(255 * anim_progress)
 
                     font_to_use = fonts.cell_bold if is_fixed else fonts.cell
-                    num_surf = font_to_use.render(str(val), True, color)
+                    num_surf = _render_cell_text(font_to_use, str(val), color)
 
                     if not is_fixed and anim_progress < 1.0:
                         scaled_size = int(CELL_SIZE * scale)
@@ -207,14 +212,8 @@ def draw_board(screen: pygame.Surface, fonts, state, selected_cell=None):
                 elif state.notes[r][c]:
                     # Draw subtle background for cells with notes according to theme
                     note_bg_rect = cell_rect.inflate(-4, -4)
-                    note_bg_surf = pygame.Surface(
-                        (note_bg_rect.width, note_bg_rect.height), pygame.SRCALPHA
-                    )
                     note_tint = Colors.SELECTED_BG
-                    pygame.draw.rect(
-                        note_bg_surf, (*note_tint[:3], 80), note_bg_surf.get_rect(), border_radius=4
-                    )
-                    screen.blit(note_bg_surf, note_bg_rect)
+                    screen.blit(_note_background(note_tint[:3]), note_bg_rect)
 
                     sub_size = CELL_SIZE // 3
                     for note_digit in sorted(state.notes[r][c]):
@@ -224,5 +223,5 @@ def draw_board(screen: pygame.Surface, fonts, state, selected_cell=None):
                             cell_rect.left + nc * sub_size + sub_size // 2,
                             cell_rect.top + nr * sub_size + sub_size // 2,
                         )
-                        note_surf = fonts.note.render(str(note_digit), True, Colors.NOTE_TEXT)
+                        note_surf = _render_cell_text(fonts.note, str(note_digit), Colors.NOTE_TEXT)
                         screen.blit(note_surf, note_surf.get_rect(center=note_center))

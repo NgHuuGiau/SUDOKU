@@ -2,6 +2,7 @@
 
 import math
 import random
+from functools import lru_cache
 
 import pygame
 
@@ -543,9 +544,17 @@ class Particle:
             alpha = max(0, min(255, int(self.lifetime * 255)))
             radius = max(2, int(4 * self.lifetime))
             glow_radius = radius * 3
-            surface_size = glow_radius * 2
-            particle_surface = pygame.Surface((surface_size, surface_size), pygame.SRCALPHA)
-            center = (glow_radius, glow_radius)
-            pygame.draw.circle(particle_surface, (*self.color, alpha // 4), center, glow_radius)
-            pygame.draw.circle(particle_surface, (*self.color, alpha), center, radius)
-            screen.blit(particle_surface, (int(self.x) - glow_radius, int(self.y) - glow_radius))
+            screen.blit(
+                _particle_surface(self.color, alpha, radius),
+                (int(self.x) - glow_radius, int(self.y) - glow_radius),
+            )
+
+
+@lru_cache(maxsize=256)
+def _particle_surface(color: tuple[int, int, int], alpha: int, radius: int) -> pygame.Surface:
+    glow_radius = radius * 3
+    surface = pygame.Surface((glow_radius * 2, glow_radius * 2), pygame.SRCALPHA)
+    center = (glow_radius, glow_radius)
+    pygame.draw.circle(surface, (*color, alpha // 4), center, glow_radius)
+    pygame.draw.circle(surface, (*color, alpha), center, radius)
+    return surface

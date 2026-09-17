@@ -4,6 +4,7 @@
 
 ### Bảo trì
 
+- Tối ưu render bàn Sudoku bằng cache bề mặt, tái sử dụng hình chữ nhật và chỉ tính ô xung đột một lần mỗi khung hình.
 - Chuẩn hóa định dạng toàn bộ mã Python bằng Ruff và bỏ tham số không sử dụng khi ghi nhận Daily Challenge.
 - Bỏ getter thời gian tốt nhất chỉ chuyển tiếp và mức log chưa được sử dụng.
 - Loại bỏ bộ đo hiệu năng và các lớp thực thi an toàn/circuit breaker chưa được game sử dụng.
