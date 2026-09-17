@@ -31,15 +31,26 @@ def draw_menu_view(
     fonts,
     mouse_pos: tuple[int, int],
     custom_cells: int = 40,
+    menu_data: dict | None = None,
 ) -> dict:
     """Render the full modern Sudoku main menu in Pygame.
 
     Returns a dictionary of interactive Rects for click/hover handling.
     """
     theme_mgr = get_theme_manager()
-    best_times = load_best_times()
-    daily_stats = get_daily_stats()
-    save_exists = has_save_file()
+    if menu_data is None:
+        best_times = load_best_times()
+        daily_stats = get_daily_stats()
+        save_exists = has_save_file()
+        saved_state = load_game_state() if save_exists else None
+        saved_game = (
+            (saved_state.difficulty, saved_state.get_elapsed_time()) if saved_state else None
+        )
+    else:
+        best_times = menu_data["best_times"]
+        daily_stats = menu_data["daily_stats"]
+        save_exists = menu_data["save_exists"]
+        saved_game = menu_data["saved_game"]
 
     # Fill background
     screen.fill(Colors.BG_MAIN)
@@ -212,14 +223,13 @@ def draw_menu_view(
     # A. Resume Game Card (if save exists)
     if save_exists:
         resume_rect = pygame.Rect(hero_x, cur_y, card_w, card_h)
-        saved = load_game_state()
-        if saved:
+        if saved_game:
+            saved_difficulty, elapsed = saved_game
             diff_label = {
                 "easy": menu_text("de"),
                 "medium": menu_text("trung_binh"),
                 "hard": menu_text("kho"),
-            }.get(saved.difficulty, saved.difficulty)
-            elapsed = saved.get_elapsed_time()
+            }.get(saved_difficulty, saved_difficulty)
             time_str = _format_time(elapsed)
             desc_str = f"{diff_label} • {menu_text('thoi_gian')}: {time_str}"
         else:

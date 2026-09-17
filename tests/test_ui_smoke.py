@@ -28,6 +28,26 @@ def test_menu_renders_headless():
     pygame.quit()
 
 
+def test_menu_snapshot_avoids_reloading_persistence_each_frame(monkeypatch):
+    import ui.menu as menu_ui
+
+    def unexpected_disk_read(*_args, **_kwargs):
+        raise AssertionError("menu should use the supplied snapshot")
+
+    for name in ("load_best_times", "get_daily_stats", "has_save_file", "load_game_state"):
+        monkeypatch.setattr(menu_ui, name, unexpected_disk_read)
+
+    screen = create_game_screen()
+    menu_data = {
+        "best_times": {"easy": None, "medium": None, "hard": None},
+        "daily_stats": {"streak": 0, "last_completed_date": None},
+        "save_exists": False,
+        "saved_game": None,
+    }
+    draw_menu_view(screen, load_fonts(), (0, 0), menu_data=menu_data)
+    pygame.quit()
+
+
 def test_sidebar_layout_has_no_overlapping_controls():
     layout = get_sidebar_layout()
     aliases = {"undo", "redo"}

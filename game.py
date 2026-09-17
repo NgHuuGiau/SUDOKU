@@ -19,6 +19,9 @@ from logic import (
 )
 from persistence import (
     clear_save_file,
+    get_daily_stats,
+    has_save_file,
+    load_best_times,
     load_game_state,
     mark_daily_challenge_completed,
     record_game_start,
@@ -670,6 +673,21 @@ class AppController:
 
         # Active game session
         self.game_session: Game | None = None
+        self._refresh_menu_data()
+
+    def _refresh_menu_data(self) -> None:
+        save_exists = has_save_file()
+        saved_state = load_game_state() if save_exists else None
+        self.menu_data = {
+            "best_times": load_best_times(),
+            "daily_stats": get_daily_stats(),
+            "save_exists": save_exists,
+            "saved_game": (
+                (saved_state.difficulty, saved_state.get_elapsed_time())
+                if saved_state
+                else None
+            ),
+        }
 
     def _handle_menu_events(self, menu_rects: dict) -> None:
         from config import chuyen_ngon_ngu
@@ -776,6 +794,7 @@ class AppController:
         # Session ended - go back to menu
         self.state = self.STATE_MENU
         self.game_session = None
+        self._refresh_menu_data()
 
     def _handle_leaderboard_events(self, lb_rects: dict) -> None:
         for event in pygame.event.get():
@@ -807,7 +826,11 @@ class AppController:
 
             if self.state == self.STATE_MENU:
                 menu_rects = draw_menu_view(
-                    self.screen, self.fonts, mouse_pos, custom_cells=self.custom_cells
+                    self.screen,
+                    self.fonts,
+                    mouse_pos,
+                    custom_cells=self.custom_cells,
+                    menu_data=self.menu_data,
                 )
                 pygame.display.flip()
                 self._handle_menu_events(menu_rects)

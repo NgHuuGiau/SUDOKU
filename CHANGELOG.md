@@ -9,6 +9,7 @@
 - Lưu mục tiêu ô trống của chế độ tùy chỉnh để chơi lại và tiếp tục ván đúng thiết lập.
 - Đánh dấu hoàn tất di chuyển dữ liệu cũ để không tự khôi phục file lưu sau khi người chơi xóa ván.
 - Khởi tạo lại bộ đếm tự lưu theo phiên hiện tại khi tải game.
+- Chỉ đọc save và thống kê khi vào menu/thành ván, không nạp lại JSON ở mỗi khung hình.
 
 ### Giao diện
 
