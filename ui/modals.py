@@ -1,5 +1,6 @@
 """Modal overlays (Pause, Win) for Sudoku UI."""
 
+from functools import lru_cache
 from typing import Any, cast
 
 import pygame
@@ -10,14 +11,23 @@ from ui.geometry import SCREEN_HEIGHT, SCREEN_WIDTH
 from ui.icons import SmoothIcons
 
 
+@lru_cache(maxsize=6)
+def _overlay_surface(size: tuple[int, int], alpha: int) -> pygame.Surface:
+    surface = pygame.Surface(size, pygame.SRCALPHA)
+    surface.fill((15, 23, 42, alpha))
+    return surface
+
+
+def _draw_overlay(screen: pygame.Surface, alpha: int) -> None:
+    screen.blit(_overlay_surface(screen.get_size(), alpha), (0, 0))
+
+
 def draw_win_modal(
     screen: pygame.Surface, fonts, mouse_pos, translate, state, particles
 ) -> dict[str, pygame.Rect | None]:
     overlay_rects: dict[str, pygame.Rect | None] = {"win_restart": None, "win_quit": None}
 
-    overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
-    overlay.fill((15, 23, 42, 170))
-    screen.blit(overlay, (0, 0))
+    _draw_overlay(screen, 170)
 
     if particles:
         for p in particles:
@@ -77,7 +87,7 @@ def draw_win_modal(
 
 
 def draw_pause_modal(
-    screen: pygame.Surface, fonts, mouse_pos, translate
+    screen: pygame.Surface, fonts, mouse_pos, translate, save_failed: bool = False
 ) -> dict[str, pygame.Rect | None]:
     overlay_rects: dict[str, pygame.Rect | None] = {
         "pause_resume": None,
@@ -86,9 +96,7 @@ def draw_pause_modal(
         "pause_save_quit": None,
     }
 
-    overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
-    overlay.fill((15, 23, 42, 180))
-    screen.blit(overlay, (0, 0))
+    _draw_overlay(screen, 180)
 
     card_w, card_h = 420, 320
     modal_rect = pygame.Rect(
@@ -102,6 +110,9 @@ def draw_pause_modal(
 
     pause_title = fonts.large.render(translate("tam_dung"), True, Colors.FIXED_TEXT)
     screen.blit(pause_title, pause_title.get_rect(center=(modal_rect.centerx, modal_rect.top + 90)))
+    if save_failed:
+        warning = fonts.tiny.render(translate("save_failed"), True, Colors.ERROR_TEXT)
+        screen.blit(warning, warning.get_rect(center=(modal_rect.centerx, modal_rect.top + 145)))
 
     # 3 buttons: Resume, Restart, Save & Quit
     btn_w, btn_h = 120, 44
@@ -280,15 +291,20 @@ def draw_header(screen: pygame.Surface, fonts, state, mouse_pos, translate) -> d
     }
 
 
-def draw_footer_helper(screen: pygame.Surface, fonts, translate) -> None:
+def draw_footer_helper(screen: pygame.Surface, fonts, translate, save_failed: bool = False) -> None:
     from ui.geometry import BOARD_X, SCREEN_HEIGHT, SCREEN_WIDTH
 
     helper_rect = pygame.Rect(BOARD_X, SCREEN_HEIGHT - 44, SCREEN_WIDTH - BOARD_X * 2, 32)
     pygame.draw.rect(screen, Colors.BG_CARD, helper_rect, border_radius=8)
     pygame.draw.rect(screen, Colors.CARD_BORDER, helper_rect, width=1, border_radius=8)
 
-    txt = f"{translate('move')}  |  {translate('input')}  |  {translate('notes_shortcut')}  |  {translate('delete')}"
-    help_surf = fonts.tiny.render(txt, True, Colors.STATUS_TEXT)
+    txt = (
+        translate("save_failed")
+        if save_failed
+        else f"{translate('move')}  |  {translate('input')}  |  {translate('notes_shortcut')}  |  {translate('delete')}"
+    )
+    color = Colors.ERROR_TEXT if save_failed else Colors.STATUS_TEXT
+    help_surf = fonts.tiny.render(txt, True, color)
     screen.blit(help_surf, help_surf.get_rect(center=helper_rect.center))
 
 
@@ -298,9 +314,7 @@ def draw_help_modal(screen: pygame.Surface, fonts, mouse_pos, translate) -> dict
 
     overlay_rects: dict[str, pygame.Rect | None] = {"help_close": None}
 
-    overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
-    overlay.fill((15, 23, 42, 180))
-    screen.blit(overlay, (0, 0))
+    _draw_overlay(screen, 180)
 
     card_w, card_h = 640, 520
     modal_rect = pygame.Rect(
@@ -370,16 +384,22 @@ def draw_help_modal(screen: pygame.Surface, fonts, mouse_pos, translate) -> dict
 
 
 def draw_leaderboard_modal(
-    screen: pygame.Surface, fonts, mouse_pos, translate, active_diff="medium"
+    screen: pygame.Surface,
+    fonts,
+    mouse_pos,
+    translate,
+    active_diff="medium",
+    leaderboard_data=None,
 ) -> dict:
     """Draw high scores leaderboard modal. Returns interactive rects."""
-    from persistence import get_leaderboard
+    if leaderboard_data is None:
+        from persistence import get_leaderboard
 
-    leaderboard = get_leaderboard()
+        leaderboard = get_leaderboard()
+    else:
+        leaderboard = leaderboard_data
 
-    overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
-    overlay.fill((15, 23, 42, 190))
-    screen.blit(overlay, (0, 0))
+    _draw_overlay(screen, 190)
 
     card_w, card_h = 560, 520
     modal_rect = pygame.Rect(

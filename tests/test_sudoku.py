@@ -8,7 +8,10 @@ from pathlib import Path
 import pytest
 
 import config
-from config import GAME_DICT, game_text
+import game
+import persistence
+import sounds
+from config import GAME_DICT, MENU_DICT, game_text
 from error_handling import ErrorSeverity, log_exception, logger
 from game import MAX_HISTORY_STATES, GameState
 from logic import (
@@ -25,6 +28,7 @@ from persistence import (
     _runtime_file,
     clear_save_file,
     get_data_dir,
+    get_preference,
     has_save_file,
     load_best_times,
     load_daily_stats,
@@ -33,6 +37,7 @@ from persistence import (
     load_stats,
     save_best_times,
     save_game_state,
+    set_preference,
     update_best_time,
 )
 
@@ -42,6 +47,9 @@ class TestLogic:
 
     def test_game_translations_have_matching_keys(self):
         assert GAME_DICT["en"].keys() == GAME_DICT["vi"].keys()
+
+    def test_menu_translations_have_matching_keys(self):
+        assert MENU_DICT["en"].keys() == MENU_DICT["vi"].keys()
 
     @pytest.mark.parametrize(
         ("language", "expected"),
@@ -253,7 +261,6 @@ class TestPersistence:
 
         loaded = load_game_state()
         assert loaded is not None
-        assert loaded is not None
         assert loaded.difficulty == "easy"
         assert loaded.board == original_board
         assert loaded.notes == original_notes
@@ -344,6 +351,93 @@ class TestPersistence:
 
         assert load_best_times() == times
         assert not (get_data_dir() / "best_times.json.tmp").exists()
+
+    def test_game_save_reports_unavailable_data_directory(self, monkeypatch):
+        state = GameState("easy")
+
+        def fail_data_path(_filename):
+            raise OSError("permission denied")
+
+        with monkeypatch.context() as scoped:
+            scoped.setattr(persistence, "_runtime_file", fail_data_path)
+            assert save_game_state(state) is False
+
+    def test_autosave_failure_is_visible_and_clears_after_recovery(self, monkeypatch):
+        state = GameState("easy")
+        monkeypatch.setattr(game, "save_game_state", lambda _state: False)
+
+        state.auto_save()
+
+        assert state.save_failed
+        monkeypatch.setattr(game, "save_game_state", lambda _state: True)
+        assert state.force_save()
+        assert not state.save_failed
+
+    def test_language_and_sound_preferences_round_trip(self, monkeypatch):
+        monkeypatch.setattr(config, "ngon_ngu_hien_tai", "vi")
+
+        config.chuyen_ngon_ngu()
+
+        assert config.ngon_ngu_hien_tai == "en"
+        assert get_preference("language", "vi") == "en"
+        assert set_preference("sound_enabled", False)
+        assert get_preference("sound_enabled", True) is False
+
+    def test_theme_manager_uses_preference_helpers(self, monkeypatch):
+        from ui.colors import ThemeManager
+
+        saved = {"theme": "cozy"}
+        monkeypatch.setattr(
+            "ui.colors.get_preference", lambda name, default: saved.get(name, default)
+        )
+
+        def store_preference(name: str, value: str) -> bool:
+            saved[name] = value
+            return True
+
+        monkeypatch.setattr("ui.colors.set_preference", store_preference)
+        manager = object.__new__(ThemeManager)
+
+        manager._load_theme()
+        assert manager.theme == "cozy"
+
+        manager.theme = "dark"
+        assert saved["theme"] == "dark"
+
+    def test_sound_manager_restores_and_persists_toggle(self, monkeypatch):
+        saved: dict[str, bool] = {"sound_enabled": False}
+        monkeypatch.setattr(
+            sounds, "get_preference", lambda _name, default: saved.get("sound_enabled", default)
+        )
+
+        def store_preference(name: str, value: bool) -> bool:
+            saved[name] = value
+            return True
+
+        monkeypatch.setattr(sounds, "set_preference", store_preference)
+        monkeypatch.setattr(sounds.SoundManager, "_init_sounds", lambda _self: None)
+
+        manager = sounds.SoundManager()
+        assert not manager.is_enabled()
+
+        manager.toggle()
+
+        assert manager.is_enabled()
+        assert saved["sound_enabled"] is True
+
+    def test_sound_manager_disables_an_effect_after_playback_failure(self, monkeypatch):
+        monkeypatch.setattr(sounds.SoundManager, "_init_sounds", lambda _self: None)
+        manager = sounds.SoundManager()
+
+        class BrokenSound:
+            def play(self):
+                raise sounds.pygame.error("audio device unavailable")
+
+        manager.sounds["click"] = BrokenSound()
+
+        manager.play("click")
+
+        assert "click" not in manager.sounds
 
     def test_best_times_ignore_invalid_values(self):
         (get_data_dir() / "best_times.json").write_text(
@@ -565,6 +659,21 @@ class TestGameState:
         assert restored is not None
         assert len(restored.undo_stack) == MAX_HISTORY_STATES
 
+    def test_load_ignores_history_older_than_the_retained_limit(self):
+        state = GameState("easy")
+        assert save_game_state(state)
+        filepath = Path(_runtime_file("save_game.json"))
+        with filepath.open(encoding="utf-8") as save_file:
+            saved_data = json.load(save_file)
+        saved_data["undo_stack"] *= MAX_HISTORY_STATES
+        saved_data["undo_stack"].insert(0, {"invalid": "discarded old history"})
+        filepath.write_text(json.dumps(saved_data), encoding="utf-8")
+
+        restored = load_game_state()
+
+        assert restored is not None
+        assert len(restored.undo_stack) == MAX_HISTORY_STATES
+
     def test_undo_redo(self):
         state = GameState("easy")
         r, c = 0, 0
@@ -611,6 +720,18 @@ class TestGameState:
             for c in range(9):
                 if state.board[r][c] == 0:
                     assert len(state.notes[r][c]) > 0
+
+    def test_completion_ripple_triggers_for_completed_row_column_and_box(self, monkeypatch):
+        state = GameState("easy")
+        state.board = [row[:] for row in state.solution]
+        triggered = []
+        monkeypatch.setattr(
+            game, "trigger_completion_animation", lambda *args: triggered.append(args)
+        )
+
+        state._check_completion_ripple(0, 0)
+
+        assert triggered == [("row", 0), ("col", 0), ("box", 0)]
 
     def test_toggle_pause(self):
         state = GameState("easy")

@@ -6,8 +6,8 @@ import pygame
 SCREEN_WIDTH = 1120
 SCREEN_HEIGHT = 800
 
-BOARD_SIZE = 600
-CELL_SIZE = BOARD_SIZE // 9  # 66px
+CELL_SIZE = 66
+BOARD_SIZE = CELL_SIZE * 9
 
 BOARD_X = 40
 BOARD_Y = 104
@@ -24,8 +24,8 @@ def get_timer_rect() -> pygame.Rect:
 def get_cell_from_pos(x: int, y: int):
     if not (BOARD_X <= x < BOARD_X + BOARD_SIZE and BOARD_Y <= y < BOARD_Y + BOARD_SIZE):
         return None
-    row = (y - BOARD_Y) * 9 // BOARD_SIZE
-    col = (x - BOARD_X) * 9 // BOARD_SIZE
+    row = (y - BOARD_Y) // CELL_SIZE
+    col = (x - BOARD_X) // CELL_SIZE
     return (row, col) if 0 <= row < 9 and 0 <= col < 9 else None
 
 

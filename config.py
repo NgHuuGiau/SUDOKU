@@ -2,7 +2,10 @@
 Chứa biến ngôn ngữ hiện tại và hàm chuyển đổi ngôn ngữ.
 """
 
-ngon_ngu_hien_tai = "vi"
+from persistence import get_preference, set_preference
+
+_saved_language = get_preference("language", "vi")
+ngon_ngu_hien_tai = _saved_language if _saved_language in ("vi", "en") else "vi"
 
 APP_TITLE = "Sudoku Master"
 MENU_TITLE = "Sudoku Master - Giao diện Cổ điển & Hiện đại"
@@ -83,6 +86,7 @@ GAME_DICT = {
         "import_prompt": "Paste exported puzzle JSON or an 81-digit puzzle:",
         "import_invalid": "The puzzle is invalid or does not have exactly one solution.",
         "import_success": "Puzzle imported.",
+        "save_failed": "Could not save this game. Check folder permissions or free disk space.",
     },
     "vi": {
         "move": "Di chuyển: WASD / Mũi tên",
@@ -157,6 +161,7 @@ GAME_DICT = {
         "import_prompt": "Dán JSON đã xuất hoặc chuỗi Sudoku gồm 81 chữ số:",
         "import_invalid": "Bảng Sudoku không hợp lệ hoặc không có đúng một lời giải.",
         "import_success": "Đã nhập bảng Sudoku.",
+        "save_failed": "Không lưu được ván chơi. Hãy kiểm tra quyền ghi hoặc dung lượng ổ đĩa.",
     },
 }
 
@@ -195,6 +200,10 @@ MENU_DICT = {
         "daily_challenge": "Daily Challenge",
         "daily_challenge_desc": "Same puzzle for everyone today",
         "streak_label": "Streak: {n} days",
+        "streak_badge": "{n} days",
+        "daily_done_badge": "✓ DONE",
+        "daily_today_badge": "TODAY",
+        "menu_keyboard_nav": "Tab / Shift+Tab: focus · Enter/Space: select",
     },
     "vi": {
         "app_badge": "TRÒ CHƠI TRÍ TUỆ",
@@ -223,6 +232,10 @@ MENU_DICT = {
         "daily_challenge": "Thử thách hàng ngày",
         "daily_challenge_desc": "Cùng một bảng cho mọi người hôm nay",
         "streak_label": "Chuỗi ngày: {n} ngày",
+        "streak_badge": "{n} ngày",
+        "daily_done_badge": "✓ XONG",
+        "daily_today_badge": "HÔM NAY",
+        "menu_keyboard_nav": "Tab / Shift+Tab: chọn mục · Enter/Space: mở",
     },
 }
 
@@ -230,6 +243,7 @@ MENU_DICT = {
 def chuyen_ngon_ngu():
     global ngon_ngu_hien_tai
     ngon_ngu_hien_tai = "vi" if ngon_ngu_hien_tai == "en" else "en"
+    set_preference("language", ngon_ngu_hien_tai)
 
 
 def game_text(key: str) -> str:

@@ -92,18 +92,20 @@ def _load_json(filepath: str, default: dict[str, Any]) -> dict[str, Any]:
     return default
 
 
-def _save_json(filepath: str, data: dict[str, Any]) -> None:
+def _save_json(filepath: str, data: dict[str, Any]) -> bool:
     temp_path = f"{filepath}.tmp"
     try:
         with open(temp_path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
         os.replace(temp_path, filepath)
+        return True
     except OSError as exc:
         logger.warning("Could not save %s: %s", filepath, exc)
         try:
             os.remove(temp_path)
         except OSError:
             pass
+        return False
 
 
 def _is_board(value: Any, *, complete: bool = False) -> bool:
@@ -178,8 +180,7 @@ def update_best_time(difficulty: Difficulty, elapsed: int) -> bool:
     return False
 
 
-def save_game_state(state: "GameState") -> None:
-    filepath = _runtime_file("save_game.json")
+def save_game_state(state: "GameState") -> bool:
     data = {
         "difficulty": state.difficulty,
         "custom_empty_cells": state.custom_empty_cells,
@@ -213,7 +214,11 @@ def save_game_state(state: "GameState") -> None:
             for board, notes in state.redo_stack
         ],
     }
-    _save_json(filepath, data)
+    try:
+        return _save_json(_runtime_file("save_game.json"), data)
+    except OSError as exc:
+        logger.warning("Could not access save directory: %s", exc)
+        return False
 
 
 def load_game_state() -> "GameState | None":
@@ -296,12 +301,13 @@ def load_game_state() -> "GameState | None":
         state.last_active_time = data["last_active_time"]
         state.final_time = data["final_time"]
         state._last_auto_save_time = 0.0
+        state.save_failed = False
 
         def restore_history(items: Any) -> list[tuple[list[list[int]], list[list[set[int]]]]]:
             if not isinstance(items, list):
                 raise ValueError("Invalid undo history")
             restored = []
-            for item in items:
+            for item in items[-MAX_HISTORY_STATES:]:
                 if (
                     not isinstance(item, dict)
                     or not _is_board(item.get("board"))
@@ -313,8 +319,8 @@ def load_game_state() -> "GameState | None":
                 )
             return restored
 
-        state.undo_stack = restore_history(data.get("undo_stack", []))[-MAX_HISTORY_STATES:]
-        state.redo_stack = restore_history(data.get("redo_stack", []))[-MAX_HISTORY_STATES:]
+        state.undo_stack = restore_history(data.get("undo_stack", []))
+        state.redo_stack = restore_history(data.get("redo_stack", []))
         if not state.undo_stack:
             state.undo_stack = [(copy.deepcopy(board), copy.deepcopy(state.notes))]
         return state
@@ -404,6 +410,24 @@ def load_stats() -> dict[str, Any]:
 
 def save_stats(stats: dict[str, Any]) -> None:
     _save_json(_runtime_file("stats.json"), stats)
+
+
+def get_preference(name: str, default: Any) -> Any:
+    try:
+        return load_stats().get(name, default)
+    except OSError as exc:
+        logger.warning("Could not load preference %s: %s", name, exc)
+        return default
+
+
+def set_preference(name: str, value: Any) -> bool:
+    try:
+        stats = load_stats()
+        stats[name] = value
+        return _save_json(_runtime_file("stats.json"), stats)
+    except OSError as exc:
+        logger.warning("Could not save preference %s: %s", name, exc)
+        return False
 
 
 # =============================================================================

@@ -43,7 +43,7 @@ def draw_game_view(
     # 3. Sidebar & Footer (only when playing)
     if not state.game_over and not state.paused:
         draw_sidebar(screen, fonts, mouse_pos, translate, state)
-        draw_footer_helper(screen, fonts, translate)
+        draw_footer_helper(screen, fonts, translate, getattr(state, "save_failed", False))
 
     # 4. Win Modal
     if state.game_over:
@@ -52,7 +52,9 @@ def draw_game_view(
 
     # 5. Pause Modal
     elif state.paused:
-        pause_rects = draw_pause_modal(screen, fonts, mouse_pos, translate)
+        pause_rects = draw_pause_modal(
+            screen, fonts, mouse_pos, translate, getattr(state, "save_failed", False)
+        )
         overlay_rects.update(pause_rects)
 
     pygame.display.flip()

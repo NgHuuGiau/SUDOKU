@@ -183,7 +183,7 @@ class DLX:
         col.right.left = col
         col.left.right = col
 
-    def search(self, k: int = 0) -> bool:
+    def search(self) -> bool:
         """Algorithm X with dancing links."""
         if self.header.right == self.header:
             self.solution_count += 1
@@ -211,7 +211,7 @@ class DLX:
                 self.cover(node.column)
                 node = node.right
 
-            if self.search(k + 1):
+            if self.search():
                 return True
 
             self.solution.pop()
@@ -248,7 +248,7 @@ def build_dlx_matrix(board: Board) -> DLX:
         for c in range(9):
             val = board[r][c]
             if val != 0:
-                add_sudoku_row(dlx, r, c, val, is_given=True)
+                add_sudoku_row(dlx, r, c, val)
 
     # Empty cells - all possible values
     for r in range(9):
@@ -256,12 +256,12 @@ def build_dlx_matrix(board: Board) -> DLX:
             if board[r][c] == 0:
                 for v in range(1, 10):
                     if is_valid_placement(board, r, c, v):
-                        add_sudoku_row(dlx, r, c, v, is_given=False)
+                        add_sudoku_row(dlx, r, c, v)
 
     return dlx
 
 
-def add_sudoku_row(dlx: DLX, r: int, c: int, v: int, is_given: bool) -> None:
+def add_sudoku_row(dlx: DLX, r: int, c: int, v: int) -> None:
     """Add a row to DLX matrix for cell (r,c) = v.
 
     Row ID encodes: r*81 + c*9 + (v-1) for unique identification

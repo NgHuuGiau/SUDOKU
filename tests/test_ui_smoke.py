@@ -1,17 +1,28 @@
 """Headless smoke test for the Pygame rendering pipeline."""
 
 import os
+from typing import cast
 
 os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
 
 import pygame
+import pytest
 
 import game
 import ui.board as board_ui
 from game import AppController, Game, GameState
-from persistence import load_daily_stats, load_game_state
+from persistence import LeaderboardData, load_daily_stats, load_game_state
 from ui import create_game_screen, draw_game_view, load_fonts
-from ui.geometry import SCREEN_HEIGHT, SCREEN_WIDTH, get_sidebar_layout
+from ui.geometry import (
+    BOARD_SIZE,
+    BOARD_X,
+    BOARD_Y,
+    CELL_SIZE,
+    SCREEN_HEIGHT,
+    SCREEN_WIDTH,
+    get_cell_from_pos,
+    get_sidebar_layout,
+)
 from ui.icons import SmoothIcons
 from ui.menu import draw_menu_view
 
@@ -50,6 +61,32 @@ def test_menu_renders_headless():
     pygame.quit()
 
 
+def test_custom_menu_card_hides_chevron_from_stepper_controls():
+    from ui.colors import Colors
+    from ui.drawing import draw_interactive_card
+
+    pygame.font.init()
+    screen = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+    card = pygame.Rect(100, 100, 640, 58)
+    draw_interactive_card(
+        screen,
+        card,
+        (0, 0),
+        "Tùy chỉnh",
+        "Số ô trống",
+        load_fonts(),
+        Colors.BTN_PRIMARY,
+        show_chevron=False,
+    )
+
+    chevron_area = pygame.Rect(card.right - 32, card.centery - 9, 18, 18)
+    assert all(
+        screen.get_at((x, y))[:3] == Colors.BG_CARD
+        for x in range(chevron_area.left, chevron_area.right)
+        for y in range(chevron_area.top, chevron_area.bottom)
+    )
+
+
 def test_menu_snapshot_avoids_reloading_persistence_each_frame(monkeypatch):
     import ui.menu as menu_ui
 
@@ -70,6 +107,53 @@ def test_menu_snapshot_avoids_reloading_persistence_each_frame(monkeypatch):
     pygame.quit()
 
 
+def test_leaderboard_snapshot_avoids_reloading_persistence_each_frame(monkeypatch):
+    import persistence
+    from config import game_text
+    from ui.modals import draw_leaderboard_modal
+
+    def unexpected_disk_read(*_args, **_kwargs):
+        raise AssertionError("leaderboard should use the supplied snapshot")
+
+    monkeypatch.setattr(persistence, "get_leaderboard", unexpected_disk_read)
+    pygame.init()
+    screen = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+    leaderboard_data = cast(
+        LeaderboardData,
+        {difficulty: [] for difficulty in ("easy", "medium", "hard", "daily", "custom")},
+    )
+
+    draw_leaderboard_modal(
+        screen,
+        load_fonts(),
+        (0, 0),
+        game_text,
+        leaderboard_data=leaderboard_data,
+    )
+
+
+def test_opening_leaderboard_loads_one_snapshot(monkeypatch):
+    controller = AppController.__new__(AppController)
+    controller.state = AppController.STATE_MENU
+    controller.running = True
+    snapshot = cast(
+        LeaderboardData,
+        {difficulty: [] for difficulty in ("easy", "medium", "hard", "daily", "custom")},
+    )
+    monkeypatch.setattr(game, "get_leaderboard", lambda: snapshot)
+    stats_rect = pygame.Rect(10, 10, 30, 30)
+    monkeypatch.setattr(
+        pygame.event,
+        "get",
+        lambda: [pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=stats_rect.center)],
+    )
+
+    controller._handle_menu_events({"stats": stats_rect})
+
+    assert controller.state == AppController.STATE_LEADERBOARD
+    assert controller.leaderboard_data is snapshot
+
+
 def test_sidebar_layout_has_no_overlapping_controls():
     layout = get_sidebar_layout()
     controls = [value for key, value in layout.items() if key != "numbers" and value is not None]
@@ -79,6 +163,19 @@ def test_sidebar_layout_has_no_overlapping_controls():
     assert all(0 <= rect.top and rect.bottom <= SCREEN_HEIGHT for rect in controls)
     for index, rect in enumerate(controls):
         assert not any(rect.colliderect(other) for other in controls[index + 1 :])
+
+
+def test_board_hitboxes_match_rendered_cell_edges():
+    assert BOARD_SIZE == CELL_SIZE * 9
+    for row in range(9):
+        for column in range(9):
+            x = BOARD_X + column * CELL_SIZE
+            y = BOARD_Y + row * CELL_SIZE
+            assert get_cell_from_pos(x, y) == (row, column)
+            assert get_cell_from_pos(x + CELL_SIZE - 1, y + CELL_SIZE - 1) == (row, column)
+
+    assert get_cell_from_pos(BOARD_X + BOARD_SIZE, BOARD_Y) is None
+    assert get_cell_from_pos(BOARD_X, BOARD_Y + BOARD_SIZE) is None
 
 
 def test_menu_help_opens_help_overlay_and_escape_returns_to_menu(monkeypatch):
@@ -102,6 +199,51 @@ def test_menu_help_opens_help_overlay_and_escape_returns_to_menu(monkeypatch):
     )
     controller._handle_help_events({"help_close": pygame.Rect(0, 0, 1, 1)})
     assert controller.state == AppController.STATE_MENU
+
+
+def test_menu_keyboard_focus_activates_selected_difficulty(monkeypatch):
+    controller = AppController.__new__(AppController)
+    controller.state = AppController.STATE_MENU
+    controller.running = True
+    started: list[str] = []
+    monkeypatch.setattr(controller, "_start_game", started.append)
+    events = [
+        pygame.event.Event(pygame.KEYDOWN, key=pygame.K_TAB, mod=0),
+        pygame.event.Event(pygame.KEYDOWN, key=pygame.K_TAB, mod=0),
+        pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN, mod=0),
+    ]
+    monkeypatch.setattr(pygame.event, "get", lambda: events)
+    menu_rects = {
+        "easy": pygame.Rect(0, 0, 20, 20),
+        "medium": pygame.Rect(30, 0, 20, 20),
+        "hard": pygame.Rect(60, 0, 20, 20),
+    }
+
+    controller._handle_menu_events(menu_rects)
+
+    assert started == ["medium"]
+
+
+def test_shift_tab_wraps_to_last_menu_action(monkeypatch):
+    controller = AppController.__new__(AppController)
+    controller.state = AppController.STATE_MENU
+    controller.running = True
+    started: list[str] = []
+    monkeypatch.setattr(controller, "_start_game", started.append)
+    events = [
+        pygame.event.Event(pygame.KEYDOWN, key=pygame.K_TAB, mod=pygame.KMOD_SHIFT),
+        pygame.event.Event(pygame.KEYDOWN, key=pygame.K_SPACE, mod=0),
+    ]
+    monkeypatch.setattr(pygame.event, "get", lambda: events)
+    menu_rects = {
+        "easy": pygame.Rect(0, 0, 20, 20),
+        "medium": pygame.Rect(30, 0, 20, 20),
+        "hard": pygame.Rect(60, 0, 20, 20),
+    }
+
+    controller._handle_menu_events(menu_rects)
+
+    assert started == ["hard"]
 
 
 def test_help_modal_close_button_stays_on_screen():
@@ -185,6 +327,35 @@ def test_pause_resume_button_unpauses_game(monkeypatch):
     assert not state.paused
 
 
+def test_pause_save_failure_keeps_game_open_and_reports_failure(monkeypatch):
+    state = GameState("easy")
+    state.paused = True
+    state.save_failed = True
+    session = Game.__new__(Game)
+    session.state = state
+    session.running = True
+    session.go_to_menu = False
+    session.pause_resume_rect = None
+    session.pause_restart_rect = None
+    save_quit_rect = pygame.Rect(10, 10, 40, 40)
+    session.pause_save_quit_rect = save_quit_rect
+    session.pause_quit_rect = save_quit_rect
+    force_save_calls: list[bool] = []
+
+    def fail_save() -> bool:
+        force_save_calls.append(True)
+        return False
+
+    monkeypatch.setattr(state, "force_save", fail_save)
+
+    session._handle_pause_click(save_quit_rect.center)
+
+    assert session.running
+    assert not session.go_to_menu
+    assert state.save_failed
+    assert force_save_calls == [True]
+
+
 def test_modern_icon_renderer_returns_visible_icon_at_requested_size():
     icon = SmoothIcons.get("grid_logo", 32, (30, 100, 180))
 
@@ -194,11 +365,9 @@ def test_modern_icon_renderer_returns_visible_icon_at_requested_size():
 
 def test_start_new_game_and_resume_saved_game(monkeypatch):
     class StubGame:
-        def __init__(self, difficulty, loaded_state=None):
+        def __init__(self, difficulty, loaded_state=None, screen=None):
             self.loaded_state = loaded_state
-
-        def _load_fonts(self):
-            pass
+            self.screen = screen
 
     monkeypatch.setattr(game, "Game", StubGame)
     controller = AppController.__new__(AppController)
@@ -207,10 +376,56 @@ def test_start_new_game_and_resume_saved_game(monkeypatch):
 
     controller._start_game("easy")
     assert isinstance(controller.game_session, StubGame)
+    assert controller.game_session.screen is controller.screen
 
     saved_state = GameState("easy")
     controller._start_game("easy", loaded_state=saved_state)
     assert controller.game_session.loaded_state is saved_state
+
+
+def test_game_reuses_supplied_screen_without_reinitializing_display(monkeypatch):
+    screen = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+
+    def unexpected_screen_creation():
+        raise AssertionError("Game should reuse the controller's display")
+
+    monkeypatch.setattr(game, "create_game_screen", unexpected_screen_creation)
+
+    session = Game("easy", loaded_state=GameState("easy"), screen=screen)
+
+    assert session.screen is screen
+
+
+def test_highscore_dialog_closes_tk_root_when_prompt_raises(monkeypatch):
+    import tkinter
+    from tkinter import simpledialog
+
+    class FakeRoot:
+        destroyed = False
+
+        def withdraw(self):
+            pass
+
+        def attributes(self, *_args):
+            pass
+
+        def destroy(self):
+            self.destroyed = True
+
+    root = FakeRoot()
+    monkeypatch.setattr(tkinter, "Tk", lambda: root)
+
+    def fail_prompt(*_args, **_kwargs):
+        raise RuntimeError("dialog failed")
+
+    monkeypatch.setattr(simpledialog, "askstring", fail_prompt)
+    session = Game.__new__(Game)
+    session.state = GameState("easy")
+
+    with pytest.raises(RuntimeError, match="dialog failed"):
+        session._show_name_input_dialog()
+
+    assert root.destroyed
 
 
 def test_restart_resets_session_flags():
@@ -264,6 +479,35 @@ def test_keyboard_places_solution_value_in_selected_empty_cell(monkeypatch):
     assert state.board[row][column] == value
 
 
+def test_unicode_digit_does_not_crash_keyboard_input(monkeypatch):
+    state = GameState("easy")
+    session = Game.__new__(Game)
+    session.state = state
+    session.show_help = False
+    row, column = next((r, c) for r in range(9) for c in range(9) if state.original[r][c] == 0)
+    state.selected = [row, column]
+    event = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_UNKNOWN, unicode="²", mod=0)
+    monkeypatch.setattr(pygame.event, "get", lambda: [event])
+
+    assert session.handle_events()
+    assert state.board[row][column] == 0
+
+
+def test_backspace_with_empty_unicode_clears_selected_cell(monkeypatch):
+    state = GameState("easy")
+    session = Game.__new__(Game)
+    session.state = state
+    session.show_help = False
+    row, column = next((r, c) for r in range(9) for c in range(9) if state.original[r][c] == 0)
+    state.selected = [row, column]
+    state.board[row][column] = state.solution[row][column]
+    event = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_BACKSPACE, unicode="", mod=0)
+    monkeypatch.setattr(pygame.event, "get", lambda: [event])
+
+    assert session.handle_events()
+    assert state.board[row][column] == 0
+
+
 def test_escape_pauses_and_resumes_game(monkeypatch):
     state = GameState("easy")
     session = Game.__new__(Game)
@@ -293,6 +537,38 @@ def test_window_close_saves_latest_game_state(monkeypatch):
     restored = load_game_state()
     assert restored is not None
     assert restored.board[row][column] == state.solution[row][column]
+
+
+def test_window_close_keeps_game_open_when_save_fails(monkeypatch):
+    state = GameState("easy")
+    state.save_failed = True
+    session = Game.__new__(Game)
+    session.state = state
+    session.running = True
+    monkeypatch.setattr(state, "force_save", lambda: False)
+    monkeypatch.setattr(pygame.event, "get", lambda: [pygame.event.Event(pygame.QUIT)])
+
+    assert session.handle_events()
+    assert session.running
+    assert state.save_failed
+
+
+def test_window_close_does_not_retry_save_after_game_is_complete(monkeypatch):
+    state = GameState("easy")
+    state.game_over = True
+    state.save_failed = True
+    session = Game.__new__(Game)
+    session.state = state
+    session.running = True
+
+    def unexpected_save():
+        raise AssertionError("completed games need no save")
+
+    monkeypatch.setattr(state, "force_save", unexpected_save)
+    monkeypatch.setattr(pygame.event, "get", lambda: [pygame.event.Event(pygame.QUIT)])
+
+    assert not session.handle_events()
+    assert not session.running
 
 
 def test_return_to_menu_saves_latest_game_state():

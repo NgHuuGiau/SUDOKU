@@ -5,6 +5,9 @@ import math
 
 import pygame
 
+from error_handling import logger
+from persistence import get_preference, set_preference
+
 
 def generate_tone(
     frequency: float,
@@ -122,7 +125,8 @@ class SoundManager:
 
     def __init__(self):
         self.sounds = {}
-        self.enabled = True
+        enabled = get_preference("sound_enabled", True)
+        self.enabled = enabled if type(enabled) is bool else True
         self._init_sounds()
 
     def _init_sounds(self):
@@ -135,8 +139,8 @@ class SoundManager:
                 "hint": generate_hint(),
                 "undo": generate_undo(),
             }
-        except Exception as e:
-            print(f"Warning: Could not initialize sounds: {e}")
+        except pygame.error as exc:
+            logger.warning("Could not initialize sound effects: %s", exc)
             self.sounds = {}
 
     def play(self, name: str):
@@ -145,12 +149,14 @@ class SoundManager:
             return
         try:
             self.sounds[name].play()
-        except Exception:
-            pass
+        except pygame.error as exc:
+            self.sounds.pop(name, None)
+            logger.warning("Disabling unavailable sound effect %s: %s", name, exc)
 
     def toggle(self):
         """Toggle sound on/off."""
         self.enabled = not self.enabled
+        set_preference("sound_enabled", self.enabled)
 
     def is_enabled(self) -> bool:
         return self.enabled

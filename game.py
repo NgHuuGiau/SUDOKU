@@ -18,7 +18,9 @@ from logic import (
     is_valid_placement,
 )
 from persistence import (
+    LeaderboardData,
     clear_save_file,
+    get_leaderboard,
     has_save_file,
     load_best_times,
     load_daily_stats,
@@ -37,6 +39,7 @@ from ui import (
     get_cell_from_pos,
     get_sidebar_layout,
     load_fonts,
+    trigger_completion_animation,
     trigger_number_placement_animation,
 )
 
@@ -71,7 +74,7 @@ class GameState:
         ]
         self.redo_stack: List[Tuple[Board, List[List[Set[int]]]]] = []
         self._last_auto_save_time = 0.0
-        save_game_state(self)
+        self.save_failed = not save_game_state(self)
 
     def _generate_puzzle(self) -> tuple[Board, Board]:
         if self.difficulty == "daily":
@@ -132,26 +135,19 @@ class GameState:
         self.auto_save()
 
     def _check_completion_ripple(self, r: int, c: int) -> None:
-        try:
-            from ui.board import trigger_completion_animation
+        if all(self.board[r][col] == self.solution[r][col] for col in range(9)):
+            trigger_completion_animation("row", r)
+        if all(self.board[row][c] == self.solution[row][c] for row in range(9)):
+            trigger_completion_animation("col", c)
 
-            # Check row r
-            if all(self.board[r][col] == self.solution[r][col] for col in range(9)):
-                trigger_completion_animation("row", r)
-            # Check col c
-            if all(self.board[row][c] == self.solution[row][c] for row in range(9)):
-                trigger_completion_animation("col", c)
-            # Check 3x3 box
-            br, bc = (r // 3) * 3, (c // 3) * 3
-            box_idx = (r // 3) * 3 + (c // 3)
-            if all(
-                self.board[br + dr][bc + dc] == self.solution[br + dr][bc + dc]
-                for dr in range(3)
-                for dc in range(3)
-            ):
-                trigger_completion_animation("box", box_idx)
-        except Exception:
-            pass
+        br, bc = (r // 3) * 3, (c // 3) * 3
+        box_idx = (r // 3) * 3 + (c // 3)
+        if all(
+            self.board[br + dr][bc + dc] == self.solution[br + dr][bc + dc]
+            for dr in range(3)
+            for dc in range(3)
+        ):
+            trigger_completion_animation("box", box_idx)
 
     @log_exception(ErrorSeverity.MEDIUM, user_action="clear_cell")
     def clear_cell(self) -> None:
@@ -221,7 +217,7 @@ class GameState:
         self.undo_stack = [(copy.deepcopy(self.board), copy.deepcopy(self.notes))]
         self.redo_stack.clear()
         self._last_auto_save_time = 0.0
-        save_game_state(self)
+        self.save_failed = not save_game_state(self)
         play_sound("click")
 
     def set_puzzle(self, board: Board, solution: Board) -> None:
@@ -250,21 +246,23 @@ class GameState:
         self.undo_stack = [(copy.deepcopy(self.board), copy.deepcopy(self.notes))]
         self.redo_stack = []
         self._last_auto_save_time = 0.0
-        save_game_state(self)
+        self.save_failed = not save_game_state(self)
 
     def auto_save(self) -> None:
         if self.game_over:
             return
         now = time.monotonic() * 1000
         if now - self._last_auto_save_time >= AUTO_SAVE_DEBOUNCE_MS:
-            save_game_state(self)
+            self.save_failed = not save_game_state(self)
             self._last_auto_save_time = now
 
-    def force_save(self) -> None:
+    def force_save(self) -> bool:
         """Immediate save without debounce (for critical moments)."""
-        if not self.game_over:
-            save_game_state(self)
-            self._last_auto_save_time = time.monotonic() * 1000
+        if self.game_over:
+            return not self.save_failed
+        self.save_failed = not save_game_state(self)
+        self._last_auto_save_time = time.monotonic() * 1000
+        return not self.save_failed
 
     def get_elapsed_time(self) -> int:
         if self.game_over:
@@ -279,8 +277,13 @@ class GameState:
 class Game:
     """Full game session (PLAYING state). Manages one Sudoku game."""
 
-    def __init__(self, difficulty: Difficulty = "medium", loaded_state=None):
-        self.screen = create_game_screen()
+    def __init__(
+        self,
+        difficulty: Difficulty = "medium",
+        loaded_state=None,
+        screen: pygame.Surface | None = None,
+    ):
+        self.screen = screen if screen is not None else create_game_screen()
         self._load_fonts()
         if loaded_state:
             self.state = loaded_state
@@ -311,7 +314,8 @@ class Game:
     def handle_events(self) -> bool:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                self.state.force_save()
+                if not self.state.game_over and not self.state.force_save():
+                    return True
                 self.running = False
                 return False
 
@@ -363,9 +367,11 @@ class Game:
         if self.pause_restart_rect is not None and self.pause_restart_rect.collidepoint(x, y):
             self._restart_game()
         if self.pause_save_quit_rect is not None and self.pause_save_quit_rect.collidepoint(x, y):
-            self.state.force_save()
+            if not self.state.force_save():
+                return
             self.running = False
             self.go_to_menu = True
+            return
         # Backward compat
         if self.pause_quit_rect and self.pause_quit_rect.collidepoint(x, y):
             self.state.force_save()
@@ -446,7 +452,8 @@ class Game:
                 self._restart_game()
                 return
             if layout["menu"].collidepoint(x, y):
-                self.state.force_save()
+                if not self.state.force_save():
+                    return
                 self.running = False
                 self.go_to_menu = True
                 return
@@ -526,18 +533,18 @@ class Game:
         from config import game_text
 
         root = tk.Tk()
-        root.withdraw()
-        root.attributes("-topmost", True)
+        try:
+            root.withdraw()
+            root.attributes("-topmost", True)
+            name = simpledialog.askstring(
+                game_text("new_highscore"), game_text("enter_name"), parent=root
+            )
+            if name and name.strip():
+                from persistence import add_leaderboard_entry
 
-        name = simpledialog.askstring(
-            game_text("new_highscore"), game_text("enter_name"), parent=root
-        )
-        root.destroy()
-
-        if name and name.strip():
-            from persistence import add_leaderboard_entry
-
-            add_leaderboard_entry(self.state.difficulty, name.strip(), self.state.final_time)
+                add_leaderboard_entry(self.state.difficulty, name.strip(), self.state.final_time)
+        finally:
+            root.destroy()
 
     def _spawn_win_fireworks(self) -> None:
         burst_points = [
@@ -576,9 +583,9 @@ class Game:
 
         elif self.state.original[r][c] == 0:
             if (
-                hasattr(event, "unicode")
-                and event.unicode.isdigit()
-                and 1 <= int(event.unicode) <= 9
+                isinstance(getattr(event, "unicode", None), str)
+                and len(event.unicode) == 1
+                and event.unicode in "123456789"
             ):
                 self.state.place_number(int(event.unicode))
             elif key in (pygame.K_BACKSPACE, pygame.K_DELETE, pygame.K_KP0):
@@ -590,10 +597,12 @@ class Game:
                 x = random.randint(70, SCREEN_WIDTH - 70)
                 y = random.randint(70, SCREEN_HEIGHT // 2)
                 self._spawn_firework_burst(x, y, 26)
-            for p in self.particles[:]:
+            active_particles = []
+            for p in self.particles:
                 p.update()
-                if p.lifetime <= 0:
-                    self.particles.remove(p)
+                if p.lifetime > 0:
+                    active_particles.append(p)
+            self.particles[:] = active_particles
         if not self.state.game_over and check_win(self.state.board, self.state.solution):
             self.state.game_over = True
             self.state.final_time = self.state.get_elapsed_time()
@@ -632,17 +641,6 @@ class Game:
                 self.screen, self.fonts, pygame.mouse.get_pos(), game_text
             )
 
-    def run(self) -> str:
-        """Run the game session. Returns 'menu' or 'quit'."""
-        clock = pygame.time.Clock()
-        while self.running:
-            if not self.handle_events():
-                return "quit"
-            self.update()
-            self.render()
-            clock.tick(60)
-        return "menu" if self.go_to_menu else "quit"
-
 
 # ──────────────────────────────────────────────
 #  MAIN APPLICATION CONTROLLER
@@ -655,6 +653,21 @@ class AppController:
     STATE_PLAYING = "playing"
     STATE_LEADERBOARD = "leaderboard"
     STATE_HELP = "help"
+    MENU_FOCUS_ORDER = (
+        "resume",
+        "daily",
+        "easy",
+        "medium",
+        "hard",
+        "custom",
+        "custom_dec",
+        "custom_inc",
+        "theme",
+        "sound",
+        "lang",
+        "stats",
+        "help",
+    )
 
     def __init__(self):
         # create_game_screen handles enable_high_dpi + pygame.init internally
@@ -666,7 +679,10 @@ class AppController:
 
         # Menu state
         self.custom_cells = 40
-        self.leaderboard_diff = "medium"
+        self.menu_focus_key: str | None = None
+        self._menu_rects: dict = {}
+        self.leaderboard_diff: Difficulty = "medium"
+        self.leaderboard_data: LeaderboardData | None = None
 
         # Active game session
         self.game_session: Game | None = None
@@ -689,23 +705,51 @@ class AppController:
         from sounds import toggle_sound
         from ui.colors import get_theme_manager
 
+        focus_items = [key for key in self.MENU_FOCUS_ORDER if menu_rects.get(key) is not None]
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
                 return
+            if event.type == pygame.MOUSEMOTION:
+                self.menu_focus_key = None
+                continue
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_1:
                     self._start_game("easy")
-                elif event.key == pygame.K_2:
+                    continue
+                if event.key == pygame.K_2:
                     self._start_game("medium")
-                elif event.key == pygame.K_3:
+                    continue
+                if event.key == pygame.K_3:
                     self._start_game("hard")
-                elif event.key == pygame.K_ESCAPE:
+                    continue
+                if event.key == pygame.K_ESCAPE:
                     self.running = False
-            if event.type != pygame.MOUSEBUTTONDOWN:
+                    continue
+                if event.key == pygame.K_TAB and focus_items:
+                    step = -1 if event.mod & pygame.KMOD_SHIFT else 1
+                    current = getattr(self, "menu_focus_key", None)
+                    index = (
+                        focus_items.index(current)
+                        if current in focus_items
+                        else (-1 if step > 0 else 0)
+                    )
+                    self.menu_focus_key = focus_items[(index + step) % len(focus_items)]
+                    continue
+                if event.key in (pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_SPACE):
+                    current = getattr(self, "menu_focus_key", None)
+                    focused_rect = menu_rects.get(current) if current else None
+                    if focused_rect is not None:
+                        pos = focused_rect.center
+                    else:
+                        continue
+                else:
+                    continue
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                self.menu_focus_key = None
+                pos = event.pos
+            else:
                 continue
-
-            pos = event.pos
 
             if menu_rects.get("resume") and menu_rects["resume"].collidepoint(pos):
                 saved = load_game_state()
@@ -743,6 +787,7 @@ class AppController:
             elif menu_rects.get("lang") and menu_rects["lang"].collidepoint(pos):
                 chuyen_ngon_ngu()
             elif menu_rects.get("stats") and menu_rects["stats"].collidepoint(pos):
+                self.leaderboard_data = cast(LeaderboardData, get_leaderboard())
                 self.state = self.STATE_LEADERBOARD
             elif menu_rects.get("help") and menu_rects["help"].collidepoint(pos):
                 self.state = self.STATE_HELP
@@ -766,10 +811,10 @@ class AppController:
         elif difficulty == "custom" and loaded_state is not None:
             self.custom_cells = loaded_state.custom_empty_cells
 
-        self.game_session = Game(cast(Difficulty, difficulty), loaded_state=loaded_state)
-        assert self.game_session is not None
-        self.game_session.screen = self.screen
-        self.game_session._load_fonts()
+        self.game_session = Game(
+            cast(Difficulty, difficulty), loaded_state=loaded_state, screen=self.screen
+        )
+        self.menu_focus_key = None
         self.state = self.STATE_PLAYING
 
     def _run_game_session(self) -> None:
@@ -817,6 +862,9 @@ class AppController:
             mouse_pos = pygame.mouse.get_pos()
 
             if self.state == self.STATE_MENU:
+                focused_rect = self._menu_rects.get(self.menu_focus_key)
+                if focused_rect is not None:
+                    mouse_pos = focused_rect.center
                 menu_rects = draw_menu_view(
                     self.screen,
                     self.fonts,
@@ -824,6 +872,7 @@ class AppController:
                     custom_cells=self.custom_cells,
                     menu_data=self.menu_data,
                 )
+                self._menu_rects = menu_rects
                 pygame.display.flip()
                 self._handle_menu_events(menu_rects)
 
@@ -835,7 +884,12 @@ class AppController:
 
             elif self.state == self.STATE_LEADERBOARD:
                 lb_rects = draw_leaderboard_modal(
-                    self.screen, self.fonts, mouse_pos, game_text, active_diff=self.leaderboard_diff
+                    self.screen,
+                    self.fonts,
+                    mouse_pos,
+                    game_text,
+                    active_diff=self.leaderboard_diff,
+                    leaderboard_data=self.leaderboard_data,
                 )
                 pygame.display.flip()
                 self._handle_leaderboard_events(lb_rects)

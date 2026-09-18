@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from typing import Literal
 
-from persistence import load_stats
+from persistence import get_preference, set_preference
 
 ThemeMode = Literal["light", "dark", "frost", "cozy"]
 
@@ -279,23 +279,12 @@ class ThemeManager:
 
     def _load_theme(self):
         """Load theme from persistent storage."""
-        try:
-            stats = load_stats()
-            t = stats.get("theme", "light")
-            self._theme = t if t in THEME_ORDER else "light"
-        except Exception:
-            self._theme = "light"
+        theme = get_preference("theme", "light")
+        self._theme = theme if theme in THEME_ORDER else "light"
 
     def _save_theme(self):
         """Save theme to persistent storage."""
-        try:
-            stats = load_stats()
-            stats["theme"] = self._theme
-            from persistence import save_stats
-
-            save_stats(stats)
-        except Exception:
-            pass
+        set_preference("theme", self._theme)
 
     @property
     def theme(self) -> ThemeMode:

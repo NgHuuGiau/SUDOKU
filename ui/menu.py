@@ -4,9 +4,7 @@ from datetime import datetime, timezone
 
 import pygame
 
-from config import (
-    menu_text,
-)
+from config import game_text, menu_text
 from persistence import (
     has_save_file,
     load_best_times,
@@ -185,15 +183,20 @@ def draw_menu_view(
 
     # Hero title
     hero_title = fonts.hero.render("SUDOKU", True, Colors.FIXED_TEXT)
-    screen.blit(hero_title, (hero_x + 24, hero_y + 12))
-
     # Hero subtitle
     hero_sub = fonts.badge.render(menu_text("thu_thach"), True, Colors.STATUS_TEXT)
-    screen.blit(hero_sub, (hero_x + 24, hero_y + 44))
+    hero_text_gap = 4
+    hero_text_height = hero_title.get_height() + hero_text_gap + hero_sub.get_height()
+    hero_text_y = hero_y + (hero_h - hero_text_height) // 2
+    screen.blit(hero_title, (hero_x + 24, hero_text_y))
+    screen.blit(
+        hero_sub,
+        (hero_x + 24, hero_text_y + hero_title.get_height() + hero_text_gap),
+    )
 
     # Streak badge on the right of hero card
     streak_val = daily_stats.get("streak", 0)
-    streak_txt = f"{streak_val} ngày" if menu_text("easy") == "Dễ" else f"{streak_val} days"
+    streak_txt = menu_text("streak_badge").format(n=streak_val)
     streak_w = 120
     streak_rect = pygame.Rect(hero_rect.right - streak_w - 20, hero_y + 22, streak_w, 32)
     draw_badge(
@@ -224,13 +227,10 @@ def draw_menu_view(
         resume_rect = pygame.Rect(hero_x, cur_y, card_w, card_h)
         if saved_game:
             saved_difficulty, elapsed = saved_game
-            diff_label = {
-                "easy": menu_text("de"),
-                "medium": menu_text("trung_binh"),
-                "hard": menu_text("kho"),
-            }.get(saved_difficulty, saved_difficulty)
+            diff_key = {"daily": "daily_challenge"}.get(saved_difficulty, saved_difficulty)
+            diff_label = menu_text(diff_key)
             time_str = _format_time(elapsed)
-            desc_str = f"{diff_label} • {menu_text('thoi_gian')}: {time_str}"
+            desc_str = f"{diff_label} • {game_text('thoi_gian')}: {time_str}"
         else:
             desc_str = menu_text("tiep_tuc_van")
         draw_interactive_card(
@@ -252,10 +252,10 @@ def draw_menu_view(
     today_utc = datetime.now(timezone.utc).date().isoformat()
     completed_today = daily_stats.get("last_completed_date") == today_utc
     if completed_today:
-        daily_badge = "✓ XONG" if menu_text("easy") == "Dễ" else "✓ DONE"
+        daily_badge = menu_text("daily_done_badge")
         daily_accent = Colors.BTN_SUCCESS
     else:
-        daily_badge = "HÔM NAY" if menu_text("easy") == "Dễ" else "TODAY"
+        daily_badge = menu_text("daily_today_badge")
         daily_accent = Colors.GOLD
 
     draw_interactive_card(
@@ -337,6 +337,7 @@ def draw_menu_view(
         fonts=fonts,
         accent_color=getattr(Colors, "RIPPLE", (99, 102, 241)),
         icon_name="slider",
+        show_chevron=False,
     )
     menu_rects["custom"] = cust_rect
 
@@ -384,6 +385,11 @@ def draw_menu_view(
     footer_txt = menu_text("chuc_vui_ve")
     f_surf = fonts.badge.render(footer_txt, True, Colors.STATUS_TEXT)
     screen.blit(f_surf, f_surf.get_rect(center=(SCREEN_WIDTH // 2, footer_y)))
+    keyboard_help = menu_text("menu_keyboard_nav")
+    keyboard_surf = fonts.tiny.render(keyboard_help, True, Colors.STATUS_TEXT)
+    screen.blit(
+        keyboard_surf, keyboard_surf.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT - 14))
+    )
 
     return menu_rects
 

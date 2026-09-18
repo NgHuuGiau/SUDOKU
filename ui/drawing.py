@@ -74,6 +74,7 @@ def draw_interactive_card(
     icon_name=None,
     badge_text=None,
     radius=14,
+    show_chevron=True,
 ) -> bool:
     """Draw a rich modern card with hover lift, left accent stripe, icon, title, desc and chevron."""
     from ui.icons import SmoothIcons
@@ -123,8 +124,11 @@ def draw_interactive_card(
 
     # Right side: badge if any + chevron
     right_x = draw_rect.right - 18
-    ch_surf = SmoothIcons.get("arrow_right", 18, accent_color if is_hover else Colors.STATUS_TEXT)
-    screen.blit(ch_surf, (right_x - 14, draw_rect.centery - 9))
+    if show_chevron:
+        ch_surf = SmoothIcons.get(
+            "arrow_right", 18, accent_color if is_hover else Colors.STATUS_TEXT
+        )
+        screen.blit(ch_surf, (right_x - 14, draw_rect.centery - 9))
 
     if badge_text:
         badge_w = len(badge_text) * 8 + 16
