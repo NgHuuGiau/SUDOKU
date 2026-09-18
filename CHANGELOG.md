@@ -4,6 +4,16 @@
 
 ### Bảo trì
 
+- Lưu lựa chọn ngôn ngữ và âm thanh vào thiết lập cục bộ; hiện thông báo trong game khi không thể ghi ván lưu.
+- Thêm điều hướng menu bằng Tab/Shift+Tab và Enter/Space kèm chỉ dẫn hiển thị; CI kiểm thử Python 3.13 và metadata giới hạn phạm vi 3.10–3.13.
+- Bỏ vòng lặp Game.run không còn caller và tham số không dùng trong solver DLX.
+
+- Cập nhật README đầy đủ về kiến trúc, luồng dữ liệu, cài đặt, lưu dữ liệu, kiểm thử, CI, đóng gói và giới hạn hiện tại; xác nhận giao diện hỗ trợ Tiếng Việt có dấu và English.
+- Dùng snapshot bảng xếp hạng trong lúc mở modal thay vì đọc JSON ở từng khung hình; tái sử dụng bề mặt phủ mờ của các modal.
+- Lọc hạt pháo hoa trong một lượt tuyến tính, tránh xóa từng phần tử giữa danh sách khi hiệu ứng kết thúc.
+- Đóng cửa sổ Tcl/Tk trong mọi trường hợp sau hộp thoại nhập tên; chỉ chấp nhận ký tự bàn phím ASCII `1`–`9` để tránh lỗi chuyển đổi ký tự số Unicode đặc biệt.
+- Bổ sung kiểm tra đồng bộ khóa dịch tiếng Anh/tiếng Việt cho menu và hồi quy lưu snapshot bảng xếp hạng.
+
 - Tối ưu render bàn Sudoku bằng cache bề mặt, tái sử dụng hình chữ nhật và chỉ tính ô xung đột một lần mỗi khung hình.
 - Chuẩn hóa định dạng toàn bộ mã Python bằng Ruff và bỏ tham số không sử dụng khi ghi nhận Daily Challenge.
 - Bỏ getter thời gian tốt nhất chỉ chuyển tiếp và mức log chưa được sử dụng.
