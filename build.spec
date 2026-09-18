@@ -14,7 +14,7 @@ IS_MACOS = sys.platform == 'darwin'
 
 # Data files to include
 datas = [
-    ('assets/preview/SUDOKU.ico', 'Picture'),
+    ('assets/icons/SUDOKU.ico', 'assets/icons'),
 ]
 
 # Hidden imports
@@ -91,7 +91,7 @@ if IS_WINDOWS:
         target_arch=None,
         codesign_identity=None,
         entitlements_file=None,
-        icon='assets/preview/SUDOKU.ico',
+        icon='assets/icons/SUDOKU.ico',
     )
 elif IS_MACOS:
     exe = EXE(
@@ -114,13 +114,13 @@ elif IS_MACOS:
         target_arch=None,
         codesign_identity=None,
         entitlements_file=None,
-        icon='assets/preview/SUDOKU.icns' if os.path.exists('assets/preview/SUDOKU.icns') else None,
+        icon='assets/icons/SUDOKU.icns' if os.path.exists('assets/icons/SUDOKU.icns') else None,
     )
     
     app = BUNDLE(
         exe,
         name='SudokuMaster.app',
-        icon='assets/preview/SUDOKU.icns' if os.path.exists('assets/preview/SUDOKU.icns') else None,
+        icon='assets/icons/SUDOKU.icns' if os.path.exists('assets/icons/SUDOKU.icns') else None,
         bundle_identifier='com.sudokumaster.game',
         info_plist={
             'CFBundleName': 'Sudoku Master',

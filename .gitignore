@@ -24,15 +24,18 @@ dist/
 .dist-check/
 *.egg-info/
 
+/logs/
 *.log
 
 settings.txt
 
-# Runtime data files
-*.json
-!pyproject.toml
-!package.json
-!package-lock.json
+# Runtime data files in the legacy project-root location
+/best_times.json
+/daily_stats.json
+/leaderboard.json
+/save_game.json
+/stats.json
+/*.json.tmp
 
 # Local encryption/config material
 config.key

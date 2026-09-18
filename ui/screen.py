@@ -25,9 +25,9 @@ def enable_high_dpi() -> None:
 
 def get_sudoku_icon_path() -> str:
     if hasattr(sys, "_MEIPASS"):
-        return os.path.join(sys._MEIPASS, "Picture", "SUDOKU.ico")
+        return os.path.join(sys._MEIPASS, "assets", "icons", "SUDOKU.ico")
     project_dir = os.path.dirname(os.path.dirname(__file__))
-    return os.path.join(project_dir, "assets", "preview", "SUDOKU.ico")
+    return os.path.join(project_dir, "assets", "icons", "SUDOKU.ico")
 
 
 def create_game_screen() -> pygame.Surface:
