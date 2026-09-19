@@ -8,12 +8,6 @@ from persistence import get_preference, set_preference
 ThemeMode = Literal["light", "dark", "frost", "cozy"]
 
 THEME_ORDER: list[ThemeMode] = ["light", "dark", "frost", "cozy"]
-THEME_NAMES = {
-    "light": "Tối giản",
-    "dark": "Midnight",
-    "frost": "Frost",
-    "cozy": "Cozy",
-}
 THEME_ICONS = {
     # Keep these glyphs in the basic ASCII range so Windows font fallback
     # never renders a missing emoji as a square in the toolbar.
@@ -303,10 +297,6 @@ class ThemeManager:
         self._theme = THEME_ORDER[next_idx]
         self._save_theme()
         return self._theme
-
-    @property
-    def theme_name(self) -> str:
-        return THEME_NAMES.get(self._theme, "Sáng Tối Giản")
 
     @property
     def theme_icon(self) -> str:
