@@ -1,5 +1,6 @@
 """Sudoku entry point with an optional packaged-build smoke test."""
 
+import logging
 import os
 import sys
 from tempfile import TemporaryDirectory
@@ -31,6 +32,9 @@ def _run_smoke_test() -> None:
             draw_help_modal(screen, fonts, (0, 0), game_text)
         finally:
             pygame.quit()
+            # Release log files held open inside the temp data dir,
+            # otherwise cleanup fails on Windows (open files can't be deleted).
+            logging.shutdown()
 
 
 if __name__ == "__main__":
