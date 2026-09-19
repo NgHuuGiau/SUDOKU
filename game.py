@@ -5,6 +5,7 @@ from typing import List, Literal, Set, Tuple, cast
 
 import pygame
 
+from config import chuyen_ngon_ngu, game_text
 from error_handling import (
     ErrorSeverity,
     log_exception,
@@ -19,9 +20,11 @@ from logic import (
 )
 from persistence import (
     LeaderboardData,
+    add_leaderboard_entry,
     clear_save_file,
     get_leaderboard,
     has_save_file,
+    is_top_10_time,
     load_best_times,
     load_daily_stats,
     load_game_state,
@@ -29,19 +32,23 @@ from persistence import (
     save_game_state,
     update_best_time,
 )
-from sounds import play_sound
+from sounds import play_sound, toggle_sound
 from ui import (
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
     Particle,
     create_game_screen,
     draw_game_view,
+    draw_help_modal,
+    draw_leaderboard_modal,
+    draw_menu_view,
     get_cell_from_pos,
     get_sidebar_layout,
     load_fonts,
     trigger_completion_animation,
     trigger_number_placement_animation,
 )
+from ui.colors import get_theme_manager
 
 Board = List[List[int]]
 NotesBoard = List[List[Set[int]]]
@@ -57,6 +64,10 @@ class GameState:
         self.custom_empty_cells = max(20, min(60, empty_cells))
         self.board, self.solution = self._generate_puzzle()
         self.original = [row[:] for row in self.board]
+        self._reset_runtime_state()
+
+    def _reset_runtime_state(self) -> None:
+        """Reset per-game runtime state and persist the fresh snapshot."""
         self.selected = [0, 0]
         self.notes: List[List[Set[int]]] = [[set() for _ in range(9)] for _ in range(9)]
         self.notes_mode = False
@@ -97,20 +108,14 @@ class GameState:
         if len(self.undo_stack) > 1:
             self.redo_stack.append((copy.deepcopy(self.board), copy.deepcopy(self.notes)))
             self.undo_stack.pop()
-            self.board, self.notes = self.undo_stack[-1]
-            self.board = copy.deepcopy(self.board)
-            for r in range(9):
-                for c in range(9):
-                    self.notes[r][c] = copy.deepcopy(self.notes[r][c])
+            self.board, self.notes = copy.deepcopy(self.undo_stack[-1])
             play_sound("undo")
         self.auto_save()
 
     def redo(self) -> None:
         if self.redo_stack:
-            board_state, notes_state = self.redo_stack.pop()
             self.undo_stack.append((copy.deepcopy(self.board), copy.deepcopy(self.notes)))
-            self.board = board_state
-            self.notes = copy.deepcopy(notes_state)
+            self.board, self.notes = copy.deepcopy(self.redo_stack.pop())
             play_sound("pop")
         self.auto_save()
 
@@ -202,22 +207,7 @@ class GameState:
         self.difficulty = difficulty
         self.board, self.solution = self._generate_puzzle()
         self.original = [row[:] for row in self.board]
-        self.selected = [0, 0]
-        self.notes = [[set() for _ in range(9)] for _ in range(9)]
-        self.notes_mode = False
-        self.game_over = False
-        self.paused = False
-        self.show_errors = False
-        self.start_time = pygame.time.get_ticks()
-        self.paused_time = 0
-        self.last_pause_start = 0
-        self.elapsed_before_session = 0
-        self.last_active_time = 0
-        self.final_time = 0
-        self.undo_stack = [(copy.deepcopy(self.board), copy.deepcopy(self.notes))]
-        self.redo_stack.clear()
-        self._last_auto_save_time = 0.0
-        self.save_failed = not save_game_state(self)
+        self._reset_runtime_state()
         play_sound("click")
 
     def set_puzzle(self, board: Board, solution: Board) -> None:
@@ -229,24 +219,10 @@ class GameState:
         self.board = copy.deepcopy(board)
         self.solution = copy.deepcopy(solution)
         self.original = copy.deepcopy(board)
+        self._reset_runtime_state()
         self.selected = next(
             ([r, c] for r in range(9) for c in range(9) if board[r][c] == 0), [0, 0]
         )
-        self.notes = [[set() for _ in range(9)] for _ in range(9)]
-        self.notes_mode = False
-        self.game_over = False
-        self.paused = False
-        self.show_errors = False
-        self.start_time = pygame.time.get_ticks()
-        self.paused_time = 0
-        self.last_pause_start = 0
-        self.elapsed_before_session = 0
-        self.last_active_time = 0
-        self.final_time = 0
-        self.undo_stack = [(copy.deepcopy(self.board), copy.deepcopy(self.notes))]
-        self.redo_stack = []
-        self._last_auto_save_time = 0.0
-        self.save_failed = not save_game_state(self)
 
     def auto_save(self) -> None:
         if self.game_over:
@@ -291,7 +267,6 @@ class Game:
             self.state = GameState(difficulty)
         self.particles: List[Particle] = []
         self.running = True
-        self.quit_requested = False
         self.go_to_menu = False
         self.pause_resume_rect: pygame.Rect | None = None
         self.pause_restart_rect: pygame.Rect | None = None
@@ -354,15 +329,15 @@ class Game:
 
     def _handle_gameover_click(self, pos):
         x, y = pos
-        if self.win_restart_rect and self.win_restart_rect.collidepoint(x, y):
+        if self.win_restart_rect is not None and self.win_restart_rect.collidepoint(x, y):
             self._restart_game()
-        if self.win_quit_rect and self.win_quit_rect.collidepoint(x, y):
+        if self.win_quit_rect is not None and self.win_quit_rect.collidepoint(x, y):
             self.running = False
             self.go_to_menu = True
 
     def _handle_pause_click(self, pos):
         x, y = pos
-        if self.pause_resume_rect and self.pause_resume_rect.collidepoint(x, y):
+        if self.pause_resume_rect is not None and self.pause_resume_rect.collidepoint(x, y):
             self.state.toggle_pause()
         if self.pause_restart_rect is not None and self.pause_restart_rect.collidepoint(x, y):
             self._restart_game()
@@ -372,11 +347,6 @@ class Game:
             self.running = False
             self.go_to_menu = True
             return
-        # Backward compat
-        if self.pause_quit_rect and self.pause_quit_rect.collidepoint(x, y):
-            self.state.force_save()
-            self.running = False
-            self.go_to_menu = True
 
     def _handle_help_click(self, pos):
         x, y = pos
@@ -391,18 +361,14 @@ class Game:
         x, y = pos
 
         # 1. Header buttons
-        if self.header_pause_rect and self.header_pause_rect.collidepoint(x, y):
+        if self.header_pause_rect is not None and self.header_pause_rect.collidepoint(x, y):
             self.state.toggle_pause()
             return
         if self.header_theme_rect is not None and self.header_theme_rect.collidepoint(x, y):
-            from ui.colors import get_theme_manager
-
             get_theme_manager().cycle_theme()
             play_sound("pop")
             return
         if self.header_sound_rect is not None and self.header_sound_rect.collidepoint(x, y):
-            from sounds import toggle_sound
-
             toggle_sound()
             return
         if self.header_help_rect is not None and self.header_help_rect.collidepoint(x, y):
@@ -470,8 +436,6 @@ class Game:
         import tkinter as tk
         from tkinter import messagebox
 
-        from config import game_text
-
         root = tk.Tk()
         root.withdraw()
         try:
@@ -485,8 +449,6 @@ class Game:
     def _handle_import(self) -> None:
         import tkinter as tk
         from tkinter import messagebox, simpledialog
-
-        from config import game_text
 
         root = tk.Tk()
         root.withdraw()
@@ -530,8 +492,6 @@ class Game:
         import tkinter as tk
         from tkinter import simpledialog
 
-        from config import game_text
-
         root = tk.Tk()
         try:
             root.withdraw()
@@ -540,8 +500,6 @@ class Game:
                 game_text("new_highscore"), game_text("enter_name"), parent=root
             )
             if name and name.strip():
-                from persistence import add_leaderboard_entry
-
                 add_leaderboard_entry(self.state.difficulty, name.strip(), self.state.final_time)
         finally:
             root.destroy()
@@ -609,8 +567,6 @@ class Game:
             update_best_time(self.state.difficulty, self.state.final_time)
             if self.state.difficulty == "daily":
                 mark_daily_challenge_completed()
-            from persistence import is_top_10_time
-
             if is_top_10_time(self.state.difficulty, self.state.final_time):
                 self._show_name_input_dialog()
             clear_save_file()
@@ -634,9 +590,6 @@ class Game:
         self.header_help_rect = overlay_rects.get("header_help")
 
         if self.show_help:
-            from config import game_text
-            from ui.modals import draw_help_modal
-
             self.help_rects = draw_help_modal(
                 self.screen, self.fonts, pygame.mouse.get_pos(), game_text
             )
@@ -701,10 +654,6 @@ class AppController:
         }
 
     def _handle_menu_events(self, menu_rects: dict) -> None:
-        from config import chuyen_ngon_ngu
-        from sounds import toggle_sound
-        from ui.colors import get_theme_manager
-
         focus_items = [key for key in self.MENU_FOCUS_ORDER if menu_rects.get(key) is not None]
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -854,10 +803,6 @@ class AppController:
 
     def run(self) -> None:
         """Main application loop."""
-        from config import game_text
-        from ui.menu import draw_menu_view
-        from ui.modals import draw_help_modal, draw_leaderboard_modal
-
         while self.running:
             mouse_pos = pygame.mouse.get_pos()
 
