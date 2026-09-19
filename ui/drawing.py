@@ -5,7 +5,7 @@ import pygame
 from ui.colors import Colors
 
 
-def _fit_surface(
+def fit_surface(
     surface: pygame.Surface, max_width: int, max_height: int | None = None
 ) -> pygame.Surface:
     """Keep a rendered label inside its button without changing its font globally."""
@@ -207,14 +207,14 @@ def draw_modern_button(
         icon_rect = icon_surf.get_rect(center=(rect.centerx, rect.top + 17))
         screen.blit(icon_surf, icon_rect)
         s_surf = sub_font.render(subtext, True, text_color)
-        s_surf = _fit_surface(s_surf, rect.width - 10, rect.height - icon_size - 8)
+        s_surf = fit_surface(s_surf, rect.width - 10, rect.height - icon_size - 8)
         screen.blit(s_surf, s_surf.get_rect(center=(rect.centerx, rect.bottom - 11)))
         return rect
 
     elif icon_name and text:
         icon_surf = SmoothIcons.get(icon_name, icon_size, text_color)
         t_surf = font_to_use.render(text, True, text_color)
-        t_surf = _fit_surface(t_surf, rect.width - icon_size - 12, rect.height - 8)
+        t_surf = fit_surface(t_surf, rect.width - icon_size - 12, rect.height - 8)
         total_w = icon_size + 8 + t_surf.get_width()
         start_x = rect.centerx - total_w // 2
         icon_rect = icon_surf.get_rect(midleft=(start_x, rect.centery))
@@ -225,8 +225,8 @@ def draw_modern_button(
     elif subtext and sub_font:
         t_surf = font_to_use.render(text, True, text_color)
         s_surf = sub_font.render(subtext, True, text_color)
-        t_surf = _fit_surface(t_surf, rect.width - 10, rect.height // 2 - 2)
-        s_surf = _fit_surface(s_surf, rect.width - 10, rect.height // 2 - 2)
+        t_surf = fit_surface(t_surf, rect.width - 10, rect.height // 2 - 2)
+        s_surf = fit_surface(s_surf, rect.width - 10, rect.height // 2 - 2)
         total_h = t_surf.get_height() + s_surf.get_height() + 2
         start_y = rect.centery - total_h // 2
         screen.blit(
@@ -242,7 +242,7 @@ def draw_modern_button(
 
     elif text:
         t_surf = font_to_use.render(text, True, text_color)
-        t_surf = _fit_surface(t_surf, rect.width - 12, rect.height - 8)
+        t_surf = fit_surface(t_surf, rect.width - 12, rect.height - 8)
         screen.blit(t_surf, t_surf.get_rect(center=rect.center))
         return rect
 

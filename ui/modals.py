@@ -6,7 +6,7 @@ from typing import Any, cast
 import pygame
 
 from ui.colors import Colors
-from ui.drawing import _fit_surface, draw_modern_button, draw_rounded_card
+from ui.drawing import draw_modern_button, draw_rounded_card, fit_surface
 from ui.geometry import SCREEN_HEIGHT, SCREEN_WIDTH
 from ui.icons import SmoothIcons
 
@@ -283,7 +283,6 @@ def draw_header(screen: pygame.Surface, fonts, state, mouse_pos, translate) -> d
     )
 
     return {
-        "pause": pause_btn_rect,
         "header_pause": pause_btn_rect,
         "header_sound": sound_rect,
         "header_theme": theme_rect,
@@ -349,7 +348,7 @@ def draw_help_modal(screen: pygame.Surface, fonts, mouse_pos, translate) -> dict
     for i, (key, desc) in enumerate(shortcuts):
         y = y_start + i * line_height
         # Key
-        key_surf = _fit_surface(
+        key_surf = fit_surface(
             fonts.small.render(key, True, Colors.GOLD), modal_rect.width // 2 - 64, line_height
         )
         screen.blit(key_surf, key_surf.get_rect(midleft=(key_col_x, y)))
@@ -357,7 +356,7 @@ def draw_help_modal(screen: pygame.Surface, fonts, mouse_pos, translate) -> dict
         sep_surf = fonts.small.render("→", True, Colors.STATUS_TEXT)
         screen.blit(sep_surf, sep_surf.get_rect(center=(modal_rect.centerx, y)))
         # Description
-        desc_surf = _fit_surface(
+        desc_surf = fit_surface(
             fonts.small.render(desc, True, Colors.FIXED_TEXT),
             modal_rect.width // 2 - 64,
             line_height,
