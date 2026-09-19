@@ -44,7 +44,7 @@ def generate_sudoku(
     if difficulty == "custom" and empty_cells is not None:
         target_empties = max(20, min(60, empty_cells))
     else:
-        target_empties = difficulties.get(difficulty, 48)  # noqa: F821
+        target_empties = difficulties.get(difficulty, 48)
 
     positions = list(range(side * side))
     rng.shuffle(positions)
