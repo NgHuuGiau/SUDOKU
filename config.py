@@ -204,6 +204,11 @@ MENU_DICT = {
         "daily_done_badge": "✓ DONE",
         "daily_today_badge": "TODAY",
         "menu_keyboard_nav": "Tab / Shift+Tab: focus · Enter/Space: select",
+        "resume_badge": "RESUME",
+        "theme_light": "Minimal",
+        "theme_dark": "Midnight",
+        "theme_frost": "Frost",
+        "theme_cozy": "Cozy",
     },
     "vi": {
         "app_badge": "TRÒ CHƠI TRÍ TUỆ",
@@ -236,6 +241,11 @@ MENU_DICT = {
         "daily_done_badge": "✓ XONG",
         "daily_today_badge": "HÔM NAY",
         "menu_keyboard_nav": "Tab / Shift+Tab: chọn mục · Enter/Space: mở",
+        "resume_badge": "ĐANG CHƠI",
+        "theme_light": "Tối giản",
+        "theme_dark": "Midnight",
+        "theme_frost": "Frost",
+        "theme_cozy": "Cozy",
     },
 }
 
