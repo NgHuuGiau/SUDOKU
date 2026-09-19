@@ -66,7 +66,6 @@ def draw_menu_view(
         "lang": None,
         "stats": None,
         "help": None,
-        "quit": None,
     }
 
     # ==================== 1. TOP BAR ====================
@@ -147,7 +146,7 @@ def draw_menu_view(
     draw_modern_button(
         screen,
         theme_rect,
-        f"{theme_mgr.theme_icon} {theme_mgr.theme_name[:8]}",
+        f"{theme_mgr.theme_icon} {menu_text(f'theme_{theme_mgr.theme}')[:8]}",
         mouse_pos,
         fonts.badge,
         variant="secondary",
@@ -242,7 +241,7 @@ def draw_menu_view(
             fonts=fonts,
             accent_color=Colors.BTN_PRIMARY,
             icon_name="play",
-            badge_text="RESUME" if menu_text("easy") != "Dễ" else "ĐANG CHƠI",
+            badge_text=menu_text("resume_badge"),
         )
         menu_rects["resume"] = resume_rect
         cur_y += card_h + card_gap
@@ -275,7 +274,7 @@ def draw_menu_view(
     # C. Easy Difficulty Card
     easy_rect = pygame.Rect(hero_x, cur_y, card_w, card_h)
     easy_best = best_times.get("easy")
-    easy_badge = f"★ {_format_time(easy_best)}" if easy_best else None
+    easy_badge = _format_time(easy_best) if easy_best else None
     draw_interactive_card(
         screen,
         easy_rect,
@@ -293,7 +292,7 @@ def draw_menu_view(
     # D. Medium Difficulty Card
     med_rect = pygame.Rect(hero_x, cur_y, card_w, card_h)
     med_best = best_times.get("medium")
-    med_badge = f"★ {_format_time(med_best)}" if med_best else None
+    med_badge = _format_time(med_best) if med_best else None
     draw_interactive_card(
         screen,
         med_rect,
@@ -311,7 +310,7 @@ def draw_menu_view(
     # E. Hard Difficulty Card
     hard_rect = pygame.Rect(hero_x, cur_y, card_w, card_h)
     hard_best = best_times.get("hard")
-    hard_badge = f"★ {_format_time(hard_best)}" if hard_best else None
+    hard_badge = _format_time(hard_best) if hard_best else None
     draw_interactive_card(
         screen,
         hard_rect,
