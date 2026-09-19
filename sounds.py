@@ -16,7 +16,6 @@ def generate_tone(
     sample_rate: int = 44100,
 ) -> pygame.mixer.Sound:
     """Generate a simple sine wave tone."""
-    sample_rate = 44100 if sample_rate is None else sample_rate
     n_samples = int(sample_rate * duration)
     buf = array.array("h", [0] * n_samples)
     amplitude = int(32767 * volume)
