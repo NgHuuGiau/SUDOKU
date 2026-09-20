@@ -397,6 +397,7 @@ def test_game_reuses_supplied_screen_without_reinitializing_display(monkeypatch)
 
 
 def test_highscore_dialog_closes_tk_root_when_prompt_raises(monkeypatch):
+    pytest.importorskip("tkinter")
     import tkinter
     from tkinter import simpledialog
 
@@ -593,6 +594,7 @@ def test_return_to_menu_saves_latest_game_state():
 
 
 def test_import_puzzle_replaces_game_state_and_closes_dialog(monkeypatch):
+    pytest.importorskip("tkinter")
     import tkinter
     from tkinter import messagebox, simpledialog
 
@@ -628,6 +630,7 @@ def test_import_puzzle_replaces_game_state_and_closes_dialog(monkeypatch):
 
 
 def test_invalid_puzzle_import_keeps_current_game_and_closes_dialog(monkeypatch):
+    pytest.importorskip("tkinter")
     import tkinter
     from tkinter import messagebox, simpledialog
 

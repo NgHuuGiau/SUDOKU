@@ -36,6 +36,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
 
+      - name: Check GUI toolkit availability
+        run: |
+          python -c "import tkinter; print('tkinter OK', tkinter.TkVersion)" || echo "tkinter MISSING - dialog tests will skip"
+          python -c "import pygame; print('pygame', pygame.version.ver)"
+
       - name: Run tests
         env:
           SDL_VIDEODRIVER: dummy
