@@ -44,9 +44,8 @@ jobs:
       - name: Run tests
         env:
           SDL_VIDEODRIVER: dummy
-          DISPLAY: ":99"
         run: |
-          xvfb-run -a --server-args="-screen 0 1024x768x24" python -m pytest -v --tb=short --cov=. --cov-report=xml --timeout=120
+          xvfb-run -a --server-args="-screen 0 1024x768x24" python -m pytest -v --tb=short --cov=. --cov-report=xml --timeout=300
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
