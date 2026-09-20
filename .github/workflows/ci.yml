@@ -20,16 +20,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb python3-tk libsdl2-dev libsdl2-mixer-dev libsdl2-image-dev libsdl2-ttf-dev
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y python3-tk libsdl2-dev libsdl2-mixer-dev libsdl2-image-dev libsdl2-ttf-dev
 
       - name: Install dependencies
         run: |
@@ -39,9 +39,9 @@ jobs:
       - name: Run tests
         env:
           SDL_VIDEODRIVER: dummy
+          DISPLAY: ":99"
         run: |
-          sudo apt-get install -y xvfb
-          xvfb-run -a python -m pytest -v --tb=short --cov=. --cov-report=xml
+          xvfb-run -a --server-args="-screen 0 1024x768x24" python -m pytest -v --tb=short --cov=. --cov-report=xml --timeout=120
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
