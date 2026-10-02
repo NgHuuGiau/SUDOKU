@@ -23,7 +23,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb python3-tk libsdl2-dev libsdl2-mixer-dev libsdl2-image-dev libsdl2-ttf-dev
+          sudo apt-get install -y xvfb libsdl2-dev libsdl2-mixer-dev libsdl2-image-dev libsdl2-ttf-dev
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -38,7 +38,6 @@ jobs:
 
       - name: Check GUI toolkit availability
         run: |
-          python -c "import tkinter; print('tkinter OK', tkinter.TkVersion)" || echo "tkinter MISSING - dialog tests will skip"
           python -c "import pygame; print('pygame', pygame.version.ver)"
 
       - name: Run tests
