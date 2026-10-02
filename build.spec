@@ -36,8 +36,7 @@ excludes = [
     'setuptools', 'pip', 'wheel',
 ]
 
-a = Analysis(
-    ['main.py'],
+a = Analysis(\n    ['src/sudoku/main.py'],
     pathex=[],
     binaries=[],
     datas=datas,
@@ -135,3 +134,7 @@ else:  # Linux
         argv_emulation=False,
         target_arch=None,
     )
+
+
+
+

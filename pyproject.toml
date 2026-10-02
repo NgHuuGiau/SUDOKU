@@ -106,7 +106,7 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = ["."]
+source = ["src/sudoku"]
 omit = [
     "test_*.py",
     "build.spec",
@@ -124,9 +124,11 @@ exclude_lines = [
 ]
 
 [tool.setuptools.packages.find]
-where = ["."]
-include = ["*"]
+where = ["src"]
+include = ["sudoku*"]
 exclude = ["test*", "build*", "dist*", "*.egg-info"]
 
 [tool.setuptools.package-dir]
-"" = "."
+"sudoku" = "src/sudoku"
+
+
