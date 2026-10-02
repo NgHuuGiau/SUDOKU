@@ -1,4 +1,4 @@
-# PyInstaller build configuration for Sudoku
+﻿# PyInstaller build configuration for Sudoku
 # Usage: pyinstaller build.spec
 # Cross-platform: Windows (exe), Linux (binary), macOS (app)
 
@@ -14,6 +14,7 @@ IS_MACOS = sys.platform == 'darwin'
 # Data files to include
 datas = [
     ('assets/icons/SUDOKU.ico', 'assets/icons'),
+    ('assets/preview/', 'assets/preview/'),
 ]
 
 # Hidden imports
@@ -25,6 +26,25 @@ hiddenimports = [
     'random',
     'math',
     'ctypes',
+    'sudoku.config',
+    'sudoku.error_handling',
+    'sudoku.game',
+    'sudoku.logic',
+    'sudoku.main',
+    'sudoku.persistence',
+    'sudoku.sounds',
+    'sudoku.ui',
+    'sudoku.ui.board',
+    'sudoku.ui.colors',
+    'sudoku.ui.drawing',
+    'sudoku.ui.fonts',
+    'sudoku.ui.geometry',
+    'sudoku.ui.icons',
+    'sudoku.ui.menu',
+    'sudoku.ui.modals',
+    'sudoku.ui.screen',
+    'sudoku.ui.sidebar',
+    'sudoku.ui.view',
 ]
 
 # Excludes to reduce binary size
@@ -36,7 +56,8 @@ excludes = [
     'setuptools', 'pip', 'wheel',
 ]
 
-a = Analysis(\n    ['src/sudoku/main.py'],
+a = Analysis(
+    ['src/sudoku/main.py'],
     pathex=[],
     binaries=[],
     datas=datas,
@@ -134,7 +155,3 @@ else:  # Linux
         argv_emulation=False,
         target_arch=None,
     )
-
-
-
-
