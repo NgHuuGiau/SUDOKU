@@ -13,7 +13,9 @@ import persistence
 @pytest.fixture(autouse=True)
 def isolate_runtime_data(monkeypatch):
     """Keep persistence tests away from the developer's real game data."""
-    with TemporaryDirectory(dir=Path(__file__).parent) as data_dir:
+    # System temp, NOT the repo dir: OneDrive sync locks files mid-test and
+    # causes random I/O flakes (same family as the .pytest_cache lock).
+    with TemporaryDirectory(prefix="sudoku_test_") as data_dir:
         monkeypatch.setenv("SUDOKU_DATA_DIR", os.fspath(data_dir))
         monkeypatch.setattr(persistence, "LEGACY_DATA_DIR", Path(data_dir))
         yield
