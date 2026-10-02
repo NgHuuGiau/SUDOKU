@@ -1,4 +1,4 @@
-# Sudoku Master
+﻿# Sudoku Master
 
 > Game Sudoku desktop viết bằng Python và Pygame · Phiên bản **2.0.0**
 
@@ -66,39 +66,43 @@ Bạn cũng có thể dùng chuột để chọn ô và bấm các nút trên gi
 
 ```text
 SUDOKU/
-├── .github/workflows/ci.yml  # Kiểm thử, lint, type-check, quét bảo mật, build và release
-├── assets/
-│   ├── icons/                 # Icon ứng dụng
-│   └── preview/               # Ảnh chụp giao diện trong README
-├── tests/                    # Unit, persistence, integration và UI smoke tests
-├── ui/                       # Giao diện Pygame
-│   ├── board.py              # Render bàn Sudoku và animation
-│   ├── colors.py             # Bảng màu và quản lý theme
-│   ├── drawing.py            # Nút, thẻ và thành phần vẽ dùng chung
-│   ├── fonts.py              # Font và fallback theo hệ điều hành
-│   ├── geometry.py           # Kích thước, vị trí và hitbox
-│   ├── icons.py              # Icon vector và hạt hiệu ứng
-│   ├── menu.py               # Menu chính
-│   ├── modals.py             # Modal trợ giúp, tạm dừng, chiến thắng, xếp hạng
-│   ├── screen.py             # Khởi tạo cửa sổ, DPI và icon
-│   ├── sidebar.py            # Các nút và bàn phím số
-│   └── view.py               # Ghép các thành phần thành màn hình chơi
-├── config.py                 # Chuỗi giao diện tiếng Việt / tiếng Anh
-├── error_handling.py         # Ghi log và decorator ghi nhận lỗi
-├── game.py                   # Trạng thái Sudoku, sự kiện và bộ điều khiển ứng dụng
-├── logic.py                  # Sinh, giải, xác thực và nhập/xuất puzzle
-├── main.py                   # Điểm vào ứng dụng và smoke test bản đóng gói
-├── persistence.py            # Lưu game, thống kê, kỷ lục và bảng xếp hạng JSON
-├── sounds.py                 # Tạo và phát âm thanh bằng Pygame
-├── build.bat / build.spec    # Đóng gói ứng dụng bằng PyInstaller
-├── pyproject.toml            # Metadata, dependency và cấu hình công cụ
-├── requirements.txt          # Dependency tối thiểu để chạy game
-├── .gitignore                # Loại trừ cache, dữ liệu cá nhân và artifact build
-├── .pre-commit-config.yaml   # Kiểm tra trước khi commit
-├── .secrets.baseline         # Baseline detect-secrets
-├── CHANGELOG.md              # Lịch sử thay đổi
-├── LICENSE                   # Giấy phép MIT
-└── README.md                 # Tài liệu dự án
+??? .github/workflows/ci.yml  # Ki?m th?, lint, type-check, qu�t b?o m?t, build v� release
+??? assets/
+?   ??? icons/                 # Icon ?ng d?ng
+?   ??? preview/               # ?nh ch?p giao di?n trong README
+??? src/
+?   ??? sudoku/               # G�i m? ngu?n ch�nh
+?       ??? __init__.py
+?       ??? config.py         # Chu?i giao di?n ti?ng Vi?t / ti?ng Anh
+?       ??? error_handling.py # Ghi log v� decorator ghi nh?n l?i
+?       ??? game.py           # Tr?ng th�i Sudoku, s? ki?n v� b? �i?u khi?n ?ng d?ng
+?       ??? logic.py          # Sinh, gi?i, x�c th?c v� nh?p/xu?t puzzle
+?       ??? main.py           # �i?m v�o ?ng d?ng v� smoke test b?n ��ng g�i
+?       ??? persistence.py    # L�u game, th?ng k�, k? l?c v� b?ng x?p h?ng JSON
+?       ??? sounds.py         # T?o v� ph�t �m thanh b?ng Pygame
+?       ??? ui/               # Giao di?n Pygame
+?           ??? __init__.py
+?           ??? board.py      # Render b�n Sudoku v� animation
+?           ??? colors.py     # B?ng m�u v� qu?n l? theme
+?           ??? drawing.py    # N�t, th? v� th�nh ph?n v? d�ng chung
+?           ??? fonts.py      # Font v� fallback theo h? �i?u h�nh
+?           ??? geometry.py   # K�ch th�?c, v? tr� v� hitbox
+?           ??? icons.py      # Icon vector v� h?t hi?u ?ng
+?           ??? menu.py       # Menu ch�nh
+?           ??? modals.py     # Modal tr? gi�p, t?m d?ng, chi?n th?ng, x?p h?ng
+?           ??? screen.py     # Kh?i t?o c?a s?, DPI v� icon
+?           ??? sidebar.py    # C�c n�t v� b�n ph�m s?
+?           ??? view.py       # Gh�p c�c th�nh ph?n th�nh m�n h?nh ch�i
+??? tests/                    # Unit, persistence, integration v� UI smoke tests
+??? build.bat / build.spec    # ��ng g�i ?ng d?ng b?ng PyInstaller
+??? pyproject.toml            # Metadata, dependency v� c?u h?nh c�ng c?
+??? requirements.txt          # Dependency t?i thi?u �? ch?y game
+??? .gitignore                # Lo?i tr? cache, d? li?u c� nh�n v� artifact build
+??? .pre-commit-config.yaml   # Ki?m tra tr�?c khi commit
+??? .secrets.baseline         # Baseline detect-secrets
+??? CHANGELOG.md              # L?ch s? thay �?i
+??? LICENSE                   # Gi?y ph�p MIT
+??? README.md                 # T�i li?u d? �n
 ```
 
 ### Luồng hoạt động
@@ -126,7 +130,7 @@ python -m pip install -e ".[dev]"
 Chạy ứng dụng:
 
 ```bash
-python main.py
+python -m sudoku.main
 ```
 
 ## Dữ liệu và quyền riêng tư
@@ -152,7 +156,7 @@ python -m ruff check .
 python -m ruff format --check .
 python -m mypy . --ignore-missing-imports
 python -m compileall -q .
-python main.py --smoke-test
+python -m sudoku.main --smoke-test
 ```
 
 `--smoke-test` khởi tạo giao diện ở chế độ headless và render các màn hình cơ bản; dữ liệu thử nghiệm được ghi vào thư mục tạm. GitHub Actions chạy test có coverage, Ruff, mypy, quét `pip-audit`/secret, build Windows/Linux và smoke-test các file thực thi.
@@ -180,3 +184,6 @@ Trên Windows có thể dùng `build.bat`. Artifact nằm trong `dist/`; không 
 ## Giấy phép
 
 Dự án được phát hành theo [giấy phép MIT](LICENSE).
+
+
+
