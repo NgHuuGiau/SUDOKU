@@ -7,14 +7,14 @@ os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
 
 import pygame
 
-import game
-import ui.board as board_ui
-from config import game_text
-from game import AppController, Game, GameState
-from logic import export_puzzle
-from persistence import LeaderboardData, load_best_times, load_daily_stats, load_game_state
-from ui import create_game_screen, draw_game_view, load_fonts
-from ui.geometry import (
+import sudoku.game as game
+import sudoku.ui.board as board_ui
+from sudoku.config import game_text
+from sudoku.game import AppController, Game, GameState
+from sudoku.logic import export_puzzle
+from sudoku.persistence import LeaderboardData, load_best_times, load_daily_stats, load_game_state
+from sudoku.ui import create_game_screen, draw_game_view, load_fonts
+from sudoku.ui.geometry import (
     BOARD_SIZE,
     BOARD_X,
     BOARD_Y,
@@ -24,8 +24,8 @@ from ui.geometry import (
     get_cell_from_pos,
     get_sidebar_layout,
 )
-from ui.icons import SmoothIcons
-from ui.menu import draw_menu_view
+from sudoku.ui.icons import SmoothIcons
+from sudoku.ui.menu import draw_menu_view
 
 
 def test_game_view_renders_headless():
@@ -63,8 +63,8 @@ def test_menu_renders_headless():
 
 
 def test_custom_menu_card_hides_chevron_from_stepper_controls():
-    from ui.colors import Colors
-    from ui.drawing import draw_interactive_card
+    from sudoku.ui.colors import Colors
+    from sudoku.ui.drawing import draw_interactive_card
 
     pygame.font.init()
     screen = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -89,7 +89,7 @@ def test_custom_menu_card_hides_chevron_from_stepper_controls():
 
 
 def test_menu_snapshot_avoids_reloading_persistence_each_frame(monkeypatch):
-    import ui.menu as menu_ui
+    import sudoku.ui.menu as menu_ui
 
     def unexpected_disk_read(*_args, **_kwargs):
         raise AssertionError("menu should use the supplied snapshot")
@@ -109,9 +109,9 @@ def test_menu_snapshot_avoids_reloading_persistence_each_frame(monkeypatch):
 
 
 def test_leaderboard_snapshot_avoids_reloading_persistence_each_frame(monkeypatch):
-    import persistence
-    from config import game_text
-    from ui.modals import draw_leaderboard_modal
+    import sudoku.persistence as persistence
+    from sudoku.config import game_text
+    from sudoku.ui.modals import draw_leaderboard_modal
 
     def unexpected_disk_read(*_args, **_kwargs):
         raise AssertionError("leaderboard should use the supplied snapshot")
@@ -248,8 +248,8 @@ def test_shift_tab_wraps_to_last_menu_action(monkeypatch):
 
 
 def test_help_modal_close_button_stays_on_screen():
-    from config import game_text
-    from ui.modals import draw_help_modal
+    from sudoku.config import game_text
+    from sudoku.ui.modals import draw_help_modal
 
     pygame.init()
     screen = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -260,7 +260,7 @@ def test_help_modal_close_button_stays_on_screen():
 
 
 def test_pause_modal_buttons_are_visible_and_do_not_overlap():
-    from ui.modals import draw_pause_modal
+    from sudoku.ui.modals import draw_pause_modal
 
     pygame.init()
     screen = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -279,7 +279,7 @@ def test_pause_modal_buttons_are_visible_and_do_not_overlap():
 
 
 def test_win_modal_buttons_are_visible_and_do_not_overlap():
-    from ui.modals import draw_win_modal
+    from sudoku.ui.modals import draw_win_modal
 
     pygame.init()
     screen = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -398,7 +398,7 @@ def test_game_reuses_supplied_screen_without_reinitializing_display(monkeypatch)
 
 
 def test_name_entry_submit_adds_leaderboard_entry(monkeypatch):
-    from persistence import load_leaderboard
+    from sudoku.persistence import load_leaderboard
 
     state = GameState("easy")
     state.final_time = 95
@@ -421,7 +421,7 @@ def test_name_entry_submit_adds_leaderboard_entry(monkeypatch):
 
 
 def test_name_entry_escape_cancels_without_saving(monkeypatch):
-    from persistence import load_leaderboard
+    from sudoku.persistence import load_leaderboard
 
     state = GameState("easy")
     state.final_time = 95
@@ -466,7 +466,7 @@ def test_winning_daily_game_updates_daily_stats(monkeypatch):
     session.state = state
     session.particles = []
     monkeypatch.setattr(game, "play_sound", lambda _sound: None)
-    monkeypatch.setattr("persistence.is_top_10_time", lambda _difficulty, _elapsed: False)
+    monkeypatch.setattr("sudoku.persistence.is_top_10_time", lambda _difficulty, _elapsed: False)
 
     session.update()
 
@@ -1000,7 +1000,7 @@ def test_handle_events_escape_f1_and_text_modal_priority(monkeypatch):
 
 
 def test_text_input_modal_buttons_are_visible_and_do_not_overlap():
-    from ui.modals import draw_text_input_modal
+    from sudoku.ui.modals import draw_text_input_modal
 
     pygame.init()
     screen = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -1015,7 +1015,7 @@ def test_text_input_modal_buttons_are_visible_and_do_not_overlap():
 
 
 def test_soft_tint_blends_icon_color_toward_card():
-    from ui.drawing import soft_tint
+    from sudoku.ui.drawing import soft_tint
 
     tint = soft_tint((255, 0, 0), (255, 255, 255))
     assert tint == (255, 214, 214)
@@ -1023,8 +1023,8 @@ def test_soft_tint_blends_icon_color_toward_card():
 
 
 def test_icon_tile_renders_visible_glyph():
-    from ui.colors import Colors
-    from ui.drawing import draw_icon_tile
+    from sudoku.ui.colors import Colors
+    from sudoku.ui.drawing import draw_icon_tile
 
     pygame.init()
     screen = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -1040,8 +1040,8 @@ def test_icon_tile_renders_visible_glyph():
 
 
 def test_modern_button_renders_icon_in_icon_color():
-    from ui.colors import Colors
-    from ui.drawing import draw_modern_button
+    from sudoku.ui.colors import Colors
+    from sudoku.ui.drawing import draw_modern_button
 
     pygame.init()
     screen = pygame.Surface((120, 60))
@@ -1068,8 +1068,8 @@ def test_modern_button_renders_icon_in_icon_color():
 
 
 def test_win_modal_shows_best_time_and_new_best_badge(monkeypatch):
-    import persistence
-    from ui.modals import draw_win_modal
+    import sudoku.persistence as persistence
+    from sudoku.ui.modals import draw_win_modal
 
     state = GameState("easy")
     state.final_time = 125
@@ -1084,8 +1084,8 @@ def test_win_modal_shows_best_time_and_new_best_badge(monkeypatch):
 
 
 def test_sidebar_renders_mistakes_pill_with_wrong_cells(monkeypatch):
-    from ui.colors import Colors
-    from ui.sidebar import draw_sidebar
+    from sudoku.ui.colors import Colors
+    from sudoku.ui.sidebar import draw_sidebar
 
     session = _make_event_session(monkeypatch)
     row, col = next((r, c) for r in range(9) for c in range(9) if session.state.original[r][c] == 0)
@@ -1105,3 +1105,6 @@ def test_sidebar_renders_mistakes_pill_with_wrong_cells(monkeypatch):
         for y in range(layout["numbers"][0].top - 34, layout["numbers"][0].top - 2)
     ]
     assert any(px != Colors.BG_CARD[:3] for px in pill_zone)
+
+
+

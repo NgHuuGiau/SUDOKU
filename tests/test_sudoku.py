@@ -7,14 +7,14 @@ from pathlib import Path
 
 import pytest
 
-import config
-import game
-import persistence
-import sounds
-from config import GAME_DICT, MENU_DICT, game_text
-from error_handling import ErrorSeverity, log_exception, logger
-from game import MAX_HISTORY_STATES, MAX_SAVED_HISTORY_STATES, GameState
-from logic import (
+import sudoku.config as config
+import sudoku.game as game
+import sudoku.persistence as persistence
+import sudoku.sounds as sounds
+from sudoku.config import GAME_DICT, MENU_DICT, game_text
+from sudoku.error_handling import ErrorSeverity, log_exception, logger
+from sudoku.game import MAX_HISTORY_STATES, MAX_SAVED_HISTORY_STATES, GameState
+from sudoku.logic import (
     check_win,
     count_mistakes,
     count_solutions_dlx,
@@ -25,7 +25,7 @@ from logic import (
     is_valid_placement,
     solve_board_dlx,
 )
-from persistence import (
+from sudoku.persistence import (
     _runtime_file,
     clear_save_file,
     get_data_dir,
@@ -231,7 +231,7 @@ class TestPersistence:
         runtime_dir.mkdir()
         (legacy_dir / "save_game.json").write_text("legacy", encoding="utf-8")
         monkeypatch.setenv("SUDOKU_DATA_DIR", os.fspath(runtime_dir))
-        monkeypatch.setattr("persistence.LEGACY_DATA_DIR", legacy_dir)
+        monkeypatch.setattr("sudoku.persistence.LEGACY_DATA_DIR", legacy_dir)
 
         migrated_save = Path(_runtime_file("save_game.json"))
         assert migrated_save.read_text(encoding="utf-8") == "legacy"
@@ -396,18 +396,18 @@ class TestPersistence:
         assert get_preference("sound_enabled", True) is False
 
     def test_theme_manager_uses_preference_helpers(self, monkeypatch):
-        from ui.colors import ThemeManager
+        from sudoku.ui.colors import ThemeManager
 
         saved = {"theme": "cozy"}
         monkeypatch.setattr(
-            "ui.colors.get_preference", lambda name, default: saved.get(name, default)
+            "sudoku.ui.colors.get_preference", lambda name, default: saved.get(name, default)
         )
 
         def store_preference(name: str, value: str) -> bool:
             saved[name] = value
             return True
 
-        monkeypatch.setattr("ui.colors.set_preference", store_preference)
+        monkeypatch.setattr("sudoku.ui.colors.set_preference", store_preference)
         manager = object.__new__(ThemeManager)
 
         manager._load_theme()
@@ -573,7 +573,7 @@ class TestGameState:
             calls.append(True)
             return board, solution, 20260917
 
-        monkeypatch.setattr("game.generate_daily_challenge", make_daily_puzzle)
+        monkeypatch.setattr("sudoku.game.generate_daily_challenge", make_daily_puzzle)
         state = GameState("daily")
         state.restart("daily")
 
@@ -590,7 +590,7 @@ class TestGameState:
             requested_cells.append(empty_cells)
             return board, solution
 
-        monkeypatch.setattr("game.generate_sudoku", make_custom_puzzle)
+        monkeypatch.setattr("sudoku.game.generate_sudoku", make_custom_puzzle)
         state = GameState("custom", empty_cells=56)
         state.restart("custom")
 
@@ -818,3 +818,8 @@ class TestIntegration:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+
+
+
