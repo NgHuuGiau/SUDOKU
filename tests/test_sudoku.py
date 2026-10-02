@@ -13,9 +13,10 @@ import persistence
 import sounds
 from config import GAME_DICT, MENU_DICT, game_text
 from error_handling import ErrorSeverity, log_exception, logger
-from game import MAX_HISTORY_STATES, GameState
+from game import MAX_HISTORY_STATES, MAX_SAVED_HISTORY_STATES, GameState
 from logic import (
     check_win,
+    count_mistakes,
     count_solutions_dlx,
     export_puzzle,
     generate_daily_challenge,
@@ -132,6 +133,17 @@ class TestLogic:
 
         board[0][0] = 2
         assert not check_win(board, solution)
+
+    def test_count_mistakes(self):
+        solution = [[(r * 3 + r // 3 + c) % 9 + 1 for c in range(9)] for r in range(9)]
+        empty = [[0] * 9 for _ in range(9)]
+        assert count_mistakes(empty, solution) == 0
+        assert count_mistakes(solution, solution) == 0
+
+        board = [row[:] for row in solution]
+        board[0][0] = solution[0][0] % 9 + 1
+        board[1][1] = solution[1][1] % 9 + 1
+        assert count_mistakes(board, solution) == 2
 
     def test_count_solutions_unique(self):
         board, _ = generate_sudoku("easy")
@@ -657,7 +669,7 @@ class TestGameState:
         save_game_state(state)
         restored = load_game_state()
         assert restored is not None
-        assert len(restored.undo_stack) == MAX_HISTORY_STATES
+        assert len(restored.undo_stack) == MAX_SAVED_HISTORY_STATES
 
     def test_load_ignores_history_older_than_the_retained_limit(self):
         state = GameState("easy")
