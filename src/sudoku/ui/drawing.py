@@ -97,7 +97,7 @@ def draw_interactive_card(
     accent_color,
     icon_name=None,
     badge_text=None,
-    radius=14,
+    radius=16,
     show_chevron=True,
     text_max_width: int | None = None,
 ) -> bool:
@@ -179,7 +179,7 @@ def draw_modern_button(
     is_active=False,
     subtext=None,
     sub_font=None,
-    radius=12,
+    radius=14,
     icon_name=None,
     icon_size=22,
     icon_color=None,
@@ -216,23 +216,38 @@ def draw_modern_button(
         text_color = Colors.BTN_SECONDARY_TEXT
         border_w = 1
 
-    # Flat candy style: no drop shadow. Hover pops with a white inner ring,
-    # but never override the active border.
     if is_hover and variant != "disabled" and not is_active:
-        border_color = Colors.WHITE
+        border_color = Colors.SELECTED_BORDER
         border_w = 2
 
-    pygame.draw.rect(screen, bg_color, rect, border_radius=radius)
+    # Draw shadow
+    if variant != "disabled":
+        shadow_offset = 3 if is_hover else 1
+        shadow_rect = rect.move(0, shadow_offset)
+        pygame.draw.rect(screen, Colors.SHADOW, shadow_rect, border_radius=radius)
+
+    # Hover lift
+    draw_rect = rect.move(0, -1) if is_hover else rect
+
+    pygame.draw.rect(screen, bg_color, draw_rect, border_radius=radius)
     if border_color and border_w > 0:
-        pygame.draw.rect(screen, border_color, rect, width=border_w, border_radius=radius)
+        pygame.draw.rect(screen, border_color, draw_rect, width=border_w, border_radius=radius)
+
+    # Use draw_rect for content positioning instead of rect for button internals
+    # But wait, replacing rect with draw_rect for text/icon placement might break the signature if we don't update below. Let's just update `rect` variable.
+    rect = draw_rect
 
     if icon_name and subtext and sub_font:
         icon_surf = SmoothIcons.get(icon_name, icon_size, icon_color or text_color)
-        icon_rect = icon_surf.get_rect(center=(rect.centerx, rect.top + icon_size // 2 + 8))
-        screen.blit(icon_surf, icon_rect)
         s_surf = sub_font.render(subtext, True, text_color)
-        s_surf = fit_surface(s_surf, rect.width - 8, rect.height - icon_size - 12)
-        screen.blit(s_surf, s_surf.get_rect(center=(rect.centerx, rect.bottom - 12)))
+        s_surf = fit_surface(s_surf, rect.width - 8, rect.height - icon_size - 8)
+
+        total_h = icon_size + 2 + s_surf.get_height()
+        start_y = rect.centery - total_h // 2
+
+        icon_rect = icon_surf.get_rect(center=(rect.centerx, start_y + icon_size // 2))
+        screen.blit(icon_surf, icon_rect)
+        screen.blit(s_surf, s_surf.get_rect(center=(rect.centerx, start_y + icon_size + 2 + s_surf.get_height() // 2)))
         return rect
 
     elif icon_name and text:
@@ -249,9 +264,12 @@ def draw_modern_button(
     elif subtext and sub_font:
         t_surf = font_to_use.render(text, True, text_color)
         s_surf = sub_font.render(subtext, True, text_color)
-        t_surf = fit_surface(t_surf, rect.width - 10, rect.height // 2 - 2)
-        s_surf = fit_surface(s_surf, rect.width - 10, rect.height // 2 - 2)
-        total_h = t_surf.get_height() + s_surf.get_height() + 2
+
+        # Don't restrict the large number to half height; let it take most of the space
+        s_surf = fit_surface(s_surf, rect.width - 8, rect.height // 3)
+        t_surf = fit_surface(t_surf, rect.width - 8, rect.height - s_surf.get_height() - 4)
+
+        total_h = t_surf.get_height() + s_surf.get_height() - 4
         start_y = rect.centery - total_h // 2
         screen.blit(
             t_surf, t_surf.get_rect(center=(rect.centerx, start_y + t_surf.get_height() // 2))
@@ -259,7 +277,7 @@ def draw_modern_button(
         screen.blit(
             s_surf,
             s_surf.get_rect(
-                center=(rect.centerx, start_y + t_surf.get_height() + s_surf.get_height() // 2)
+                center=(rect.centerx, start_y + t_surf.get_height() - 4 + s_surf.get_height() // 2)
             ),
         )
         return rect

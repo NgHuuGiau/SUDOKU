@@ -195,7 +195,7 @@ def draw_sidebar(screen: pygame.Surface, fonts, mouse_pos: tuple[int, int], tran
             variant="disabled" if is_done else "secondary",
             subtext=translate("con_lai_du") if is_done else f"x{rem}",
             sub_font=fonts.badge,
-            radius=12,
+            radius=14,
         )
         if is_done:
             chk_surf = SmoothIcons.get("check", 14, Colors.BTN_SUCCESS)
@@ -213,7 +213,7 @@ def draw_sidebar(screen: pygame.Surface, fonts, mouse_pos: tuple[int, int], tran
     # 4. Info card fills the middle: difficulty, best time, streak
     info_rect = pygame.Rect(SIDEBAR_X, 576, SIDEBAR_WIDTH, 150)
     draw_rounded_card(
-        screen, info_rect, Colors.BG_CARD, Colors.CARD_BORDER, radius=14, shadow=False
+        screen, info_rect, Colors.BG_CARD, Colors.CARD_BORDER, radius=16, shadow=False
     )
     best = load_best_times().get(state.difficulty)
     streak = load_daily_stats().get("streak", 0)
@@ -231,7 +231,7 @@ def draw_sidebar(screen: pygame.Surface, fonts, mouse_pos: tuple[int, int], tran
             icon,
             color,
             icon_size=24,
-            radius=12,
+            radius=14,
         )
         label_surf = fonts.badge.render(label, True, Colors.STATUS_TEXT)
         screen.blit(label_surf, (info_rect.left + 62, row_y + 4))
@@ -252,7 +252,7 @@ def draw_sidebar(screen: pygame.Surface, fonts, mouse_pos: tuple[int, int], tran
         icon_name="restart",
         icon_size=22,
         icon_color=Colors.BTN_VIVID_TEXT,
-        radius=12,
+        radius=14,
     )
     draw_modern_button(
         screen,
@@ -264,7 +264,7 @@ def draw_sidebar(screen: pygame.Surface, fonts, mouse_pos: tuple[int, int], tran
         icon_name="home",
         icon_size=22,
         icon_color=Colors.ICON_HOME,
-        radius=12,
+        radius=14,
     )
 
     return layout  # type: ignore[no-any-return]

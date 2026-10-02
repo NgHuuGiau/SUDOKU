@@ -227,7 +227,6 @@ def draw_menu_view(
                 "theme": Colors.ICON_THEME,
                 "lang": Colors.ICON_SETTINGS,
             }[key],
-            radius=12,
         )
         menu_rects[key] = rect
         bx += width + 10
