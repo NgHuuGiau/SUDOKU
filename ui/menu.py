@@ -1,26 +1,38 @@
-"""Modern Pygame-based Menu for Sudoku UI."""
+"""Centered single-column home screen for the Sudoku app."""
 
 from datetime import datetime, timezone
 
 import pygame
 
-from config import game_text, menu_text
-from persistence import (
-    has_save_file,
-    load_best_times,
-    load_daily_stats,
-    load_game_state,
-)
+from config import menu_text
+from persistence import has_save_file, load_best_times, load_daily_stats, load_game_state
 from sounds import is_sound_enabled
 from ui.colors import Colors, get_theme_manager
-from ui.drawing import draw_badge, draw_interactive_card, draw_modern_button, draw_rounded_card
-from ui.geometry import SCREEN_HEIGHT, SCREEN_WIDTH
+from ui.drawing import draw_badge, draw_interactive_card, draw_modern_button, soft_tint
+from ui.geometry import SCREEN_WIDTH
 from ui.icons import SmoothIcons
 
 
-def _format_time(seconds: int) -> str:
-    mins, secs = divmod(max(0, seconds), 60)
+def _format_time(seconds: int | None) -> str:
+    mins, secs = divmod(max(0, seconds or 0), 60)
     return f"{mins:02}:{secs:02}"
+
+
+MENU_KEYS = (
+    "resume",
+    "daily",
+    "easy",
+    "medium",
+    "hard",
+    "custom",
+    "custom_dec",
+    "custom_inc",
+    "theme",
+    "sound",
+    "lang",
+    "stats",
+    "help",
+)
 
 
 def draw_menu_view(
@@ -30,10 +42,7 @@ def draw_menu_view(
     custom_cells: int = 40,
     menu_data: dict | None = None,
 ) -> dict:
-    """Render the full modern Sudoku main menu in Pygame.
-
-    Returns a dictionary of interactive Rects for click/hover handling.
-    """
+    """Render the centered menu and return all interactive hitboxes."""
     theme_mgr = get_theme_manager()
     if menu_data is None:
         best_times = load_best_times()
@@ -49,304 +58,109 @@ def draw_menu_view(
         save_exists = menu_data["save_exists"]
         saved_game = menu_data["saved_game"]
 
-    # Fill background
     screen.fill(Colors.BG_MAIN)
+    menu_rects: dict[str, pygame.Rect | None] = dict.fromkeys(MENU_KEYS)
 
-    menu_rects: dict[str, pygame.Rect | None] = {
-        "resume": None,
-        "daily": None,
-        "easy": None,
-        "medium": None,
-        "hard": None,
-        "custom": None,
-        "custom_dec": None,
-        "custom_inc": None,
-        "theme": None,
-        "sound": None,
-        "lang": None,
-        "stats": None,
-        "help": None,
-    }
+    col_x, col_w = 280, 560
+    cx = col_x + col_w // 2
 
-    # ==================== 1. TOP BAR ====================
-    top_y = 16
-    bar_h = 42
-
-    # Left: Game branding
-    logo_icon = SmoothIcons.get("grid_logo", 26, Colors.BTN_PRIMARY)
-    screen.blit(logo_icon, (24, top_y + (bar_h - 26) // 2))
-
-    title_surf = fonts.title.render("SUDOKU MASTER", True, Colors.FIXED_TEXT)
-    screen.blit(title_surf, (58, top_y + (bar_h - title_surf.get_height()) // 2))
-
-    badge_rect = pygame.Rect(58 + title_surf.get_width() + 10, top_y + 11, 48, 20)
-    draw_badge(
-        screen, badge_rect, "v2.0", fonts.badge, Colors.SELECTED_BG, Colors.BTN_PRIMARY, radius=5
-    )
-
-    # Right: Quick action buttons
-    btn_size = 38
-    btn_gap = 8
-    cur_right = SCREEN_WIDTH - 24
-
-    # Help button
-    help_rect = pygame.Rect(cur_right - btn_size, top_y + 2, btn_size, btn_size)
-    draw_modern_button(
-        screen,
-        help_rect,
-        "",
-        mouse_pos,
-        fonts.badge,
-        variant="secondary",
-        icon_name="help",
-        icon_size=18,
-        radius=8,
-    )
-    menu_rects["help"] = help_rect
-    cur_right -= btn_size + btn_gap
-
-    # Leaderboard / Stats button
-    stats_rect = pygame.Rect(cur_right - btn_size, top_y + 2, btn_size, btn_size)
-    draw_modern_button(
-        screen,
-        stats_rect,
-        "",
-        mouse_pos,
-        fonts.badge,
-        variant="secondary",
-        icon_name="crown",
-        icon_size=18,
-        radius=8,
-    )
-    menu_rects["stats"] = stats_rect
-    cur_right -= btn_size + btn_gap
-
-    # Sound toggle button
-    sound_active = is_sound_enabled()
-    sound_icon = "sound" if sound_active else "sound_mute"
-    sound_rect = pygame.Rect(cur_right - btn_size, top_y + 2, btn_size, btn_size)
-    draw_modern_button(
-        screen,
-        sound_rect,
-        "",
-        mouse_pos,
-        fonts.badge,
-        variant="secondary",
-        is_active=sound_active,
-        icon_name=sound_icon,
-        icon_size=18,
-        radius=8,
-    )
-    menu_rects["sound"] = sound_rect
-    cur_right -= btn_size + btn_gap
-
-    # Theme toggle button
-    theme_btn_w = 110
-    theme_rect = pygame.Rect(cur_right - theme_btn_w, top_y + 2, theme_btn_w, btn_size)
-    draw_modern_button(
-        screen,
-        theme_rect,
-        f"{theme_mgr.theme_icon} {menu_text(f'theme_{theme_mgr.theme}')[:8]}",
-        mouse_pos,
-        fonts.badge,
-        variant="secondary",
-        radius=8,
-    )
-    menu_rects["theme"] = theme_rect
-    cur_right -= theme_btn_w + btn_gap
-
-    # Language toggle button
-    lang_btn_w = 76
-    lang_rect = pygame.Rect(cur_right - lang_btn_w, top_y + 2, lang_btn_w, btn_size)
-    draw_modern_button(
-        screen,
-        lang_rect,
-        menu_text("ngon_ngu_btn"),
-        mouse_pos,
-        fonts.badge,
-        variant="secondary",
-        icon_name="globe",
-        icon_size=16,
-        radius=8,
-    )
-    menu_rects["lang"] = lang_rect
-
-    # ==================== 2. HERO CARD ====================
-    hero_w = 640
-    hero_h = 76
-    hero_x = (SCREEN_WIDTH - hero_w) // 2
-    hero_y = 66
-
-    hero_rect = pygame.Rect(hero_x, hero_y, hero_w, hero_h)
-    draw_rounded_card(screen, hero_rect, Colors.BG_CARD, Colors.CARD_BORDER, radius=14)
-
-    # Hero title
-    hero_title = fonts.hero.render("SUDOKU", True, Colors.FIXED_TEXT)
-    # Hero subtitle
-    hero_sub = fonts.badge.render(menu_text("thu_thach"), True, Colors.STATUS_TEXT)
-    hero_text_gap = 4
-    hero_text_height = hero_title.get_height() + hero_text_gap + hero_sub.get_height()
-    hero_text_y = hero_y + (hero_h - hero_text_height) // 2
-    screen.blit(hero_title, (hero_x + 24, hero_text_y))
-    screen.blit(
-        hero_sub,
-        (hero_x + 24, hero_text_y + hero_title.get_height() + hero_text_gap),
-    )
-
-    # Streak badge on the right of hero card
-    streak_val = daily_stats.get("streak", 0)
-    streak_txt = menu_text("streak_badge").format(n=streak_val)
-    streak_w = 120
-    streak_rect = pygame.Rect(hero_rect.right - streak_w - 20, hero_y + 22, streak_w, 32)
+    # Logo block
+    logo = SmoothIcons.get("grid_logo", 56, Colors.BTN_PRIMARY)
+    screen.blit(logo, logo.get_rect(center=(cx, 56)))
+    title = fonts.title.render("SUDOKU", True, Colors.FIXED_TEXT)
+    screen.blit(title, title.get_rect(center=(cx, 100)))
     draw_badge(
         screen,
-        streak_rect,
-        streak_txt,
+        pygame.Rect(cx - 80, 120, 160, 28),
+        "PLAY SMART",
         fonts.badge,
-        Colors.SELECTED_BG,
-        Colors.GOLD,
-        icon_name="flame",
-        icon_size=16,
-        radius=16,
+        soft_tint(Colors.BTN_PRIMARY, Colors.BG_MAIN),
+        Colors.BTN_PRIMARY,
+        radius=14,
     )
+    sub1 = fonts.badge.render(menu_text("thu_thach"), True, Colors.STATUS_TEXT)
+    screen.blit(sub1, sub1.get_rect(center=(cx, 158)))
+    streak = fonts.badge.render(
+        menu_text("streak_label").format(n=daily_stats.get("streak", 0)),
+        True,
+        Colors.ICON_STREAK,
+    )
+    screen.blit(streak, streak.get_rect(center=(cx, 178)))
 
-    # ==================== 3. SECTION HEADING ====================
-    sec_y = hero_rect.bottom + 12
-    sec_title = fonts.badge.render(menu_text("chon_do_kho").upper(), True, Colors.STATUS_TEXT)
-    screen.blit(sec_title, (hero_x + 4, sec_y))
-
-    # ==================== 4. CARDS STACK ====================
-    card_w = hero_w
-    card_h = 58
-    card_gap = 9
-    cur_y = sec_y + 22
-
-    # A. Resume Game Card (if save exists)
+    # Cards
+    y = 202
     if save_exists:
-        resume_rect = pygame.Rect(hero_x, cur_y, card_w, card_h)
+        saved_text = menu_text("tiep_tuc_van")
+        saved_desc = menu_text("tiep_tuc_van_desc").split("(")[0].strip()
         if saved_game:
             saved_difficulty, elapsed = saved_game
-            diff_key = {"daily": "daily_challenge"}.get(saved_difficulty, saved_difficulty)
-            diff_label = menu_text(diff_key)
-            time_str = _format_time(elapsed)
-            desc_str = f"{diff_label} • {game_text('thoi_gian')}: {time_str}"
-        else:
-            desc_str = menu_text("tiep_tuc_van")
+            saved_desc = f"{saved_desc} ({saved_difficulty.title()} - {_format_time(elapsed)})"
+        resume_rect = pygame.Rect(col_x, y, col_w, 76)
         draw_interactive_card(
             screen,
             resume_rect,
             mouse_pos,
-            title=menu_text("tiep_tuc_van"),
-            desc=desc_str,
-            fonts=fonts,
-            accent_color=Colors.BTN_PRIMARY,
+            saved_text,
+            saved_desc,
+            fonts,
+            Colors.BTN_PRIMARY,
             icon_name="play",
             badge_text=menu_text("resume_badge"),
+            text_max_width=col_w - 64 - 160,
         )
         menu_rects["resume"] = resume_rect
-        cur_y += card_h + card_gap
+        y += 88
 
-    # B. Daily Challenge Card
-    daily_rect = pygame.Rect(hero_x, cur_y, card_w, card_h)
     today_utc = datetime.now(timezone.utc).date().isoformat()
     completed_today = daily_stats.get("last_completed_date") == today_utc
-    if completed_today:
-        daily_badge = menu_text("daily_done_badge")
-        daily_accent = Colors.BTN_SUCCESS
-    else:
-        daily_badge = menu_text("daily_today_badge")
-        daily_accent = Colors.GOLD
-
+    daily_rect = pygame.Rect(col_x, y, col_w, 76)
     draw_interactive_card(
         screen,
         daily_rect,
         mouse_pos,
-        title=menu_text("daily_challenge"),
-        desc=menu_text("daily_challenge_desc"),
-        fonts=fonts,
-        accent_color=daily_accent,
+        menu_text("daily_challenge"),
+        menu_text("daily_challenge_desc"),
+        fonts,
+        Colors.BTN_SUCCESS if completed_today else Colors.GOLD,
         icon_name="flame",
-        badge_text=daily_badge,
+        badge_text=(
+            menu_text("daily_done_badge") if completed_today else menu_text("daily_today_badge")
+        ),
+        text_max_width=col_w - 64 - 160,
     )
     menu_rects["daily"] = daily_rect
-    cur_y += card_h + card_gap
+    y += 88
 
-    # C. Easy Difficulty Card
-    easy_rect = pygame.Rect(hero_x, cur_y, card_w, card_h)
-    easy_best = best_times.get("easy")
-    easy_badge = _format_time(easy_best) if easy_best else None
-    draw_interactive_card(
-        screen,
-        easy_rect,
-        mouse_pos,
-        title=f"1. {menu_text('de')}",
-        desc=menu_text("de_desc"),
-        fonts=fonts,
-        accent_color=Colors.BTN_SUCCESS,
-        icon_name="star",
-        badge_text=easy_badge,
-    )
-    menu_rects["easy"] = easy_rect
-    cur_y += card_h + card_gap
+    for index, (key, title_key, desc_key, icon, accent) in enumerate(
+        [
+            ("easy", "de", "de_desc", "star", Colors.BTN_SUCCESS),
+            ("medium", "trung_binh", "trung_binh_desc", "sparkles", Colors.BTN_WARNING),
+            ("hard", "kho", "kho_desc", "trophy", Colors.BTN_DANGER),
+            ("custom", "custom", "custom_desc", "slider", Colors.RIPPLE),
+        ]
+    ):
+        row_rect = pygame.Rect(col_x, y + index * 82, col_w, 72)
+        best: int | None = {str(k): v for k, v in best_times.items()}.get(key)
+        draw_interactive_card(
+            screen,
+            row_rect,
+            mouse_pos,
+            menu_text(title_key),
+            menu_text(desc_key),
+            fonts,
+            accent,
+            icon_name=icon,
+            badge_text=_format_time(best) if best else None,
+            show_chevron=key != "custom",
+            text_max_width=col_w - 64 - (190 if key == "custom" else 130),
+        )
+        menu_rects[key] = row_rect
 
-    # D. Medium Difficulty Card
-    med_rect = pygame.Rect(hero_x, cur_y, card_w, card_h)
-    med_best = best_times.get("medium")
-    med_badge = _format_time(med_best) if med_best else None
-    draw_interactive_card(
-        screen,
-        med_rect,
-        mouse_pos,
-        title=f"2. {menu_text('trung_binh')}",
-        desc=menu_text("trung_binh_desc"),
-        fonts=fonts,
-        accent_color=Colors.BTN_WARNING,
-        icon_name="sparkles",
-        badge_text=med_badge,
-    )
-    menu_rects["medium"] = med_rect
-    cur_y += card_h + card_gap
-
-    # E. Hard Difficulty Card
-    hard_rect = pygame.Rect(hero_x, cur_y, card_w, card_h)
-    hard_best = best_times.get("hard")
-    hard_badge = _format_time(hard_best) if hard_best else None
-    draw_interactive_card(
-        screen,
-        hard_rect,
-        mouse_pos,
-        title=f"3. {menu_text('kho')}",
-        desc=menu_text("kho_desc"),
-        fonts=fonts,
-        accent_color=Colors.BTN_DANGER,
-        icon_name="trophy",
-        badge_text=hard_badge,
-    )
-    menu_rects["hard"] = hard_rect
-    cur_y += card_h + card_gap
-
-    # F. Custom Difficulty Card with Stepper (+ / -)
-    cust_rect = pygame.Rect(hero_x, cur_y, card_w, card_h)
-    draw_interactive_card(
-        screen,
-        cust_rect,
-        mouse_pos,
-        title=f"4. {menu_text('custom')}",
-        desc=menu_text("custom_desc"),
-        fonts=fonts,
-        accent_color=getattr(Colors, "RIPPLE", (99, 102, 241)),
-        icon_name="slider",
-        show_chevron=False,
-    )
-    menu_rects["custom"] = cust_rect
-
-    # Stepper buttons [-] [count] [+] inside Custom card
-    stepper_y = cust_rect.centery - 14
-    step_btn_w = 28
-    step_box_w = 54
-    stepper_x = cust_rect.right - 145
-
-    dec_rect = pygame.Rect(stepper_x, stepper_y, step_btn_w, 28)
+    custom_rect = menu_rects["custom"]
+    assert custom_rect is not None
+    step_y = custom_rect.centery - 14
+    step_x = custom_rect.right - 12 - 28 - 4 - 54 - 4 - 28
+    dec_rect = pygame.Rect(step_x, step_y, 28, 28)
     draw_modern_button(
         screen,
         dec_rect,
@@ -356,16 +170,14 @@ def draw_menu_view(
         variant="secondary",
         icon_name="minus",
         icon_size=14,
-        radius=6,
+        radius=8,
     )
     menu_rects["custom_dec"] = dec_rect
-
-    val_rect = pygame.Rect(stepper_x + step_btn_w + 4, stepper_y, step_box_w, 28)
-    pygame.draw.rect(screen, Colors.SELECTED_BG, val_rect, border_radius=6)
-    val_surf = fonts.badge.render(str(custom_cells), True, Colors.FIXED_TEXT)
-    screen.blit(val_surf, val_surf.get_rect(center=val_rect.center))
-
-    inc_rect = pygame.Rect(stepper_x + step_btn_w + step_box_w + 8, stepper_y, step_btn_w, 28)
+    value_rect = pygame.Rect(step_x + 32, step_y, 54, 28)
+    pygame.draw.rect(screen, Colors.SELECTED_BG, value_rect, border_radius=8)
+    value_surface = fonts.badge.render(str(custom_cells), True, Colors.FIXED_TEXT)
+    screen.blit(value_surface, value_surface.get_rect(center=value_rect.center))
+    inc_rect = pygame.Rect(step_x + 90, step_y, 28, 28)
     draw_modern_button(
         screen,
         inc_rect,
@@ -375,21 +187,55 @@ def draw_menu_view(
         variant="secondary",
         icon_name="plus",
         icon_size=14,
-        radius=6,
+        radius=8,
     )
     menu_rects["custom_inc"] = inc_rect
 
-    # ==================== 5. FOOTER ====================
-    footer_y = SCREEN_HEIGHT - 38
-    footer_txt = menu_text("chuc_vui_ve")
-    f_surf = fonts.badge.render(footer_txt, True, Colors.STATUS_TEXT)
-    screen.blit(f_surf, f_surf.get_rect(center=(SCREEN_WIDTH // 2, footer_y)))
-    keyboard_help = menu_text("menu_keyboard_nav")
-    keyboard_surf = fonts.tiny.render(keyboard_help, True, Colors.STATUS_TEXT)
-    screen.blit(
-        keyboard_surf, keyboard_surf.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT - 14))
-    )
+    # Bottom icon row
+    buttons: list[tuple] = [
+        ("help", "", "help", 22, {}),
+        ("stats", "", "stats", 22, {}),
+        (
+            "sound",
+            "",
+            "sound" if is_sound_enabled() else "sound_mute",
+            22,
+            {"is_active": is_sound_enabled()},
+        ),
+        ("theme", menu_text(f"theme_{theme_mgr.theme}"), "palette", 20, {"width": 120}),
+        ("lang", menu_text("ngon_ngu_btn"), "globe", 20, {"width": 84}),
+    ]
+    total_w = 48 * 3 + 120 + 84 + 4 * 10
+    bx = (SCREEN_WIDTH - total_w) // 2
+    for key, label, icon, icon_size, extra in buttons:
+        width = extra.get("width", 48)
+        rect = pygame.Rect(bx, 704, width, 48)
+        draw_modern_button(
+            screen,
+            rect,
+            label,
+            mouse_pos,
+            fonts.badge,
+            variant="secondary",
+            is_active=extra.get("is_active", False),
+            icon_name=icon,
+            icon_size=icon_size,
+            icon_color={
+                "help": Colors.ICON_SETTINGS,
+                "stats": Colors.ICON_STATS,
+                "sound": Colors.ICON_SOUND,
+                "theme": Colors.ICON_THEME,
+                "lang": Colors.ICON_SETTINGS,
+            }[key],
+            radius=12,
+        )
+        menu_rects[key] = rect
+        bx += width + 10
 
+    hint = fonts.tiny.render(
+        "Tab / Shift+Tab: focus · Enter/Space: select", True, Colors.STATUS_TEXT
+    )
+    screen.blit(hint, hint.get_rect(center=(cx, 768)))
     return menu_rects
 
 
