@@ -44,7 +44,7 @@ Các ảnh dưới đây là ảnh chụp từ giao diện hiện tại trong `a
 - Lưu thời gian tốt nhất và TOP 10 theo từng chế độ trên máy hiện tại. Khi thời gian thắng đủ điều kiện vào TOP 10, game cho phép nhập tên người chơi.
 - Bốn giao diện màu, hiệu ứng chuyển động nhẹ và âm thanh có thể bật/tắt.
 - Hai ngôn ngữ giao diện: Tiếng Việt có dấu và English; lựa chọn ngôn ngữ và âm thanh được lưu cục bộ giữa các lần chạy.
-- Nhập puzzle từ JSON đã xuất hoặc chuỗi gồm 81 chữ số; xuất puzzle vào clipboard. Các hộp thoại này cần Tcl/Tk.
+- Nhập puzzle từ JSON đã xuất hoặc chuỗi gồm 81 chữ số; xuất puzzle vào clipboard. Mọi hộp thoại đều vẽ trong game, không cần Tcl/Tk.
 
 ## Điều khiển
 
@@ -110,7 +110,6 @@ SUDOKU/
 - Python **3.10–3.13**. CI kiểm tra cả bốn phiên bản này.
 - Cửa sổ game có kích thước cố định `1120 × 800`; nên dùng màn hình có độ phân giải tối thiểu bằng kích thước này.
 - `pip` để cài dependency.
-- Tcl/Tk để dùng hộp thoại nhập/xuất puzzle và để tạo bản đóng gói đầy đủ. Trên một số bản Linux cần cài thêm gói `python3-tk`.
 
 Cài dependency chạy game:
 
@@ -156,7 +155,7 @@ python -m compileall -q .
 python main.py --smoke-test
 ```
 
-`--smoke-test` khởi tạo giao diện ở chế độ headless, kiểm tra Tcl/Tk và render các màn hình cơ bản; dữ liệu thử nghiệm được ghi vào thư mục tạm. GitHub Actions chạy test có coverage, Ruff, mypy, quét `pip-audit`/secret, build Windows/Linux và smoke-test các file thực thi.
+`--smoke-test` khởi tạo giao diện ở chế độ headless và render các màn hình cơ bản; dữ liệu thử nghiệm được ghi vào thư mục tạm. GitHub Actions chạy test có coverage, Ruff, mypy, quét `pip-audit`/secret, build Windows/Linux và smoke-test các file thực thi.
 
 Pipeline CI chạy test, Ruff, mypy, `pip-audit` và `detect-secrets` trên Linux. Build Windows và Linux tạo ứng dụng bằng PyInstaller rồi chạy smoke test cho file thực thi. CI Summary tổng hợp kết quả; tag `v*` tạo GitHub Release với artifact Windows và Linux. Build macOS chưa nằm trong CI và chưa được xác minh.
 
