@@ -36,12 +36,14 @@ from sounds import play_sound, toggle_sound
 from ui import (
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
+    Colors,
     Particle,
     create_game_screen,
     draw_game_view,
     draw_help_modal,
     draw_leaderboard_modal,
     draw_menu_view,
+    draw_text_input_modal,
     get_cell_from_pos,
     get_sidebar_layout,
     load_fonts,
@@ -49,6 +51,7 @@ from ui import (
     trigger_number_placement_animation,
 )
 from ui.colors import get_theme_manager
+from ui.drawing import draw_rounded_card, fit_surface
 
 Board = List[List[int]]
 NotesBoard = List[List[Set[int]]]
@@ -56,6 +59,9 @@ Difficulty = Literal["easy", "medium", "hard", "daily", "custom"]
 
 AUTO_SAVE_DEBOUNCE_MS = 500
 MAX_HISTORY_STATES = 200
+MAX_SAVED_HISTORY_STATES = 50
+TEXT_INPUT_MAX_CHARS = 2048
+TOAST_DURATION_MS = 2500
 
 
 class GameState:
@@ -280,6 +286,11 @@ class Game:
         self.header_help_rect: pygame.Rect | None = None
         self.help_rects: dict[str, pygame.Rect] | None = None
         self.show_help = False
+        self.text_input: dict | None = None
+        self.text_ok_rect: pygame.Rect | None = None
+        self.text_cancel_rect: pygame.Rect | None = None
+        self.toast_text: str | None = None
+        self.toast_until = 0
 
     @log_exception(ErrorSeverity.HIGH, user_action="_load_fonts")
     def _load_fonts(self) -> None:
@@ -293,6 +304,10 @@ class Game:
                     return True
                 self.running = False
                 return False
+
+            if getattr(self, "text_input", None) is not None:
+                self._handle_text_input_event(event)
+                continue
 
             if self.state.game_over:
                 if event.type == pygame.MOUSEBUTTONDOWN:
@@ -433,42 +448,97 @@ class Game:
                 return
 
     def _handle_export(self) -> None:
-        import tkinter as tk
-        from tkinter import messagebox
-
-        root = tk.Tk()
-        root.withdraw()
         try:
-            root.clipboard_clear()
-            root.clipboard_append(export_puzzle(self.state.board, self.state.solution))
-            root.update()
-            messagebox.showinfo(game_text("xuat_van"), game_text("export_copied"), parent=root)
-        finally:
-            root.destroy()
+            pygame.scrap.init()
+            pygame.scrap.put(
+                pygame.SCRAP_TEXT,
+                export_puzzle(self.state.board, self.state.solution).encode("utf-8"),
+            )
+        except Exception:
+            self._show_toast(game_text("export_failed"))
+        else:
+            self._show_toast(game_text("export_copied"))
 
     def _handle_import(self) -> None:
-        import tkinter as tk
-        from tkinter import messagebox, simpledialog
+        self._open_text_input("import", "nhap_van", "import_prompt")
 
-        root = tk.Tk()
-        root.withdraw()
-        try:
-            puzzle_text = simpledialog.askstring(
-                game_text("nhap_van"), game_text("import_prompt"), parent=root
-            )
+    def _open_text_input(self, kind: str, title_key: str, prompt_key: str) -> None:
+        self.text_input = {
+            "kind": kind,
+            "title": title_key,
+            "prompt": prompt_key,
+            "value": "",
+            "error": None,
+        }
+
+    def _handle_text_input_event(self, event) -> None:
+        data = self.text_input
+        if data is None:
+            return
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            pos = event.pos
+            ok_rect = getattr(self, "text_ok_rect", None)
+            cancel_rect = getattr(self, "text_cancel_rect", None)
+            if ok_rect is not None and ok_rect.collidepoint(pos):
+                self._submit_text_input()
+            elif cancel_rect is not None and cancel_rect.collidepoint(pos):
+                self.text_input = None
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                self.text_input = None
+            elif event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+                self._submit_text_input()
+            elif event.key == pygame.K_BACKSPACE:
+                data["value"] = data["value"][:-1]
+            else:
+                char = getattr(event, "unicode", "")
+                if (
+                    isinstance(char, str)
+                    and len(char) == 1
+                    and char.isprintable()
+                    and len(data["value"]) < TEXT_INPUT_MAX_CHARS
+                ):
+                    data["value"] += char
+
+    def _submit_text_input(self) -> None:
+        data = self.text_input
+        if data is None:
+            return
+        if data["kind"] == "import":
+            puzzle_text = data["value"].strip()
             if not puzzle_text:
+                self.text_input = None
                 return
             try:
                 board, solution = import_puzzle(puzzle_text)
             except ValueError:
-                messagebox.showerror(
-                    game_text("nhap_van"), game_text("import_invalid"), parent=root
-                )
+                data["error"] = "import_invalid"
                 return
             self.state.set_puzzle(board, solution)
-            messagebox.showinfo(game_text("nhap_van"), game_text("import_success"), parent=root)
-        finally:
-            root.destroy()
+            self.text_input = None
+            self._show_toast(game_text("import_success"))
+        elif data["kind"] == "name":
+            name = data["value"].strip()
+            self.text_input = None
+            if name:
+                add_leaderboard_entry(self.state.difficulty, name, self.state.final_time)
+
+    def _show_toast(self, text: str) -> None:
+        self.toast_text = text
+        self.toast_until = pygame.time.get_ticks() + TOAST_DURATION_MS
+
+    def _draw_toast(self) -> None:
+        if not self.toast_text or pygame.time.get_ticks() >= self.toast_until:
+            return
+        surf = fit_surface(
+            self.fonts.small.render(self.toast_text, True, Colors.FIXED_TEXT),
+            SCREEN_WIDTH - 120,
+            34,
+        )
+        rect = pygame.Rect(0, 0, surf.get_width() + 36, surf.get_height() + 20)
+        rect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT - 70)
+        draw_rounded_card(self.screen, rect, Colors.BG_CARD, Colors.CARD_BORDER, radius=12)
+        self.screen.blit(surf, surf.get_rect(center=rect.center))
 
     def _restart_game(self) -> None:
         self.particles.clear()
@@ -488,21 +558,8 @@ class Game:
             self.particles.append(Particle(x, y, random.choice(colors)))
 
     def _show_name_input_dialog(self) -> None:
-        """Show tkinter dialog to enter name for leaderboard."""
-        import tkinter as tk
-        from tkinter import simpledialog
-
-        root = tk.Tk()
-        try:
-            root.withdraw()
-            root.attributes("-topmost", True)
-            name = simpledialog.askstring(
-                game_text("new_highscore"), game_text("enter_name"), parent=root
-            )
-            if name and name.strip():
-                add_leaderboard_entry(self.state.difficulty, name.strip(), self.state.final_time)
-        finally:
-            root.destroy()
+        """Open an in-game dialog to enter a name for the leaderboard."""
+        self._open_text_input("name", "new_highscore", "enter_name")
 
     def _spawn_win_fireworks(self) -> None:
         burst_points = [
@@ -593,6 +650,24 @@ class Game:
             self.help_rects = draw_help_modal(
                 self.screen, self.fonts, pygame.mouse.get_pos(), game_text
             )
+
+        self._draw_toast()
+
+        if getattr(self, "text_input", None) is not None:
+            assert self.text_input is not None
+            data = self.text_input
+            text_rects = draw_text_input_modal(
+                self.screen,
+                self.fonts,
+                mouse_pos,
+                game_text,
+                game_text(data["title"]),
+                game_text(data["prompt"]),
+                data["value"],
+                game_text(data["error"]) if data.get("error") else None,
+            )
+            self.text_ok_rect = text_rects["text_ok"]
+            self.text_cancel_rect = text_rects["text_cancel"]
 
 
 # ──────────────────────────────────────────────

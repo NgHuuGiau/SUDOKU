@@ -36,7 +36,7 @@ def get_sidebar_layout() -> dict:
 
     # 1. Quick Actions (3 + 2 buttons, so labels stay readable)
     quick_btn_w = (w - 12) // 3
-    quick_btn_h = 52
+    quick_btn_h = 60
     quick_buttons = []
     for i in range(5):
         col = i % 3
@@ -49,7 +49,7 @@ def get_sidebar_layout() -> dict:
 
     # 2. Tools (2 x 2 grid, so translated labels do not get clipped)
     tool_btn_w = (w - 6) // 2
-    tool_btn_h = 38
+    tool_btn_h = 42
     clear_rect = pygame.Rect(x, y, tool_btn_w, tool_btn_h)
     auto_notes_rect = pygame.Rect(x + tool_btn_w + 6, y, tool_btn_w, tool_btn_h)
     export_rect = pygame.Rect(x, y + tool_btn_h + 6, tool_btn_w, tool_btn_h)
@@ -60,7 +60,7 @@ def get_sidebar_layout() -> dict:
     # 3. Number pad (3x3 grid)
     num_grid_y = y + 18
     num_btn_w = (w - 16) // 3
-    num_btn_h = 58
+    num_btn_h = 60
     number_buttons = []
     for i in range(9):
         col = i % 3
@@ -74,13 +74,11 @@ def get_sidebar_layout() -> dict:
             )
         )
 
-    y = num_grid_y + 3 * (num_btn_h + 8) + 14
-
-    # 4. Bottom actions (New Game, Menu)
+    # 4. Bottom actions pinned to the bottom (New Game, Menu)
     action_btn_w = (w - 10) // 2
-    action_btn_h = 46
-    new_game_rect = pygame.Rect(x, y, action_btn_w, action_btn_h)
-    menu_rect = pygame.Rect(x + action_btn_w + 10, y, action_btn_w, action_btn_h)
+    action_btn_h = 52
+    new_game_rect = pygame.Rect(x, 736, action_btn_w, action_btn_h)
+    menu_rect = pygame.Rect(x + action_btn_w + 10, 736, action_btn_w, action_btn_h)
 
     return {
         "quick_undo": quick_buttons[0],

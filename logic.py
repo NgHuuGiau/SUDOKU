@@ -323,6 +323,13 @@ def check_win(board: Board, solution: Board) -> bool:
     return all(board[r][c] == solution[r][c] for r in range(9) for c in range(9))
 
 
+def count_mistakes(board: Board, solution: Board) -> int:
+    """Live count of filled cells that do not match the solution (presentation aid)."""
+    return sum(
+        1 for r in range(9) for c in range(9) if board[r][c] != 0 and board[r][c] != solution[r][c]
+    )
+
+
 # =============================================================================
 # Import/Export Puzzle (81-character string format)
 # =============================================================================

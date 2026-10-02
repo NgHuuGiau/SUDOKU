@@ -80,7 +80,7 @@ def trigger_completion_animation(comp_type: str, index: int) -> None:
 def draw_board(screen: pygame.Surface, fonts, state, selected_cell=None):
     board_rect = pygame.Rect(BOARD_X, BOARD_Y, BOARD_SIZE, BOARD_SIZE)
     draw_rounded_card(
-        screen, board_rect, Colors.BG_BOARD, Colors.GRID_OUTER, border_width=2, radius=12
+        screen, board_rect, Colors.BG_BOARD, Colors.GRID_OUTER, border_width=3, radius=10
     )
 
     r_sel, c_sel = selected_cell if selected_cell else state.selected
@@ -139,7 +139,7 @@ def draw_board(screen: pygame.Surface, fonts, state, selected_cell=None):
         ripple_c = getattr(Colors, "RIPPLE", (79, 70, 229))
         screen.blit(_selection_glow(ripple_c), sel_rect)
         # Sharp accent border
-        pygame.draw.rect(screen, Colors.SELECTED_BORDER, sel_rect, width=2, border_radius=6)
+        pygame.draw.rect(screen, Colors.SELECTED_BORDER, sel_rect, width=3, border_radius=8)
 
     # 4. Completion ripple animations
     now = time.monotonic()

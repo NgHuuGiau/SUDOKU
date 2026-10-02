@@ -25,7 +25,14 @@ from ui.colors import (
     ThemeManager,
     get_theme_manager,
 )
-from ui.drawing import draw_badge, draw_interactive_card, draw_modern_button, draw_rounded_card
+from ui.drawing import (
+    draw_badge,
+    draw_icon_tile,
+    draw_interactive_card,
+    draw_modern_button,
+    draw_rounded_card,
+    soft_tint,
+)
 from ui.fonts import GameFonts, load_fonts
 from ui.geometry import (
     BOARD_SIZE,
@@ -50,6 +57,7 @@ from ui.modals import (
     draw_help_modal,
     draw_leaderboard_modal,
     draw_pause_modal,
+    draw_text_input_modal,
     draw_win_modal,
 )
 from ui.screen import create_game_screen, enable_high_dpi, get_sudoku_icon_path
@@ -91,6 +99,8 @@ __all__ = [
     "draw_interactive_card",
     "draw_badge",
     "draw_modern_button",
+    "draw_icon_tile",
+    "soft_tint",
     # Components
     "draw_board",
     "trigger_number_placement_animation",
@@ -100,6 +110,7 @@ __all__ = [
     "draw_footer_helper",
     "draw_win_modal",
     "draw_pause_modal",
+    "draw_text_input_modal",
     "draw_help_modal",
     "draw_leaderboard_modal",
     # Screen

@@ -7,14 +7,10 @@ from tempfile import TemporaryDirectory
 
 
 def _run_smoke_test() -> None:
-    """Headlessly render the packaged app and verify its bundled Tcl runtime."""
+    """Headlessly render the packaged app to verify the build works."""
     os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
     with TemporaryDirectory() as data_dir:
         os.environ["SUDOKU_DATA_DIR"] = data_dir
-
-        import tkinter
-
-        tkinter.Tcl().eval("info patchlevel")
 
         import pygame
 

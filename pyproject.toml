@@ -85,7 +85,6 @@ pretty = true
 [[tool.mypy.overrides]]
 module = [
     "pygame.*",
-    "tkinter.*",
 ]
 ignore_missing_imports = true
 
@@ -94,7 +93,13 @@ testpaths = ["tests"]
 python_files = "test_*.py"
 python_classes = "Test*"
 python_functions = "test_*"
-addopts = "-v --tb=short --strict-markers"
+addopts = "-v --tb=short --strict-markers -p no:cacheprovider"
+filterwarnings = [
+    # Third-party noise: pygame 2.6 still boots through pkg_resources (upstream issue,
+    # not our code). Module-scoped so real warnings from our modules still surface.
+    "ignore::UserWarning:pygame.pkgdata",
+    "ignore::DeprecationWarning:pkg_resources",
+]
 markers = [
     "slow: marks tests as slow",
     "integration: marks tests as integration tests",

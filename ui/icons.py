@@ -56,9 +56,9 @@ def _draw_modern_icon(
     if name not in _MODERN_ICON_NAMES:
         return False
 
-    soft_color = (*color, 30)
-    pygame.draw.circle(surf, soft_color, (int(cx), int(cy)), max(2, int(size * 0.43)))
-    width = max(2, int(size * 0.075))
+    soft_color = (*color, 42)
+    pygame.draw.circle(surf, soft_color, (int(cx), int(cy)), max(2, int(size * 0.44)))
+    width = max(3, int(size * 0.11))
 
     def line(points: list[tuple[float, float]], stroke_width: int = width) -> None:
         int_points = [(int(x), int(y)) for x, y in points]
@@ -115,22 +115,32 @@ def _draw_modern_icon(
             ],
         )
     elif name == "hint":
-        pygame.draw.circle(surf, color, (int(cx), int(cy - size * 0.08)), int(size * 0.19))
-        line([(cx - size * 0.13, cy + size * 0.14), (cx + size * 0.13, cy + size * 0.14)])
-        line([(cx - size * 0.09, cy + size * 0.23), (cx + size * 0.09, cy + size * 0.23)])
+        pygame.draw.circle(surf, color, (int(cx), int(cy - size * 0.06)), int(size * 0.19))
+        # Rays so it reads as a bulb, not a dot.
+        for angle in (-0.5, 0.0, 0.5):
+            dx, dy = math.sin(angle), -math.cos(angle)
+            line(
+                [
+                    (cx + dx * size * 0.28, cy - size * 0.06 + dy * size * 0.28),
+                    (cx + dx * size * 0.36, cy - size * 0.06 + dy * size * 0.36),
+                ],
+                max(1, width - 1),
+            )
+        line([(cx - size * 0.13, cy + size * 0.16), (cx + size * 0.13, cy + size * 0.16)])
+        line([(cx - size * 0.09, cy + size * 0.25), (cx + size * 0.09, cy + size * 0.25)])
     elif name == "erase":
-        pygame.draw.polygon(
-            surf,
-            color,
-            [
-                (cx - size * 0.25, cy + size * 0.10),
-                (cx - size * 0.02, cy - size * 0.24),
-                (cx + size * 0.26, cy - size * 0.02),
-                (cx + size * 0.03, cy + size * 0.32),
-            ],
-        )
+        # Classic two-tone tilted eraser with a baseline.
+        light = tuple(int(c + (255 - c) * 0.55) for c in color)
+        ax, ay = cx - size * 0.24, cy + size * 0.04
+        bx, by = cx - size * 0.02, cy - size * 0.22
+        cx2, cy2 = cx + size * 0.26, cy + size * 0.04
+        dx, dy = cx + size * 0.04, cy + size * 0.28
+        pygame.draw.polygon(surf, color, [(ax, ay), (bx, by), (cx2, cy2), (dx, dy)])
+        mid_top = ((bx + cx2) / 2, (by + cy2) / 2)
+        mid_bot = ((ax + dx) / 2, (ay + dy) / 2)
+        pygame.draw.polygon(surf, light, [(ax, ay), (bx, by), mid_top, mid_bot])
         line(
-            [(cx - size * 0.08, cy + size * 0.21), (cx + size * 0.20, cy + size * 0.21)],
+            [(cx - size * 0.20, cy + size * 0.34), (cx + size * 0.24, cy + size * 0.34)],
             max(1, width - 1),
         )
     elif name == "sparkles":
@@ -216,6 +226,34 @@ def _draw_modern_icon(
             max(2, int(size * 0.10)),
         )
     elif name == "trophy":
+        # Side handles so it reads as a trophy cup.
+        handle_d = size * 0.26
+        pygame.draw.arc(
+            surf,
+            color,
+            pygame.Rect(
+                int(cx - size * 0.38),
+                int(cy - size * 0.23),
+                int(handle_d),
+                int(handle_d),
+            ),
+            math.pi / 2,
+            math.pi * 3 / 2,
+            width,
+        )
+        pygame.draw.arc(
+            surf,
+            color,
+            pygame.Rect(
+                int(cx + size * 0.38 - handle_d),
+                int(cy - size * 0.23),
+                int(handle_d),
+                int(handle_d),
+            ),
+            -math.pi / 2,
+            math.pi / 2,
+            width,
+        )
         pygame.draw.polygon(
             surf,
             color,

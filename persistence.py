@@ -181,6 +181,9 @@ def update_best_time(difficulty: Difficulty, elapsed: int) -> bool:
 
 
 def save_game_state(state: "GameState") -> bool:
+    # History is capped on disk only; the live session keeps the full undo depth.
+    from game import MAX_SAVED_HISTORY_STATES
+
     data = {
         "difficulty": state.difficulty,
         "custom_empty_cells": state.custom_empty_cells,
@@ -204,14 +207,14 @@ def save_game_state(state: "GameState") -> bool:
                 "board": [list(row) for row in board],
                 "notes": [[list(s) for s in row] for row in notes],
             }
-            for board, notes in state.undo_stack
+            for board, notes in state.undo_stack[-MAX_SAVED_HISTORY_STATES:]
         ],
         "redo_stack": [
             {
                 "board": [list(row) for row in board],
                 "notes": [[list(s) for s in row] for row in notes],
             }
-            for board, notes in state.redo_stack
+            for board, notes in state.redo_stack[-MAX_SAVED_HISTORY_STATES:]
         ],
     }
     try:
