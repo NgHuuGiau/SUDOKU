@@ -1,4 +1,4 @@
-﻿# Sudoku Master
+# Sudoku Master
 
 > Game Sudoku desktop viết bằng Python và Pygame · Phiên bản **2.0.0**
 
@@ -66,43 +66,49 @@ Bạn cũng có thể dùng chuột để chọn ô và bấm các nút trên gi
 
 ```text
 SUDOKU/
-??? .github/workflows/ci.yml  # Ki?m th?, lint, type-check, qu�t b?o m?t, build v� release
-??? assets/
-?   ??? icons/                 # Icon ?ng d?ng
-?   ??? preview/               # ?nh ch?p giao di?n trong README
-??? src/
-?   ??? sudoku/               # G�i m? ngu?n ch�nh
-?       ??? __init__.py
-?       ??? config.py         # Chu?i giao di?n ti?ng Vi?t / ti?ng Anh
-?       ??? error_handling.py # Ghi log v� decorator ghi nh?n l?i
-?       ??? game.py           # Tr?ng th�i Sudoku, s? ki?n v� b? �i?u khi?n ?ng d?ng
-?       ??? logic.py          # Sinh, gi?i, x�c th?c v� nh?p/xu?t puzzle
-?       ??? main.py           # �i?m v�o ?ng d?ng v� smoke test b?n ��ng g�i
-?       ??? persistence.py    # L�u game, th?ng k�, k? l?c v� b?ng x?p h?ng JSON
-?       ??? sounds.py         # T?o v� ph�t �m thanh b?ng Pygame
-?       ??? ui/               # Giao di?n Pygame
-?           ??? __init__.py
-?           ??? board.py      # Render b�n Sudoku v� animation
-?           ??? colors.py     # B?ng m�u v� qu?n l? theme
-?           ??? drawing.py    # N�t, th? v� th�nh ph?n v? d�ng chung
-?           ??? fonts.py      # Font v� fallback theo h? �i?u h�nh
-?           ??? geometry.py   # K�ch th�?c, v? tr� v� hitbox
-?           ??? icons.py      # Icon vector v� h?t hi?u ?ng
-?           ??? menu.py       # Menu ch�nh
-?           ??? modals.py     # Modal tr? gi�p, t?m d?ng, chi?n th?ng, x?p h?ng
-?           ??? screen.py     # Kh?i t?o c?a s?, DPI v� icon
-?           ??? sidebar.py    # C�c n�t v� b�n ph�m s?
-?           ??? view.py       # Gh�p c�c th�nh ph?n th�nh m�n h?nh ch�i
-??? tests/                    # Unit, persistence, integration v� UI smoke tests
-??? build.bat / build.spec    # ��ng g�i ?ng d?ng b?ng PyInstaller
-??? pyproject.toml            # Metadata, dependency v� c?u h?nh c�ng c?
-??? requirements.txt          # Dependency t?i thi?u �? ch?y game
-??? .gitignore                # Lo?i tr? cache, d? li?u c� nh�n v� artifact build
-??? .pre-commit-config.yaml   # Ki?m tra tr�?c khi commit
-??? .secrets.baseline         # Baseline detect-secrets
-??? CHANGELOG.md              # L?ch s? thay �?i
-??? LICENSE                   # Gi?y ph�p MIT
-??? README.md                 # T�i li?u d? �n
+├── .github/
+│   └── workflows/
+│       └── ci.yml              # Kiểm thử, lint, kiểu dữ liệu, bảo mật, build và phát hành
+├── assets/
+│   ├── icons/                  # Icon ứng dụng
+│   └── preview/                # Ảnh chụp giao diện dùng trong README
+├── src/
+│   └── sudoku/
+│       ├── __init__.py
+│       ├── config.py           # Chuỗi giao diện tiếng Việt và tiếng Anh
+│       ├── error_handling.py   # Ghi log và decorator xử lý ngoại lệ
+│       ├── game.py             # Trạng thái game, sự kiện và bộ điều khiển ứng dụng
+│       ├── logic.py            # Sinh, giải, xác thực và nhập/xuất puzzle
+│       ├── main.py             # Điểm vào ứng dụng và smoke test bản đóng gói
+│       ├── persistence.py      # Lưu game, thống kê, kỷ lục và bảng xếp hạng
+│       ├── sounds.py           # Tạo và phát âm thanh bằng Pygame
+│       └── ui/
+│           ├── __init__.py
+│           ├── board.py        # Vẽ bàn Sudoku và hiệu ứng
+│           ├── colors.py       # Bảng màu và quản lý giao diện
+│           ├── drawing.py      # Các thành phần vẽ dùng chung
+│           ├── fonts.py        # Tải font và font dự phòng theo hệ điều hành
+│           ├── geometry.py     # Kích thước, vị trí và hitbox
+│           ├── icons.py        # Icon vector và hiệu ứng hạt
+│           ├── menu.py         # Menu chính
+│           ├── modals.py       # Hộp thoại trợ giúp, tạm dừng, chiến thắng, xếp hạng
+│           ├── screen.py       # Khởi tạo cửa sổ, DPI và icon ứng dụng
+│           ├── sidebar.py      # Nút điều khiển và bàn phím số
+│           └── view.py         # Ghép các thành phần thành màn hình chơi
+├── tests/
+│   ├── conftest.py
+│   ├── test_sudoku.py
+│   └── test_ui_smoke.py
+├── build.bat                  # Script build trên Windows
+├── build.spec                 # Cấu hình PyInstaller cho Windows, Linux và macOS
+├── pyproject.toml             # Metadata package và cấu hình công cụ
+├── requirements.txt           # Dependency tối thiểu để chạy game
+├── .gitignore
+├── .pre-commit-config.yaml
+├── .secrets.baseline
+├── CHANGELOG.md
+├── LICENSE
+└── README.md
 ```
 
 ### Luồng hoạt động
@@ -112,7 +118,7 @@ SUDOKU/
 ## Yêu cầu và cài đặt
 
 - Python **3.10–3.13**. CI kiểm tra cả bốn phiên bản này.
-- Cửa sổ game có kích thước cố định `1120 × 800`; nên dùng màn hình có độ phân giải tối thiểu bằng kích thước này.
+- Bàn chơi dùng canvas logic `1120 × 800`; trên màn hình nhỏ hơn, cửa sổ được thu nhỏ theo tỷ lệ để vừa màn hình và vẫn giữ đúng vị trí chuột.
 - `pip` để cài dependency.
 
 Cài dependency chạy game:
@@ -145,6 +151,8 @@ Dữ liệu runtime được lưu cục bộ trong thư mục riêng theo hệ �
 
 Trong đó có thể có ván đang chơi, kỷ lục, thống kê Daily Challenge, bảng xếp hạng và log. Ở lần chạy đầu, các file dữ liệu cũ trong thư mục dự án được sao chép sang vị trí runtime; dấu mốc di chuyển ngăn dữ liệu cũ bị khôi phục lại sau khi người chơi xóa ván. Biến môi trường `SUDOKU_DATA_DIR` ghi đè thư mục mặc định, hữu ích khi kiểm thử hoặc chạy bản portable. Game không gửi các dữ liệu này lên mạng.
 
+Nếu thư mục mặc định không thể ghi, game thử lưu trong `~/.sudoku-master` thay vì dừng ngay khi khởi động.
+
 ## Kiểm tra chất lượng
 
 Chạy các kiểm tra cục bộ sau để xác minh mã nguồn và giao diện:
@@ -159,9 +167,9 @@ python -m compileall -q .
 python -m sudoku.main --smoke-test
 ```
 
-`--smoke-test` khởi tạo giao diện ở chế độ headless và render các màn hình cơ bản; dữ liệu thử nghiệm được ghi vào thư mục tạm. GitHub Actions chạy test có coverage, Ruff, mypy, quét `pip-audit`/secret, build Windows/Linux và smoke-test các file thực thi.
+`--smoke-test` khởi tạo giao diện ở chế độ headless và render các màn hình cơ bản; dữ liệu thử nghiệm được ghi vào thư mục tạm. GitHub Actions chạy test có coverage, Ruff, mypy, quét `pip-audit`/secret, build Windows/Linux/macOS và smoke-test artifact.
 
-Pipeline CI chạy test, Ruff, mypy, `pip-audit` và `detect-secrets` trên Linux. Build Windows và Linux tạo ứng dụng bằng PyInstaller rồi chạy smoke test cho file thực thi. CI Summary tổng hợp kết quả; tag `v*` tạo GitHub Release với artifact Windows và Linux. Build macOS chưa nằm trong CI và chưa được xác minh.
+Pipeline CI chạy test, Ruff, mypy, `pip-audit` và `detect-secrets` trên Linux. Build Windows, Linux và macOS tạo ứng dụng bằng PyInstaller rồi chạy smoke test. CI Summary tổng hợp kết quả; tag `v*` tạo GitHub Release với artifact cho cả ba hệ điều hành.
 
 ## Đóng gói
 
@@ -172,14 +180,15 @@ python -m pip install -e ".[build]"
 pyinstaller build.spec --clean
 ```
 
-Trên Windows có thể dùng `build.bat`. Artifact nằm trong `dist/`; không đưa thư mục build hoặc file thực thi sinh ra vào Git. Mỗi hệ điều hành cần build riêng trên hệ điều hành tương ứng.
+Trên Windows có thể dùng `build.bat`. Artifact nằm trong `dist/`; không đưa thư mục build hoặc file thực thi sinh ra vào Git. Mỗi hệ điều hành cần build riêng trên hệ điều hành tương ứng. Bản macOS được đóng gói thành `SudokuMaster-macos.zip` chứa ứng dụng `.app`.
 
 ## Giới hạn hiện tại
 
+- Các mức Dễ, Trung bình và Khó hiện được phân loại theo số ô trống; game chưa đánh giá độ khó dựa trên kỹ thuật giải cần thiết.
 - Đây là game desktop một người chơi, lưu dữ liệu cục bộ; chưa có tài khoản, multiplayer, đồng bộ online hoặc dịch vụ backend.
-- Kích thước cửa sổ hiện cố định; layout được thiết kế cho `1120 × 800`.
-- Màn hình thống kê tổng quan chưa được triển khai; hiện có bảng TOP 10 và các số liệu Daily Challenge.
-- Pipeline phát hành tự động hiện cung cấp artifact Windows và Linux, chưa có bản macOS.
+- Layout được thiết kế trên canvas `1120 × 800`; cửa sổ sẽ thu nhỏ trên màn hình thấp hơn nên chữ và nút cũng nhỏ theo.
+- Màn hình thống kê tổng quan hiển thị kỷ lục, dữ liệu Daily Challenge, số ván bắt đầu/hoàn thành và số gợi ý đã dùng; chưa thống kê thời gian trung bình hoặc số lỗi.
+- CI đã được cấu hình để build và smoke-test bản macOS; vẫn cần xác minh trải nghiệm cài đặt trên máy Mac thực tế trước khi phát hành rộng rãi.
 
 ## Giấy phép
 
