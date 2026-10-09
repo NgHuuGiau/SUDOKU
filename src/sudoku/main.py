@@ -40,4 +40,3 @@ if __name__ == "__main__":
         from sudoku.ui import tao_nut_bat_dau
 
         tao_nut_bat_dau()
-

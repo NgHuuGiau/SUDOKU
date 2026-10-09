@@ -419,4 +419,3 @@ Colors = _ColorsProxy()
 def get_theme_manager() -> ThemeManager:
     """Get the global theme manager instance."""
     return ThemeManager()
-

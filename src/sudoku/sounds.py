@@ -183,4 +183,3 @@ def toggle_sound():
 
 def is_sound_enabled() -> bool:
     return get_sound_manager().is_enabled()
-

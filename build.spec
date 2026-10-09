@@ -1,9 +1,9 @@
 ﻿# PyInstaller build configuration for Sudoku
-# Usage: pyinstaller build.spec
+# Usage: python -m PyInstaller build.spec
 # Cross-platform: Windows (exe), Linux (binary), macOS (app)
 
-import sys
 import os
+import sys
 
 block_cipher = None
 
@@ -14,37 +14,6 @@ IS_MACOS = sys.platform == 'darwin'
 # Data files to include
 datas = [
     ('assets/icons/SUDOKU.ico', 'assets/icons'),
-    ('assets/preview/', 'assets/preview/'),
-]
-
-# Hidden imports
-hiddenimports = [
-    'pygame',
-    'json',
-    'datetime',
-    'copy',
-    'random',
-    'math',
-    'ctypes',
-    'sudoku.config',
-    'sudoku.error_handling',
-    'sudoku.game',
-    'sudoku.logic',
-    'sudoku.main',
-    'sudoku.persistence',
-    'sudoku.sounds',
-    'sudoku.ui',
-    'sudoku.ui.board',
-    'sudoku.ui.colors',
-    'sudoku.ui.drawing',
-    'sudoku.ui.fonts',
-    'sudoku.ui.geometry',
-    'sudoku.ui.icons',
-    'sudoku.ui.menu',
-    'sudoku.ui.modals',
-    'sudoku.ui.screen',
-    'sudoku.ui.sidebar',
-    'sudoku.ui.view',
 ]
 
 # Excludes to reduce binary size
@@ -61,7 +30,6 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=datas,
-    hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -76,56 +44,40 @@ pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
 # Platform-specific executable options
 if IS_WINDOWS:
-    exe = EXE(
-        pyz,
-        a.scripts,
-        a.binaries,
-        a.zipfiles,
-        a.datas,
-        [],
-        name='SudokuMaster',
-        debug=False,
-        bootloader_ignore_signals=False,
-        strip=False,
-        upx=True,
-        upx_exclude=[],
-        runtime_tmpdir=None,
-        console=False,  # Windowed app (no console)
-        disable_windowed_traceback=False,
-        argv_emulation=False,
-        target_arch=None,
-        codesign_identity=None,
-        entitlements_file=None,
-        icon='assets/icons/SUDOKU.ico',
-    )
+    icon = 'assets/icons/SUDOKU.ico'
 elif IS_MACOS:
-    exe = EXE(
-        pyz,
-        a.scripts,
-        a.binaries,
-        a.zipfiles,
-        a.datas,
-        [],
-        name='SudokuMaster',
-        debug=False,
-        bootloader_ignore_signals=False,
-        strip=False,
-        upx=True,
-        upx_exclude=[],
-        runtime_tmpdir=None,
-        console=False,
-        disable_windowed_traceback=False,
-        argv_emulation=False,
-        target_arch=None,
-        codesign_identity=None,
-        entitlements_file=None,
-        icon='assets/icons/SUDOKU.icns' if os.path.exists('assets/icons/SUDOKU.icns') else None,
-    )
-    
+    icon = 'assets/icons/SUDOKU.icns' if os.path.exists('assets/icons/SUDOKU.icns') else None
+else:
+    icon = None
+
+exe_options = {'codesign_identity': None, 'entitlements_file': None} if IS_MACOS else {}
+exe = EXE(
+    pyz,
+    a.scripts,
+    a.binaries,
+    a.zipfiles,
+    a.datas,
+    [],
+    name='SudokuMaster',
+    debug=False,
+    bootloader_ignore_signals=False,
+    strip=False,
+    upx=True,
+    upx_exclude=[],
+    runtime_tmpdir=None,
+    console=False,
+    disable_windowed_traceback=False,
+    argv_emulation=False,
+    target_arch=None,
+    icon=icon,
+    **exe_options,
+)
+
+if IS_MACOS:
     app = BUNDLE(
         exe,
         name='SudokuMaster.app',
-        icon='assets/icons/SUDOKU.icns' if os.path.exists('assets/icons/SUDOKU.icns') else None,
+        icon=icon,
         bundle_identifier='com.sudokumaster.game',
         info_plist={
             'CFBundleName': 'Sudoku Master',
@@ -134,24 +86,4 @@ elif IS_MACOS:
             'CFBundleShortVersionString': '2.0.0',
             'NSHighResolutionCapable': True,
         },
-    )
-else:  # Linux
-    exe = EXE(
-        pyz,
-        a.scripts,
-        a.binaries,
-        a.zipfiles,
-        a.datas,
-        [],
-        name='SudokuMaster',
-        debug=False,
-        bootloader_ignore_signals=False,
-        strip=False,
-        upx=True,
-        upx_exclude=[],
-        runtime_tmpdir=None,
-        console=False,
-        disable_windowed_traceback=False,
-        argv_emulation=False,
-        target_arch=None,
     )

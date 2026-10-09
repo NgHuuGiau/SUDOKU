@@ -100,13 +100,12 @@ def generate_daily_challenge(
 
 
 class DLXNode:
-    __slots__ = ("left", "right", "up", "down", "column", "row_id", "col_id", "size")
+    __slots__ = ("left", "right", "up", "down", "column", "row_id", "size")
 
     def __init__(self):
         self.left = self.right = self.up = self.down = self
         self.column = self
         self.row_id = -1
-        self.col_id = -1
         self.size = 0
 
 
@@ -116,15 +115,13 @@ class DLX:
     def __init__(self, n_cols: int):
         self.header = DLXNode()
         self.columns: list[DLXNode] = [DLXNode() for _ in range(n_cols)]
-        self.nodes: list[DLXNode] = []
         self.solution: list[int] = []
         self.solution_count = 0
         self.limit = 2
 
         # Link column headers
         prev = self.header
-        for i, col in enumerate(self.columns):
-            col.col_id = i
+        for col in self.columns:
             col.up = col.down = col
             col.size = 0
             prev.right = col
@@ -139,7 +136,6 @@ class DLX:
         for col_id in cols:
             node = DLXNode()
             node.row_id = row_id
-            node.col_id = col_id
             node.column = self.columns[col_id]
 
             # Vertical links
@@ -158,7 +154,6 @@ class DLX:
                 node.right = first
                 first.left.right = node
                 first.left = node
-            self.nodes.append(node)
 
     def cover(self, col: DLXNode) -> None:
         """Remove column from header list and all rows in that column."""
@@ -405,4 +400,3 @@ def import_puzzle(data_str: str) -> tuple[Board, Board]:
     if count_solutions_dlx(board, limit=2) != 1:
         raise ValueError("Puzzle must have exactly one solution")
     return board, solution
-

@@ -4,7 +4,7 @@ REM Usage: build.bat
 
 echo Building SudokuMaster.exe ...
 
-pyinstaller build.spec --clean
+python -m PyInstaller build.spec --clean
 
 if errorlevel 1 (
     echo Build FAILED!

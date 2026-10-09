@@ -130,7 +130,7 @@ jobs:
 
       - name: Build executable
         run: |
-          pyinstaller build.spec --clean
+          python -m PyInstaller build.spec --clean
 
       - name: Smoke test executable
         run: .\dist\SudokuMaster.exe --smoke-test
@@ -171,7 +171,7 @@ jobs:
 
       - name: Build executable
         run: |
-          pyinstaller build.spec --clean
+          python -m PyInstaller build.spec --clean
 
       - name: Smoke test executable
         run: ./dist/SudokuMaster --smoke-test
@@ -206,7 +206,7 @@ jobs:
           pip install -e ".[build]"
 
       - name: Build app bundle
-        run: pyinstaller build.spec --clean
+        run: python -m PyInstaller build.spec --clean
 
       - name: Smoke test app bundle
         run: ./dist/SudokuMaster.app/Contents/MacOS/SudokuMaster --smoke-test

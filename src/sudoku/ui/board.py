@@ -225,4 +225,3 @@ def draw_board(screen: pygame.Surface, fonts, state, selected_cell=None):
                         )
                         note_surf = _render_cell_text(fonts.note, str(note_digit), Colors.NOTE_TEXT)
                         screen.blit(note_surf, note_surf.get_rect(center=note_center))
-

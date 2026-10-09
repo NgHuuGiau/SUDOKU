@@ -243,8 +243,6 @@ def draw_modern_button(
     if border_color and border_w > 0:
         pygame.draw.rect(screen, border_color, draw_rect, width=border_w, border_radius=radius)
 
-    # Use draw_rect for content positioning instead of rect for button internals
-    # But wait, replacing rect with draw_rect for text/icon placement might break the signature if we don't update below. Let's just update `rect` variable.
     rect = draw_rect
 
     if icon_name and subtext and sub_font:

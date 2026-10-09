@@ -852,7 +852,3 @@ class TestIntegration:
         assert loaded is not None
         assert loaded.board == state.board
         assert loaded.difficulty == state.difficulty
-
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])

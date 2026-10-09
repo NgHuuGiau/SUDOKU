@@ -97,12 +97,12 @@ SUDOKU/
 │           └── view.py         # Ghép các thành phần thành màn hình chơi
 ├── tests/
 │   ├── conftest.py
+│   ├── test_edge_cases.py
 │   ├── test_sudoku.py
 │   └── test_ui_smoke.py
 ├── build.bat                  # Script build trên Windows
 ├── build.spec                 # Cấu hình PyInstaller cho Windows, Linux và macOS
 ├── pyproject.toml             # Metadata package và cấu hình công cụ
-├── requirements.txt           # Dependency tối thiểu để chạy game
 ├── .gitignore
 ├── .pre-commit-config.yaml
 ├── .secrets.baseline
@@ -124,7 +124,7 @@ SUDOKU/
 Cài dependency chạy game:
 
 ```bash
-python -m pip install -r requirements.txt
+python -m pip install -e .
 ```
 
 Cài thêm công cụ phát triển và kiểm thử:
@@ -177,7 +177,7 @@ Cài PyInstaller rồi tạo bản thực thi cho hệ điều hành hiện tạ
 
 ```bash
 python -m pip install -e ".[build]"
-pyinstaller build.spec --clean
+python -m PyInstaller build.spec --clean
 ```
 
 Trên Windows có thể dùng `build.bat`. Artifact nằm trong `dist/`; không đưa thư mục build hoặc file thực thi sinh ra vào Git. Mỗi hệ điều hành cần build riêng trên hệ điều hành tương ứng. Bản macOS được đóng gói thành `SudokuMaster-macos.zip` chứa ứng dụng `.app`.

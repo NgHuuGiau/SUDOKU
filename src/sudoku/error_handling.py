@@ -75,4 +75,3 @@ def log_exception(
         return wrapper
 
     return decorator
-

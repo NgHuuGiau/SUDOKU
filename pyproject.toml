@@ -45,18 +45,6 @@ ignore = [
     "B008",  # function call in default argument
     "T201",  # print statements (allowed in this project)
 ]
-per-file-ignores = { }
-exclude = [
-    ".git",
-    "__pycache__",
-    "dist",
-    "build",
-    "*.egg-info",
-    ".pytest_cache",
-    ".mypy_cache",
-    ".ruff_cache",
-]
-
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
@@ -82,17 +70,8 @@ explicit_package_bases = true
 show_error_codes = true
 pretty = true
 
-[[tool.mypy.overrides]]
-module = [
-    "pygame.*",
-]
-ignore_missing_imports = true
-
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-python_files = "test_*.py"
-python_classes = "Test*"
-python_functions = "test_*"
 addopts = "-v --tb=short --strict-markers -p no:cacheprovider"
 filterwarnings = [
     # Third-party noise: pygame 2.6 still boots through pkg_resources (upstream issue,
@@ -100,19 +79,9 @@ filterwarnings = [
     "ignore::UserWarning:pygame.pkgdata",
     "ignore::DeprecationWarning:pkg_resources",
 ]
-markers = [
-    "slow: marks tests as slow",
-    "integration: marks tests as integration tests",
-]
-
 [tool.coverage.run]
 source = ["src/sudoku"]
-omit = [
-    "test_*.py",
-    "build.spec",
-    "*/site-packages/*",
-    "*/dist-packages/*",
-]
+omit = ["test_*.py"]
 
 [tool.coverage.report]
 exclude_lines = [
@@ -126,9 +95,5 @@ exclude_lines = [
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["sudoku*"]
-exclude = ["test*", "build*", "dist*", "*.egg-info"]
-
-[tool.setuptools.package-dir]
-"sudoku" = "src/sudoku"
 
 
