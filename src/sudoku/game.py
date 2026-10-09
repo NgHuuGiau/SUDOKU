@@ -24,10 +24,12 @@ from sudoku.persistence import (
     clear_save_file,
     get_leaderboard,
     has_save_file,
+    increment_stat,
     is_top_10_time,
     load_best_times,
     load_daily_stats,
     load_game_state,
+    load_stats,
     mark_daily_challenge_completed,
     save_game_state,
     update_best_time,
@@ -71,6 +73,7 @@ class GameState:
         self.board, self.solution = self._generate_puzzle()
         self.original = [row[:] for row in self.board]
         self._reset_runtime_state()
+        increment_stat("games_started")
 
     def _reset_runtime_state(self) -> None:
         """Reset per-game runtime state and persist the fresh snapshot."""
@@ -97,10 +100,13 @@ class GameState:
         if self.difficulty == "daily":
             board, solution, _ = generate_daily_challenge()
             return board, solution
-        return cast(tuple[Board, Board], generate_sudoku(
-            self.difficulty,
-            empty_cells=self.custom_empty_cells if self.difficulty == "custom" else None,
-        ))
+        return cast(
+            tuple[Board, Board],
+            generate_sudoku(
+                self.difficulty,
+                empty_cells=self.custom_empty_cells if self.difficulty == "custom" else None,
+            ),
+        )
 
     def save_state(self) -> None:
         current = (copy.deepcopy(self.board), copy.deepcopy(self.notes))
@@ -182,6 +188,7 @@ class GameState:
             self.board[r][c] = self.solution[r][c]
             self.notes[r][c].clear()
             self.save_state()
+            increment_stat("hints_used")
             play_sound("hint")
         self.auto_save()
 
@@ -214,6 +221,7 @@ class GameState:
         self.board, self.solution = self._generate_puzzle()
         self.original = [row[:] for row in self.board]
         self._reset_runtime_state()
+        increment_stat("games_started")
         play_sound("click")
 
     def set_puzzle(self, board: Board, solution: Board) -> None:
@@ -229,6 +237,7 @@ class GameState:
         self.selected = next(
             ([r, c] for r in range(9) for c in range(9) if board[r][c] == 0), [0, 0]
         )
+        increment_stat("games_started")
 
     def auto_save(self) -> None:
         if self.game_over:
@@ -621,6 +630,7 @@ class Game:
         if not self.state.game_over and check_win(self.state.board, self.state.solution):
             self.state.game_over = True
             self.state.final_time = self.state.get_elapsed_time()
+            increment_stat("games_completed")
             update_best_time(self.state.difficulty, self.state.final_time)
             if self.state.difficulty == "daily":
                 mark_daily_challenge_completed()
@@ -709,7 +719,7 @@ class AppController:
         self.custom_cells = 40
         self.menu_focus_key: str | None = None
         self._menu_rects: dict = {}
-        self.leaderboard_diff: Difficulty = "medium"
+        self.leaderboard_diff = "overview"
         self.leaderboard_data: LeaderboardData | None = None
 
         # Active game session
@@ -717,12 +727,14 @@ class AppController:
         self._refresh_menu_data()
 
     def _refresh_menu_data(self) -> None:
-        save_exists = has_save_file()
-        saved_state = load_game_state() if save_exists else None
+        save_file_exists = has_save_file()
+        saved_state = load_game_state() if save_file_exists else None
         self.menu_data = {
             "best_times": load_best_times(),
             "daily_stats": load_daily_stats(),
-            "save_exists": save_exists,
+            "stats": load_stats(),
+            "save_exists": saved_state is not None,
+            "save_error": save_file_exists and saved_state is None,
             "saved_game": (
                 (saved_state.difficulty, saved_state.get_elapsed_time()) if saved_state else None
             ),
@@ -872,7 +884,7 @@ class AppController:
                 pos
             ):
                 self.state = self.STATE_MENU
-            for d in ("easy", "medium", "hard", "daily", "custom"):
+            for d in ("overview", "easy", "medium", "hard", "daily", "custom"):
                 if lb_rects.get(f"tab_{d}") and lb_rects[f"tab_{d}"].collidepoint(pos):
                     self.leaderboard_diff = d
 
@@ -910,6 +922,9 @@ class AppController:
                     game_text,
                     active_diff=self.leaderboard_diff,
                     leaderboard_data=self.leaderboard_data,
+                    best_times=self.menu_data["best_times"],
+                    daily_stats=self.menu_data["daily_stats"],
+                    game_stats=self.menu_data.get("stats", {}),
                 )
                 pygame.display.flip()
                 self._handle_leaderboard_events(lb_rects)
@@ -922,12 +937,3 @@ class AppController:
             self.clock.tick(60)
 
         pygame.quit()
-
-
-
-
-
-
-
-
-

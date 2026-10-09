@@ -57,6 +57,14 @@ GAME_DICT = {
         "completed_today": "Completed today!",
         "come_back_tomorrow": "Come back tomorrow for a new challenge",
         "leaderboard": "Leaderboard",
+        "statistics": "Statistics",
+        "best_time": "Best time",
+        "total_daily_completed": "Daily challenges completed",
+        "current_streak": "Current streak",
+        "best_streak": "Best streak",
+        "games_started": "Games started",
+        "games_completed": "Games completed",
+        "hints_used": "Hints used",
         "leaderboard_title": "TOP 10 - {diff}",
         "enter_name": "Enter your name:",
         "new_highscore": "NEW HIGH SCORE!",
@@ -136,6 +144,14 @@ GAME_DICT = {
         "completed_today": "Đã hoàn thành hôm nay!",
         "come_back_tomorrow": "Quay lại ngày mai để nhận thử thách mới",
         "leaderboard": "Bảng xếp hạng",
+        "statistics": "Thống kê",
+        "best_time": "Kỷ lục thời gian",
+        "total_daily_completed": "Thử thách đã hoàn thành",
+        "current_streak": "Chuỗi hiện tại",
+        "best_streak": "Chuỗi dài nhất",
+        "games_started": "Ván đã bắt đầu",
+        "games_completed": "Ván đã hoàn thành",
+        "hints_used": "Số gợi ý đã dùng",
         "leaderboard_title": "TOP 10 - {diff}",
         "enter_name": "Nhập tên của bạn:",
         "new_highscore": "KỶ LỤC MỚI!",
@@ -213,6 +229,7 @@ MENU_DICT = {
         "daily_today_badge": "TODAY",
         "menu_keyboard_nav": "Tab / Shift+Tab: focus · Enter/Space: select",
         "resume_badge": "RESUME",
+        "save_unavailable": "Saved game could not be restored; choosing a difficulty starts a new game.",
         "theme_light": "Sunny",
         "theme_dark": "Night Pop",
         "theme_frost": "Mint",
@@ -250,6 +267,7 @@ MENU_DICT = {
         "daily_today_badge": "HÔM NAY",
         "menu_keyboard_nav": "Tab / Shift+Tab: chọn mục · Enter/Space: mở",
         "resume_badge": "ĐANG CHƠI",
+        "save_unavailable": "Không thể khôi phục ván đã lưu; chọn mức độ sẽ bắt đầu ván mới.",
         "theme_light": "Nắng",
         "theme_dark": "Đêm",
         "theme_frost": "Bạc hà",
@@ -271,5 +289,3 @@ def game_text(key: str) -> str:
 
 def menu_text(key: str) -> str:
     return MENU_DICT[ngon_ngu_hien_tai].get(key, key)
-
-

@@ -25,7 +25,12 @@ def generate_sudoku(
         return (base * (r % base) + r // base + c) % side
 
     def shuffle(s):
-        return rng.sample(s, len(s))
+        values = list(s)
+        # random() is stable for a given seed across Python versions; sample/shuffle are not.
+        for i in range(len(values) - 1, 0, -1):
+            j = int(rng.random() * (i + 1))
+            values[i], values[j] = values[j], values[i]
+        return values
 
     r_base = range(base)
     rows = [g * base + r for g in shuffle(r_base) for r in shuffle(r_base)]
@@ -35,6 +40,7 @@ def generate_sudoku(
     board = [[nums[pattern(r, c)] for c in cols] for r in rows]
     full_board_solution = copy.deepcopy(board)
 
+    # Difficulty labels currently reflect clue counts, not required solving techniques.
     difficulties = {
         "easy": 38,  # 38 empty cells -> 43 clues left
         "medium": 48,  # 48 empty cells -> 33 clues left
@@ -46,8 +52,7 @@ def generate_sudoku(
     else:
         target_empties = difficulties.get(difficulty, 48)
 
-    positions = list(range(side * side))
-    rng.shuffle(positions)
+    positions = shuffle(range(side * side))
 
     removed = 0
     for pos in positions:

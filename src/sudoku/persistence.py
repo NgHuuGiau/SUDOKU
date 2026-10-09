@@ -6,6 +6,7 @@ import logging
 import os
 import shutil
 import sys
+import tempfile
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, TypedDict, cast
@@ -13,9 +14,10 @@ from typing import TYPE_CHECKING, Any, Literal, TypedDict, cast
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from sudoku.game import GameState
+    from sudoku.game import GameState  # pragma: no cover - imported only by static type checkers
 
-LEGACY_DATA_DIR = Path(__file__).resolve().parent
+# Older releases stored JSON beside the repository's top-level modules.
+LEGACY_DATA_DIR = Path(__file__).resolve().parents[2]
 
 
 def get_data_dir() -> Path:
@@ -33,7 +35,18 @@ def get_data_dir() -> Path:
         data_dir = (
             Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local" / "share")) / "SudokuMaster"
         )
-    data_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        data_dir.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryFile(dir=data_dir):
+            pass
+    except OSError:
+        if override:
+            raise
+        data_dir = Path.home() / ".sudoku-master"
+        data_dir.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryFile(dir=data_dir):
+            pass
+        logger.warning("Using fallback game data directory: %s", data_dir)
     return data_dir
 
 
@@ -404,15 +417,28 @@ def mark_daily_challenge_completed() -> DailyStats:
 # =============================================================================
 
 
+GAME_STAT_KEYS = ("games_started", "games_completed", "hints_used")
+
+
 def load_stats() -> dict[str, Any]:
     stats = _load_json(_runtime_file("stats.json"), {"theme": "light"})
     if stats.get("theme") not in ("light", "dark", "frost", "cozy"):
         stats["theme"] = "light"
+    for key in GAME_STAT_KEYS:
+        stats[key] = _nonnegative_int(stats.get(key)) or 0
     return stats
 
 
 def save_stats(stats: dict[str, Any]) -> None:
     _save_json(_runtime_file("stats.json"), stats)
+
+
+def increment_stat(name: str) -> None:
+    if name not in GAME_STAT_KEYS:
+        raise ValueError(f"Unsupported game statistic: {name}")
+    stats = load_stats()
+    stats[name] += 1
+    save_stats(stats)
 
 
 def get_preference(name: str, default: Any) -> Any:
@@ -519,4 +545,3 @@ def is_top_10_time(difficulty: Difficulty, elapsed: int) -> bool:
     if len(entries) < LEADERBOARD_MAX_ENTRIES:
         return True
     return elapsed < entries[-1]["time"]
-
