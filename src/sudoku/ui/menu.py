@@ -135,6 +135,7 @@ def draw_menu_view(
     menu_rects["daily"] = daily_rect
     y += 88
 
+    normalized_best_times = {str(k): v for k, v in best_times.items()}
     for index, (key, title_key, desc_key, icon, accent) in enumerate(
         [
             ("easy", "de", "de_desc", "star", Colors.BTN_SUCCESS),
@@ -144,7 +145,7 @@ def draw_menu_view(
         ]
     ):
         row_rect = pygame.Rect(col_x, y + index * 82, col_w, 72)
-        best: int | None = {str(k): v for k, v in best_times.items()}.get(key)
+        best: int | None = normalized_best_times.get(key)
         draw_interactive_card(
             screen,
             row_rect,

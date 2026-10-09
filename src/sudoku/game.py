@@ -280,6 +280,7 @@ class Game:
             self.state = loaded_state
         else:
             self.state = GameState(difficulty)
+        self.sidebar_data = (load_best_times(), load_daily_stats())
         self.particles: List[Particle] = []
         self.running = True
         self.go_to_menu = False
@@ -553,6 +554,7 @@ class Game:
         self.particles.clear()
         clear_save_file()
         self.state.restart(self.state.difficulty)
+        self.sidebar_data = (load_best_times(), load_daily_stats())
 
     def _spawn_firework_burst(self, x: int, y: int, count: int = 38) -> None:
         colors = [
@@ -634,6 +636,7 @@ class Game:
             update_best_time(self.state.difficulty, self.state.final_time)
             if self.state.difficulty == "daily":
                 mark_daily_challenge_completed()
+            self.sidebar_data = (load_best_times(), load_daily_stats())
             if is_top_10_time(self.state.difficulty, self.state.final_time):
                 self._show_name_input_dialog()
             clear_save_file()
@@ -643,7 +646,12 @@ class Game:
     def render(self) -> None:
         mouse_pos = pygame.mouse.get_pos()
         overlay_rects = draw_game_view(
-            self.screen, self.fonts, self.state, mouse_pos, self.particles
+            self.screen,
+            self.fonts,
+            self.state,
+            mouse_pos,
+            self.particles,
+            sidebar_data=self.sidebar_data,
         )
         self.pause_resume_rect = overlay_rects["pause_resume"]
         self.pause_restart_rect = overlay_rects.get("pause_restart")
@@ -678,6 +686,8 @@ class Game:
             )
             self.text_ok_rect = text_rects["text_ok"]
             self.text_cancel_rect = text_rects["text_cancel"]
+
+        pygame.display.flip()
 
 
 # ──────────────────────────────────────────────

@@ -24,7 +24,12 @@ def _format_clock(total_seconds: int | None) -> str:
 
 
 def draw_sidebar(
-    screen: pygame.Surface, fonts, mouse_pos: tuple[int, int], translate, state
+    screen: pygame.Surface,
+    fonts,
+    mouse_pos: tuple[int, int],
+    translate,
+    state,
+    sidebar_data: tuple[dict, dict] | None = None,
 ) -> dict[str, pygame.Rect | list[pygame.Rect]]:
     layout = get_sidebar_layout()
     rem_counts = get_remaining_counts(state.board)
@@ -217,8 +222,11 @@ def draw_sidebar(
     draw_rounded_card(
         screen, info_rect, Colors.BG_CARD, Colors.CARD_BORDER, radius=16, shadow=False
     )
-    best = load_best_times().get(state.difficulty)
-    streak = load_daily_stats().get("streak", 0)
+    if sidebar_data is None:
+        sidebar_data = (load_best_times(), load_daily_stats())
+    best_times, daily_stats = sidebar_data
+    best = best_times.get(state.difficulty)
+    streak = daily_stats.get("streak", 0)
     for index, (label, value, icon, color) in enumerate(
         [
             (translate("do_kho"), translate(state.difficulty), "slider", Colors.ICON_THEME),

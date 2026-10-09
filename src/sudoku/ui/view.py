@@ -13,7 +13,13 @@ from sudoku.ui.sidebar import draw_sidebar
 
 
 def draw_game_view(
-    screen: pygame.Surface, fonts: GameFonts, state, mouse_pos, particles=None, translate=None
+    screen: pygame.Surface,
+    fonts: GameFonts,
+    state,
+    mouse_pos,
+    particles=None,
+    translate=None,
+    sidebar_data: tuple[dict, dict] | None = None,
 ) -> dict:
     if translate is None:
         from sudoku.config import game_text
@@ -42,7 +48,7 @@ def draw_game_view(
 
     # 3. Sidebar & Footer (only when playing)
     if not state.game_over and not state.paused:
-        draw_sidebar(screen, fonts, mouse_pos, translate, state)
+        draw_sidebar(screen, fonts, mouse_pos, translate, state, sidebar_data)
         draw_footer_helper(screen, fonts, translate, getattr(state, "save_failed", False))
 
     # 4. Win Modal
@@ -57,7 +63,6 @@ def draw_game_view(
         )
         overlay_rects.update(pause_rects)
 
-    pygame.display.flip()
     return overlay_rects
 
 
@@ -73,5 +78,3 @@ __all__ = [
     "draw_header",
     "draw_footer_helper",
 ]
-
-
