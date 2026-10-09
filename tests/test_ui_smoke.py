@@ -12,7 +12,13 @@ import sudoku.ui.board as board_ui
 from sudoku.config import game_text
 from sudoku.game import AppController, Game, GameState
 from sudoku.logic import export_puzzle
-from sudoku.persistence import LeaderboardData, load_best_times, load_daily_stats, load_game_state
+from sudoku.persistence import (
+    LeaderboardData,
+    load_best_times,
+    load_daily_stats,
+    load_game_state,
+    load_stats,
+)
 from sudoku.ui import create_game_screen, draw_game_view, load_fonts
 from sudoku.ui.geometry import (
     BOARD_SIZE,
@@ -21,11 +27,14 @@ from sudoku.ui.geometry import (
     CELL_SIZE,
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
+    SIDEBAR_WIDTH,
+    SIDEBAR_X,
     get_cell_from_pos,
     get_sidebar_layout,
 )
 from sudoku.ui.icons import SmoothIcons
 from sudoku.ui.menu import draw_menu_view
+from sudoku.ui.screen import _fit_window_size
 
 
 def test_game_view_renders_headless():
@@ -62,6 +71,56 @@ def test_menu_renders_headless():
     pygame.quit()
 
 
+def test_menu_layout_keeps_cards_and_controls_inside_window():
+    from sudoku.ui.colors import Colors
+
+    pygame.init()
+    screen = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+    menu_data = {
+        "best_times": {},
+        "daily_stats": {"streak": 2, "total_completed": 3, "best_streak": 2},
+        "save_exists": True,
+        "saved_game": ("medium", 90),
+    }
+
+    rects = draw_menu_view(screen, load_fonts(), (0, 0), menu_data=menu_data)
+    visible = [rect for rect in rects.values() if rect is not None]
+    difficulty_cards = [rects[key] for key in ("easy", "medium", "hard", "custom")]
+
+    assert screen.get_at((0, 0))[:3] == Colors.BG_MAIN
+    assert all(screen.get_rect().contains(rect) for rect in visible)
+    assert all(rect.width == difficulty_cards[0].width for rect in difficulty_cards)
+    assert all(
+        not first.colliderect(second)
+        for index, first in enumerate(difficulty_cards)
+        for second in difficulty_cards[index + 1 :]
+    )
+
+
+def test_corrupt_save_does_not_show_resume_button(monkeypatch):
+    pygame.font.init()
+    monkeypatch.setattr(game, "has_save_file", lambda: True)
+    monkeypatch.setattr(game, "load_game_state", lambda: None)
+    monkeypatch.setattr(game, "load_best_times", dict)
+    monkeypatch.setattr(game, "load_daily_stats", dict)
+    monkeypatch.setattr(game, "load_stats", dict)
+
+    controller = AppController.__new__(AppController)
+    controller._refresh_menu_data()
+
+    screen = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+    rects = draw_menu_view(screen, load_fonts(), (0, 0), menu_data=controller.menu_data)
+    assert rects["resume"] is None
+    assert controller.menu_data["save_error"]
+
+
+def test_small_display_window_keeps_logical_canvas_aspect_ratio():
+    fitted = _fit_window_size((1366, 768), (1120, 800))
+
+    assert fitted == (963, 688)
+    assert _fit_window_size((1200, 850), (1120, 800)) == (1078, 770)
+
+
 def test_custom_menu_card_hides_chevron_from_stepper_controls():
     from sudoku.ui.colors import Colors
     from sudoku.ui.drawing import draw_interactive_card
@@ -94,7 +153,7 @@ def test_menu_snapshot_avoids_reloading_persistence_each_frame(monkeypatch):
     def unexpected_disk_read(*_args, **_kwargs):
         raise AssertionError("menu should use the supplied snapshot")
 
-    for name in ("load_best_times", "load_daily_stats", "has_save_file", "load_game_state"):
+    for name in ("load_daily_stats", "has_save_file", "load_game_state"):
         monkeypatch.setattr(menu_ui, name, unexpected_disk_read)
 
     screen = create_game_screen()
@@ -124,13 +183,18 @@ def test_leaderboard_snapshot_avoids_reloading_persistence_each_frame(monkeypatc
         {difficulty: [] for difficulty in ("easy", "medium", "hard", "daily", "custom")},
     )
 
-    draw_leaderboard_modal(
+    rects = draw_leaderboard_modal(
         screen,
         load_fonts(),
         (0, 0),
         game_text,
+        active_diff="overview",
         leaderboard_data=leaderboard_data,
+        best_times={"easy": 90, "medium": None, "hard": 150, "daily": None, "custom": 200},
+        daily_stats={"total_completed": 4, "streak": 2, "best_streak": 3},
+        game_stats={"games_started": 8, "games_completed": 5, "hints_used": 3},
     )
+    assert screen.get_rect().contains(rects["tab_overview"])
 
 
 def test_opening_leaderboard_loads_one_snapshot(monkeypatch):
@@ -164,6 +228,14 @@ def test_sidebar_layout_has_no_overlapping_controls():
     assert all(0 <= rect.top and rect.bottom <= SCREEN_HEIGHT for rect in controls)
     for index, rect in enumerate(controls):
         assert not any(rect.colliderect(other) for other in controls[index + 1 :])
+    quick_actions = [layout["quick_hint"], layout["quick_check_errors"]]
+    assert (
+        abs(
+            (quick_actions[0].left + quick_actions[-1].right) // 2
+            - (SIDEBAR_X + SIDEBAR_WIDTH // 2)
+        )
+        <= 1
+    )
 
 
 def test_board_hitboxes_match_rendered_cell_edges():
@@ -300,13 +372,22 @@ def test_leaderboard_custom_tab_is_visible_and_selectable(monkeypatch):
     controller.state = AppController.STATE_LEADERBOARD
     controller.leaderboard_diff = "medium"
     custom_tab = pygame.Rect(20, 20, 40, 30)
+    overview_tab = pygame.Rect(70, 20, 40, 30)
+    events = iter(
+        (
+            [pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=overview_tab.center)],
+            [pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=custom_tab.center)],
+        )
+    )
     monkeypatch.setattr(
         pygame.event,
         "get",
-        lambda: [pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=custom_tab.center)],
+        lambda: next(events),
     )
 
-    controller._handle_leaderboard_events({"tab_custom": custom_tab})
+    controller._handle_leaderboard_events({"tab_overview": overview_tab, "tab_custom": custom_tab})
+    assert controller.leaderboard_diff == "overview"
+    controller._handle_leaderboard_events({"tab_overview": overview_tab, "tab_custom": custom_tab})
 
     assert controller.leaderboard_diff == "custom"
 
@@ -878,6 +959,7 @@ def test_win_update_registers_score_and_clears_save(monkeypatch):
     session.update()
 
     assert session.state.game_over
+    assert load_stats()["games_completed"] == 1
     assert session.text_input is not None
     session.text_input["value"] = "Winner"
     session._submit_text_input()
@@ -1105,6 +1187,3 @@ def test_sidebar_renders_mistakes_pill_with_wrong_cells(monkeypatch):
         for y in range(layout["numbers"][0].top - 34, layout["numbers"][0].top - 2)
     ]
     assert any(px != Colors.BG_CARD[:3] for px in pill_zone)
-
-
-

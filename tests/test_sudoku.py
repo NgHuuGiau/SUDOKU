@@ -2,6 +2,7 @@
 
 import json
 import os
+import sys
 from datetime import date
 from pathlib import Path
 
@@ -31,6 +32,7 @@ from sudoku.persistence import (
     get_data_dir,
     get_preference,
     has_save_file,
+    increment_stat,
     load_best_times,
     load_daily_stats,
     load_game_state,
@@ -72,6 +74,23 @@ class TestLogic:
         first = generate_daily_challenge(challenge_date=challenge_date)
         second = generate_daily_challenge(challenge_date=challenge_date)
         assert first == second
+
+    def test_data_directory_falls_back_when_os_path_is_not_writable(self, monkeypatch, tmp_path):
+        home = tmp_path / "home"
+        home.mkdir()
+        blocker = tmp_path / "not_a_directory"
+        blocker.write_text("", encoding="utf-8")
+        monkeypatch.setattr(Path, "home", lambda: home)
+        monkeypatch.delenv("SUDOKU_DATA_DIR", raising=False)
+
+        if os.name == "nt":
+            monkeypatch.setenv("LOCALAPPDATA", str(blocker))
+        elif sys.platform == "darwin":
+            (home / "Library").write_text("", encoding="utf-8")
+        else:
+            monkeypatch.setenv("XDG_DATA_HOME", str(blocker))
+
+        assert get_data_dir() == home / ".sudoku-master"
 
     def test_generate_sudoku_easy(self):
         board, solution = generate_sudoku("easy")
@@ -514,6 +533,23 @@ class TestPersistence:
         assert leaderboard["easy"] == [{"name": "Valid", "time": 42, "date": "2026-09-17"}]
         assert leaderboard["daily"] == []
 
+    def test_game_statistics_increment_and_sanitize(self):
+        (get_data_dir() / "stats.json").write_text(
+            json.dumps({"theme": "dark", "games_started": "many", "hints_used": -1}),
+            encoding="utf-8",
+        )
+
+        increment_stat("games_started")
+        increment_stat("games_completed")
+        increment_stat("hints_used")
+
+        assert load_stats() == {
+            "theme": "dark",
+            "games_started": 1,
+            "games_completed": 1,
+            "hints_used": 1,
+        }
+
     def test_update_best_time_first(self):
         assert update_best_time("easy", 120)
         assert load_best_times()["easy"] == 120
@@ -556,6 +592,7 @@ class TestGameState:
     def test_initial_state(self):
         state = GameState("easy")
         assert state.difficulty == "easy"
+        assert load_stats()["games_started"] == 1
         assert state.selected == [0, 0]
         assert state.notes_mode is False
         assert state.game_over is False
@@ -723,6 +760,7 @@ class TestGameState:
         state.give_hint()
         assert state.board[r][c] == solution_val
         assert state.notes[r][c] == set()
+        assert load_stats()["hints_used"] == 1
 
     def test_fill_possible_notes(self):
         state = GameState("easy")
@@ -818,8 +856,3 @@ class TestIntegration:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
-
-
-
-
-
