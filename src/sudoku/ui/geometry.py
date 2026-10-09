@@ -9,12 +9,12 @@ SCREEN_HEIGHT = 800
 CELL_SIZE = 66
 BOARD_SIZE = CELL_SIZE * 9
 
-BOARD_X = 40
+BOARD_X = 32
 BOARD_Y = 104
 
-SIDEBAR_X = BOARD_X + BOARD_SIZE + 28  # 668
+SIDEBAR_X = BOARD_X + BOARD_SIZE + 32
 SIDEBAR_Y = BOARD_Y
-SIDEBAR_WIDTH = SCREEN_WIDTH - SIDEBAR_X - 36  # 416
+SIDEBAR_WIDTH = SCREEN_WIDTH - SIDEBAR_X - 32
 
 
 def get_timer_rect() -> pygame.Rect:
@@ -41,7 +41,8 @@ def get_sidebar_layout() -> dict[str, pygame.Rect | list[pygame.Rect]]:
     for i in range(5):
         col = i % 3
         row = i // 3
-        bx = x + col * (quick_btn_w + 6)
+        row_offset = (quick_btn_w + 6) // 2 if row else 0
+        bx = x + row_offset + col * (quick_btn_w + 6)
         by = y + row * (quick_btn_h + 8)
         quick_buttons.append(pygame.Rect(bx, by, quick_btn_w, quick_btn_h))
 
@@ -103,4 +104,3 @@ def get_remaining_counts(board) -> dict:
             if 1 <= val <= 9:
                 counts[val] += 1
     return {num: max(0, 9 - counts[num]) for num in range(1, 10)}
-

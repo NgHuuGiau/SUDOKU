@@ -107,6 +107,16 @@ def draw_interactive_card(
     is_hover = rect.collidepoint(mouse_pos)
     draw_rect = rect.move(0, -2) if is_hover else rect
 
+    if is_hover:
+        glow_rect = draw_rect.inflate(4, 4)
+        pygame.draw.rect(
+            screen,
+            soft_tint(accent_color, Colors.BG_MAIN, 0.2),
+            glow_rect,
+            width=2,
+            border_radius=radius + 2,
+        )
+
     # Shadow
     shadow_rect = draw_rect.move(0, 4 if is_hover else 2)
     pygame.draw.rect(screen, Colors.SHADOW, shadow_rect, border_radius=radius)
@@ -247,7 +257,12 @@ def draw_modern_button(
 
         icon_rect = icon_surf.get_rect(center=(rect.centerx, start_y + icon_size // 2))
         screen.blit(icon_surf, icon_rect)
-        screen.blit(s_surf, s_surf.get_rect(center=(rect.centerx, start_y + icon_size + 2 + s_surf.get_height() // 2)))
+        screen.blit(
+            s_surf,
+            s_surf.get_rect(
+                center=(rect.centerx, start_y + icon_size + 2 + s_surf.get_height() // 2)
+            ),
+        )
         return rect
 
     elif icon_name and text:
@@ -294,5 +309,3 @@ def draw_modern_button(
         return rect
 
     return rect
-
-

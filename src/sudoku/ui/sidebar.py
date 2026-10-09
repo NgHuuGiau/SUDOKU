@@ -23,7 +23,9 @@ def _format_clock(total_seconds: int | None) -> str:
     return f"{mins:02}:{secs:02}"
 
 
-def draw_sidebar(screen: pygame.Surface, fonts, mouse_pos: tuple[int, int], translate, state) -> dict[str, pygame.Rect | list[pygame.Rect]]:
+def draw_sidebar(
+    screen: pygame.Surface, fonts, mouse_pos: tuple[int, int], translate, state
+) -> dict[str, pygame.Rect | list[pygame.Rect]]:
     layout = get_sidebar_layout()
     rem_counts = get_remaining_counts(state.board)
 
@@ -224,7 +226,7 @@ def draw_sidebar(screen: pygame.Surface, fonts, mouse_pos: tuple[int, int], tran
             (translate("streak"), str(streak), "flame", Colors.ICON_STREAK),
         ]
     ):
-        row_y = info_rect.top + 10 + index * 48
+        row_y = info_rect.top + 8 + index * 45
         draw_icon_tile(
             screen,
             pygame.Rect(info_rect.left + 12, row_y + 2, 40, 40),
@@ -238,7 +240,7 @@ def draw_sidebar(screen: pygame.Surface, fonts, mouse_pos: tuple[int, int], tran
         value_surf = fonts.medium.render(value, True, Colors.FIXED_TEXT)
         screen.blit(
             value_surf,
-            value_surf.get_rect(midright=(info_rect.right - 16, row_y + 28)),
+            value_surf.get_rect(midright=(info_rect.right - 16, row_y + 22)),
         )
 
     # 5. Bottom actions (New Game & Menu)
@@ -268,9 +270,3 @@ def draw_sidebar(screen: pygame.Surface, fonts, mouse_pos: tuple[int, int], tran
     )
 
     return layout  # type: ignore[no-any-return]
-
-
-
-
-
-

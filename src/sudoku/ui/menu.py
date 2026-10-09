@@ -47,8 +47,10 @@ def draw_menu_view(
     if menu_data is None:
         best_times = load_best_times()
         daily_stats = load_daily_stats()
-        save_exists = has_save_file()
-        saved_state = load_game_state() if save_exists else None
+        save_file_exists = has_save_file()
+        saved_state = load_game_state() if save_file_exists else None
+        save_exists = saved_state is not None
+        save_error = save_file_exists and saved_state is None
         saved_game = (
             (saved_state.difficulty, saved_state.get_elapsed_time()) if saved_state else None
         )
@@ -56,12 +58,14 @@ def draw_menu_view(
         best_times = menu_data["best_times"]
         daily_stats = menu_data["daily_stats"]
         save_exists = menu_data["save_exists"]
+        save_error = menu_data.get("save_error", False)
         saved_game = menu_data["saved_game"]
 
     screen.fill(Colors.BG_MAIN)
     menu_rects: dict[str, pygame.Rect | None] = dict.fromkeys(MENU_KEYS)
 
-    col_x, col_w = 280, 560
+    col_w = 560
+    col_x = (SCREEN_WIDTH - col_w) // 2
     cx = col_x + col_w // 2
 
     # Logo block
@@ -231,6 +235,17 @@ def draw_menu_view(
         menu_rects[key] = rect
         bx += width + 10
 
+    if save_error:
+        draw_badge(
+            screen,
+            pygame.Rect(col_x, 672, col_w, 22),
+            menu_text("save_unavailable"),
+            fonts.tiny,
+            soft_tint(Colors.BTN_WARNING, Colors.BG_MAIN),
+            Colors.BTN_WARNING,
+            radius=11,
+        )
+
     hint = fonts.tiny.render(
         "Tab / Shift+Tab: focus · Enter/Space: select", True, Colors.STATUS_TEXT
     )
@@ -243,5 +258,3 @@ def tao_nut_bat_dau():
     from sudoku.game import AppController
 
     AppController().run()
-
-

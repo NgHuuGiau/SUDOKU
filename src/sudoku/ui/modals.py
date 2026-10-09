@@ -439,6 +439,9 @@ def draw_leaderboard_modal(
     translate,
     active_diff="medium",
     leaderboard_data=None,
+    best_times=None,
+    daily_stats=None,
+    game_stats=None,
 ) -> dict:
     """Draw high scores leaderboard modal. Returns interactive rects."""
     if leaderboard_data is None:
@@ -462,6 +465,18 @@ def draw_leaderboard_modal(
 
     title_surf = fonts.large.render(translate("leaderboard"), True, Colors.FIXED_TEXT)
     screen.blit(title_surf, title_surf.get_rect(center=(modal_rect.centerx, modal_rect.top + 72)))
+
+    overview_rect = pygame.Rect(modal_rect.right - 126, modal_rect.top + 58, 96, 30)
+    draw_modern_button(
+        screen,
+        overview_rect,
+        translate("statistics"),
+        mouse_pos,
+        fonts.badge,
+        variant="secondary",
+        is_active=active_diff == "overview",
+        radius=6,
+    )
 
     # Difficulty tabs (daily gets a wider tab: its label is the longest)
     diff_tabs = [
@@ -494,67 +509,119 @@ def draw_leaderboard_modal(
         )
         overlay_rects[f"tab_{d_key}"] = t_rect
 
-    # Table Header
-    th_y = tab_y + 44
-    th_bg = pygame.Rect(modal_rect.left + 30, th_y, card_w - 60, 28)
-    pygame.draw.rect(screen, Colors.SELECTED_BG, th_bg, border_radius=6)
-
-    screen.blit(
-        fonts.badge.render(translate("rank"), True, Colors.STATUS_TEXT), (th_bg.left + 16, th_y + 6)
-    )
-    screen.blit(
-        fonts.badge.render(translate("name"), True, Colors.STATUS_TEXT), (th_bg.left + 80, th_y + 6)
-    )
-    screen.blit(
-        fonts.badge.render(translate("time"), True, Colors.STATUS_TEXT),
-        (th_bg.right - 180, th_y + 6),
-    )
-    screen.blit(
-        fonts.badge.render(translate("date"), True, Colors.STATUS_TEXT),
-        (th_bg.right - 90, th_y + 6),
-    )
-
-    # Entries list
-    entries = cast(Any, leaderboard).get(active_diff, [])[:10]
-    row_y = th_y + 34
-    row_h = 28
-    if not entries:
-        no_data = fonts.small.render(translate("no_records"), True, Colors.STATUS_TEXT)
-        screen.blit(no_data, no_data.get_rect(center=(modal_rect.centerx, row_y + 50)))
-    else:
-        for i, entry in enumerate(entries):
-            cur_y = row_y + i * row_h
-            # Rank with medal color for top 3
-            rank_color = (
-                Colors.GOLD
-                if i == 0
-                else (
-                    (200, 200, 210)
-                    if i == 1
-                    else ((205, 127, 50) if i == 2 else Colors.STATUS_TEXT)
+    if active_diff == "overview":
+        best_times = best_times or {}
+        daily_stats = daily_stats or {}
+        game_stats = game_stats or {}
+        stats = [
+            (f"{translate('best_time')} · {translate(key)}", best_times.get(diff))
+            for diff, key in (
+                ("easy", "de"),
+                ("medium", "trung_binh"),
+                ("hard", "kho"),
+                ("daily", "daily_challenge"),
+                ("custom", "custom"),
+            )
+        ]
+        stats.extend(
+            (
+                (translate("total_daily_completed"), daily_stats.get("total_completed", 0)),
+                (translate("current_streak"), daily_stats.get("streak", 0)),
+                (translate("best_streak"), daily_stats.get("best_streak", 0)),
+                (translate("games_started"), game_stats.get("games_started", 0)),
+                (translate("games_completed"), game_stats.get("games_completed", 0)),
+                (translate("hints_used"), game_stats.get("hints_used", 0)),
+            )
+        )
+        card_gap = 8
+        stat_w = (card_w - 60 - card_gap * 2) // 3
+        stat_h = 54
+        stat_y = tab_y + 42
+        for index, (label, value) in enumerate(stats):
+            col, row = index % 3, index // 3
+            stat_rect = pygame.Rect(
+                modal_rect.left + 30 + col * (stat_w + card_gap),
+                stat_y + row * (stat_h + 8),
+                stat_w,
+                stat_h,
+            )
+            draw_rounded_card(screen, stat_rect, Colors.SELECTED_BG, Colors.CARD_BORDER, radius=8)
+            label_surf = fit_surface(
+                fonts.tiny.render(label, True, Colors.STATUS_TEXT), stat_w - 16, 18
+            )
+            screen.blit(label_surf, (stat_rect.left + 10, stat_rect.top + 7))
+            shown = "—" if value is None else str(value)
+            if isinstance(value, int):
+                mins, secs = divmod(max(0, value), 60)
+                shown = (
+                    f"{mins:02}:{secs:02}"
+                    if label.startswith(translate("best_time"))
+                    else str(value)
                 )
-            )
-            rank_surf = fonts.badge.render(f"#{i + 1}", True, rank_color)
-            screen.blit(rank_surf, (th_bg.left + 18, cur_y + 4))
+            value_surf = fonts.badge.render(shown, True, Colors.GOLD)
+            screen.blit(value_surf, (stat_rect.left + 10, stat_rect.top + 28))
+    else:
+        # Table Header
+        th_y = tab_y + 44
+        th_bg = pygame.Rect(modal_rect.left + 30, th_y, card_w - 60, 28)
+        pygame.draw.rect(screen, Colors.SELECTED_BG, th_bg, border_radius=6)
 
-            # Name
-            name_surf = fonts.badge.render(
-                entry.get("name", "Player")[:14], True, Colors.FIXED_TEXT
-            )
-            screen.blit(name_surf, (th_bg.left + 80, cur_y + 4))
+        screen.blit(
+            fonts.badge.render(translate("rank"), True, Colors.STATUS_TEXT),
+            (th_bg.left + 16, th_y + 6),
+        )
+        screen.blit(
+            fonts.badge.render(translate("name"), True, Colors.STATUS_TEXT),
+            (th_bg.left + 80, th_y + 6),
+        )
+        screen.blit(
+            fonts.badge.render(translate("time"), True, Colors.STATUS_TEXT),
+            (th_bg.right - 180, th_y + 6),
+        )
+        screen.blit(
+            fonts.badge.render(translate("date"), True, Colors.STATUS_TEXT),
+            (th_bg.right - 90, th_y + 6),
+        )
 
-            # Time
-            t_sec = entry.get("time", 0)
-            mins, secs = divmod(max(0, t_sec), 60)
-            time_surf = fonts.badge.render(
-                f"{mins:02}:{secs:02}", True, Colors.GOLD if i == 0 else Colors.FIXED_TEXT
-            )
-            screen.blit(time_surf, (th_bg.right - 180, cur_y + 4))
+        # Entries list
+        entries = cast(Any, leaderboard).get(active_diff, [])[:10]
+        row_y = th_y + 34
+        row_h = 28
+        if not entries:
+            no_data = fonts.small.render(translate("no_records"), True, Colors.STATUS_TEXT)
+            screen.blit(no_data, no_data.get_rect(center=(modal_rect.centerx, row_y + 50)))
+        else:
+            for i, entry in enumerate(entries):
+                cur_y = row_y + i * row_h
+                rank_color = (
+                    Colors.GOLD
+                    if i == 0
+                    else (
+                        (200, 200, 210)
+                        if i == 1
+                        else ((205, 127, 50) if i == 2 else Colors.STATUS_TEXT)
+                    )
+                )
+                rank_surf = fonts.badge.render(f"#{i + 1}", True, rank_color)
+                screen.blit(rank_surf, (th_bg.left + 18, cur_y + 4))
 
-            # Date
-            d_str = entry.get("date", "")[:10]
-            date_surf = fonts.tiny.render(d_str, True, Colors.STATUS_TEXT)
-            screen.blit(date_surf, (th_bg.right - 90, cur_y + 5))
+                name_surf = fonts.badge.render(
+                    entry.get("name", "Player")[:14], True, Colors.FIXED_TEXT
+                )
+                screen.blit(name_surf, (th_bg.left + 80, cur_y + 4))
+
+                t_sec = entry.get("time", 0)
+                mins, secs = divmod(max(0, t_sec), 60)
+                time_surf = fonts.badge.render(
+                    f"{mins:02}:{secs:02}", True, Colors.GOLD if i == 0 else Colors.FIXED_TEXT
+                )
+                screen.blit(time_surf, (th_bg.right - 180, cur_y + 4))
+
+                d_str = entry.get("date", "")[:10]
+                date_surf = fonts.tiny.render(d_str, True, Colors.STATUS_TEXT)
+                screen.blit(date_surf, (th_bg.right - 90, cur_y + 5))
+
+    overlay_rects["tab_overview"] = overview_rect
 
     # Close button
     btn_w, btn_h = 120, 42
@@ -627,5 +694,3 @@ def draw_text_input_modal(
     overlay_rects["text_ok"] = text_ok
     overlay_rects["text_cancel"] = text_cancel
     return overlay_rects
-
-
